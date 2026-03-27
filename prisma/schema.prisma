@@ -1,0 +1,172 @@
+// Capital Studio — Prisma Schema
+// Neon PostgreSQL via @prisma/adapter-neon (Prisma 6+)
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = []
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum BrandType {
+  LHC      // Legacy Heritage Capital
+  SIMRP    // The SIMRP
+  PERSONAL // User-defined personal brand
+}
+
+enum AssetType {
+  IMAGE
+  GRAPHIC
+  VIDEO
+  AUDIO
+  VOICEOVER
+  DOCUMENT
+}
+
+enum AssetStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum Platform {
+  FACEBOOK
+  INSTAGRAM
+  X
+  LINKEDIN
+  YOUTUBE
+  TIKTOK
+  THREADS
+  SUBSTACK
+  MEDIUM
+}
+
+enum PostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  FAILED
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  users         User[]
+  assets        Asset[]
+  brands        BrandProfile[]
+  socialAccounts SocialAccount[]
+  scheduledPosts ScheduledPost[]
+
+  @@index([slug])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  tenantId  String
+  email     String   @unique
+  name      String?
+  password  String?  // null for demo user
+  role      Role     @default(MEMBER)
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assets Asset[]
+
+  @@index([tenantId])
+}
+
+// BrandProfile stores the full identity of each brand used for content generation.
+// The 'config' JSON holds colors, fonts, tagline, tone, guidelines summary — anything
+// the AI needs to generate on-brand content. Flexible, no rigid columns.
+model BrandProfile {
+  id        String    @id @default(cuid())
+  tenantId  String
+  type      BrandType
+  name      String
+  logoUrl   String?
+  config    Json      // { colors, fonts, tagline, tone, guidelines }
+  isDefault Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assets Asset[]
+
+  @@unique([tenantId, type])
+  @@index([tenantId])
+}
+
+model Asset {
+  id          String      @id @default(cuid())
+  tenantId    String
+  userId      String
+  brandId     String?
+  type        AssetType
+  status      AssetStatus @default(PENDING)
+  s3Key       String?
+  s3Url       String?
+  htmlContent String?     // for GRAPHIC type
+  metadata    Json?       // prompt, model, dimensions, etc.
+  createdAt   DateTime    @default(now())
+
+  tenant Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id])
+  brand  BrandProfile? @relation(fields: [brandId], references: [id])
+
+  @@index([tenantId, type])
+  @@index([tenantId, createdAt(sort: Desc)])
+}
+
+model SocialAccount {
+  id           String    @id @default(cuid())
+  tenantId     String
+  platform     Platform
+  accountName  String
+  accountId    String    // platform-specific user/page ID
+  accessToken  String    // store encrypted in production
+  refreshToken String?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  tenant Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  posts  ScheduledPost[]
+
+  @@unique([tenantId, platform, accountId])
+  @@index([tenantId])
+}
+
+model ScheduledPost {
+  id              String     @id @default(cuid())
+  tenantId        String
+  socialAccountId String
+  assetId         String?
+  caption         String?
+  scheduledFor    DateTime
+  status          PostStatus @default(DRAFT)
+  publishedAt     DateTime?
+  errorMessage    String?
+  createdAt       DateTime   @default(now())
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  socialAccount SocialAccount @relation(fields: [socialAccountId], references: [id])
+
+  @@index([tenantId, scheduledFor])
+  @@index([status, scheduledFor])
+}

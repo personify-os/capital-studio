@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db'
 import { imageGenerateSchema } from '@/lib/schemas/generate'
 import { generateImages } from '@/services/image'
 import { buildBrandPromptContext, getBrandConfig } from '@/lib/brands'
+import { uploadFromUrl, makeAssetKey } from '@/lib/storage'
 import type { BrandId } from '@/lib/brands'
 
 export async function POST(req: Request) {
@@ -36,16 +37,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: err.message ?? 'Generation failed.' }, { status: 500 })
   }
 
-  // Save assets to DB
+  // Upload to R2 for permanent storage, then save to DB
   const assets = await Promise.all(
-    urls.map((url) =>
-      prisma.asset.create({
+    urls.map(async (tempUrl) => {
+      const key        = makeAssetKey(session.user.tenantId, 'images')
+      const permanentUrl = await uploadFromUrl(tempUrl, key)
+
+      return prisma.asset.create({
         data: {
           tenantId: session.user.tenantId,
           userId:   session.user.id,
           type:     'IMAGE',
           status:   'READY',
-          s3Url:    url,
+          s3Key:    key,
+          s3Url:    permanentUrl,
           metadata: {
             prompt:      input.prompt,
             model:       input.model,
@@ -54,8 +59,8 @@ export async function POST(req: Request) {
           },
         },
         select: { id: true, s3Url: true, createdAt: true },
-      }),
-    ),
+      })
+    }),
   )
 
   return NextResponse.json({ assets: assets.map((a) => ({ id: a.id, url: a.s3Url! })) })

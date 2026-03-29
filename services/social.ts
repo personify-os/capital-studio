@@ -148,11 +148,42 @@ export async function publishToLinkedIn(
   return (json.id ?? '') as string
 }
 
-// ─── X (Twitter) posting ───────────────────────────────────────────────────────
+// ─── X (Twitter) — OAuth 1.0a ──────────────────────────────────────────────────
+// Uses app-level OAuth 1.0a credentials from env vars (no per-user token storage).
 
-export async function getXProfile(token: string): Promise<{ id: string; name: string }> {
-  const res  = await fetch('https://api.twitter.com/2/users/me', {
-    headers: { Authorization: `Bearer ${token}` },
+import { createHmac, randomBytes } from 'crypto'
+
+function xOAuth1Header(method: string, url: string): string {
+  const enc = encodeURIComponent
+
+  const params: Record<string, string> = {
+    oauth_consumer_key:     process.env.TWITTER_API_KEY!,
+    oauth_nonce:            randomBytes(16).toString('hex'),
+    oauth_signature_method: 'HMAC-SHA1',
+    oauth_timestamp:        String(Math.floor(Date.now() / 1000)),
+    oauth_token:            process.env.TWITTER_ACCESS_TOKEN!,
+    oauth_version:          '1.0',
+  }
+
+  const paramString = Object.keys(params)
+    .sort()
+    .map((k) => `${enc(k)}=${enc(params[k])}`)
+    .join('&')
+
+  const base      = `${method.toUpperCase()}&${enc(url)}&${enc(paramString)}`
+  const signingKey= `${enc(process.env.TWITTER_API_SECRET!!)}&${enc(process.env.TWITTER_ACCESS_TOKEN_SECRET!)}`
+  params.oauth_signature = createHmac('sha1', signingKey).update(base).digest('base64')
+
+  return 'OAuth ' + Object.keys(params)
+    .sort()
+    .map((k) => `${enc(k)}="${enc(params[k])}"`)
+    .join(', ')
+}
+
+export async function getXProfile(): Promise<{ id: string; name: string }> {
+  const url = 'https://api.twitter.com/2/users/me'
+  const res = await fetch(url, {
+    headers: { Authorization: xOAuth1Header('GET', url) },
   })
   const json = await res.json()
   if (!res.ok || json.errors) throw new Error(json.errors?.[0]?.message ?? 'Failed to fetch X profile')
@@ -160,14 +191,14 @@ export async function getXProfile(token: string): Promise<{ id: string; name: st
 }
 
 export async function publishToX(
-  _userId:  string,
-  token:    string,
-  caption:  string,
+  _userId: string,
+  _token:  string,
+  caption: string,
 ): Promise<string> {
-  // Twitter API v2 — text-only posts (image media upload is a separate multi-step flow)
-  const res  = await fetch('https://api.twitter.com/2/tweets', {
+  const url = 'https://api.twitter.com/2/tweets'
+  const res = await fetch(url, {
     method:  'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: xOAuth1Header('POST', url), 'Content-Type': 'application/json' },
     body:    JSON.stringify({ text: caption }),
   })
   const json = await res.json()

@@ -449,14 +449,12 @@ function ConnectLinkedInModal({ onClose, onConnected }: { onClose: () => void; o
 // ─── Connect X Modal ───────────────────────────────────────────────────────────
 
 function ConnectXModal({ onClose, onConnected }: { onClose: () => void; onConnected: (a: SocialAccount[]) => void }) {
-  const [token,   setToken]   = useState('')
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState<string | null>(null)
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleConnect() {
     setLoading(true); setError(null)
-    const res  = await fetch('/api/v1/social/connect/x', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bearerToken: token.trim() }) })
+    const res  = await fetch('/api/v1/social/connect/x', { method: 'POST' })
     const json = await res.json()
     if (!res.ok) { setError(json.message ?? 'Failed'); setLoading(false); return }
     const accts = await fetch('/api/v1/social/accounts').then((r) => r.json())
@@ -465,36 +463,18 @@ function ConnectXModal({ onClose, onConnected }: { onClose: () => void; onConnec
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md bg-white rounded-card shadow-card-hover overflow-hidden">
+      <div className="w-full max-w-sm bg-white rounded-card shadow-card-hover overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <p className="font-semibold text-brand-navy text-sm">Connect X (Twitter)</p>
           <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100"><X size={16} className="text-gray-500" /></button>
         </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 text-xs text-gray-700 space-y-1">
-            <p className="font-semibold">How to get your X Bearer Token:</p>
-            <ol className="list-decimal list-inside space-y-0.5 text-gray-500">
-              <li>Go to <span className="font-medium">developer.twitter.com</span> → your project</li>
-              <li>Under <span className="font-medium">Keys and Tokens</span>, generate a <span className="font-medium">Bearer Token</span></li>
-              <li>Ensure your app has <span className="font-medium">tweet.write</span> permission (Read &amp; Write)</li>
-              <li>Paste the Bearer Token below</li>
-            </ol>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Bearer Token</label>
-            <textarea
-              rows={3}
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="AAAA..."
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-azure resize-none"
-            />
-          </div>
+        <div className="p-5 space-y-4">
+          <p className="text-sm text-gray-500">Connects using the X credentials configured for Capital Studio.</p>
           {error && <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>}
-          <button type="submit" disabled={loading || !token.trim()} className="w-full py-2.5 bg-gray-900 hover:bg-black disabled:opacity-60 text-white font-semibold text-sm rounded-lg transition-colors">
+          <button type="button" onClick={handleConnect} disabled={loading} className="w-full py-2.5 bg-gray-900 hover:bg-black disabled:opacity-60 text-white font-semibold text-sm rounded-lg transition-colors">
             {loading ? 'Connecting…' : 'Connect X'}
           </button>
-        </form>
+        </div>
       </div>
     </div>
   )

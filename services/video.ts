@@ -27,7 +27,7 @@ export async function generateMotionVideo(
       prompt,
       duration:     duration as '5' | '10',
       aspect_ratio: aspectRatio,
-    },
+    } as any,
   })
 
   const r = result as any

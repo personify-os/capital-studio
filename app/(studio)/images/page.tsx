@@ -24,7 +24,7 @@ export default async function ImagesPage() {
 
   return (
     <>
-      <Topbar title="Create Images" description="Generate AI images using the best available models" />
+      <Topbar title="Image Studio" description="Generate AI images using the best available models" />
       <ImagesClient
         recentImages={recent.map((r) => ({ ...r, s3Url: r.s3Url ?? '', createdAt: r.createdAt.toISOString() }))}
       />

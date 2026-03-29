@@ -53,7 +53,7 @@ export default function WriterClient() {
   const [contentType,      setContentType]      = useState<ContentType>('caption')
   const [brandId,          setBrandId]          = useState<BrandId>('lhcapital')
   const [topic,            setTopic]            = useState('')
-  const [platform,         setPlatform]         = useState<Platform>('linkedin')
+  const [platforms,        setPlatforms]        = useState<Platform[]>(['linkedin'])
   const [tone,             setTone]             = useState<Tone>('professional')
   const [seriesCount,      setSeriesCount]      = useState<SeriesCount>(3)
   const [includeHashtags,  setIncludeHashtags]  = useState(true)
@@ -63,17 +63,24 @@ export default function WriterClient() {
     endpoint: '/api/v1/generate/caption',
   })
 
+  function togglePlatform(p: Platform) {
+    setPlatforms((prev) =>
+      prev.includes(p) ? (prev.length > 1 ? prev.filter((x) => x !== p) : prev) : [...prev, p],
+    )
+  }
+
   const handleGenerate = useCallback(() => {
     if (!topic.trim()) return
     generate({
-      platform,
+      platform:        platforms[0],
+      platforms,
       tone,
       topic:           topic.trim(),
       brandId,
       includeHashtags,
       seriesCount:     contentType === 'series' ? seriesCount : 1,
     })
-  }, [topic, platform, tone, brandId, includeHashtags, contentType, seriesCount, generate])
+  }, [topic, platforms, tone, brandId, includeHashtags, contentType, seriesCount, generate])
 
   function copy(text: string, key: number | 'all') {
     navigator.clipboard.writeText(text).then(() => {
@@ -85,9 +92,9 @@ export default function WriterClient() {
   const captions = data?.captions ?? (data?.caption ? [data.caption] : [])
 
   return (
-    <div className="flex h-full min-h-screen bg-app-bg">
+    <div className="flex bg-app-bg">
       {/* ── Left: controls ─────────────────────────────────────────── */}
-      <div className="w-[380px] flex-shrink-0 h-full overflow-y-auto p-5 border-r border-gray-100 bg-white">
+      <div className="w-[380px] flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto overflow-x-hidden p-5 border-r border-gray-100 bg-white">
         <div className="space-y-5">
 
           {/* Content type */}
@@ -168,16 +175,17 @@ export default function WriterClient() {
 
           {/* Platform */}
           <div className="bg-gray-50 rounded-card p-4">
-            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Platform</p>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1">Platform</p>
+            <p className="text-[10px] text-gray-400 mb-3">Select one or more</p>
             <div className="grid grid-cols-2 gap-1.5">
               {PLATFORMS.map((p) => (
                 <button
                   key={p.value}
                   type="button"
-                  onClick={() => setPlatform(p.value)}
+                  onClick={() => togglePlatform(p.value)}
                   className={cn(
                     'py-2 px-3 rounded-lg text-xs font-medium border-2 text-left transition-all',
-                    platform === p.value
+                    platforms.includes(p.value)
                       ? 'border-brand-azure bg-brand-azure/5 text-brand-azure'
                       : 'border-gray-200 text-gray-600 hover:border-[#689EB8]',
                   )}
@@ -212,7 +220,7 @@ export default function WriterClient() {
 
           {/* Hashtags toggle */}
           <div className="bg-gray-50 rounded-card p-4">
-            <label className="flex items-center justify-between cursor-pointer">
+            <div className="flex items-center justify-between gap-3">
               <span className="text-xs font-medium text-gray-700">Include hashtags</span>
               <button
                 type="button"
@@ -220,7 +228,7 @@ export default function WriterClient() {
                 aria-checked={includeHashtags}
                 onClick={() => setIncludeHashtags((v) => !v)}
                 className={cn(
-                  'relative w-9 h-5 rounded-full transition-colors',
+                  'relative flex-shrink-0 w-9 h-5 rounded-full transition-colors',
                   includeHashtags ? 'bg-brand-azure' : 'bg-gray-300',
                 )}
               >
@@ -229,7 +237,7 @@ export default function WriterClient() {
                   includeHashtags ? 'translate-x-4' : 'translate-x-0.5',
                 )} />
               </button>
-            </label>
+            </div>
           </div>
 
           <Button

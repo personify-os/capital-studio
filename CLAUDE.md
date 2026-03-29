@@ -100,6 +100,47 @@ prisma/               — Schema + migrations
 
 ---
 
+## Rate Limiting (Pillar 11)
+- Auth endpoints: 5 req/min per IP — brute-force guard
+- AI generation endpoints: 10 req/min per user — cost guard
+- General API: 60 req/min per tenant
+- Implementation: `lib/ratelimit.ts` (in-memory sliding window) + `middleware.ts`
+- Upgrade path: swap store for Upstash Redis when multi-instance deployment required
+
+## Input Validation (Pillar 12)
+- ALL POST/PATCH/PUT routes validate body with Zod before any DB write
+- Schemas live in `lib/schemas/` — one file per domain
+- Reuse schemas between frontend (`useGenerate`) and backend API routes
+- Never trust `req.body` directly — always `schema.safeParse(body)`
+
+## Observability (Pillar 9)
+- Error visibility: Railway log dashboard + `console.error` in every API catch block
+- AI cost tracking: `metadata.cost` stored on every Asset (see `lib/cost.ts`)
+- Internal tool — Sentry not needed; Railway logs are sufficient
+
+## Data Governance (Pillar 8)
+- Passwords: bcrypt hashed (salt rounds 12)
+- API keys: Anthropic, fal.ai, AWS, ElevenLabs — env vars only, never in source
+- Tenant isolation: enforced at query layer (`where: { tenantId }` required on all data queries)
+- PII: user email + name stored in DB — encrypted at rest via Neon's storage encryption
+
+## Compliance (Pillar 13)
+- HTTPS enforced at hosting layer (Railway / Vercel)
+- No SMS/outbound calls — TCPA not applicable
+- HIPAA: not applicable — no health data handled
+
+## Feature Flags (Pillar 5)
+- Controlled via `FLAG_*` env vars — see `lib/flags.ts`
+- Phase 2 modules (video, voiceover, motion, likeness) default OFF
+- Social platforms default ON except YouTube/TikTok (require OAuth app review)
+- Check `flags.videoGeneration` etc. before rendering phase-2 UI
+
+## CI/CD (Pillar 4)
+- GitHub Actions: `.github/workflows/ci.yml`
+- On every PR: type-check → lint → build
+- On merge to `main`: validate then `railway up --detach`
+- Required secrets: `DATABASE_URL`, `DIRECT_URL`, `RAILWAY_TOKEN`
+
 ## Module Status
 
 | Module           | Status      |
@@ -108,9 +149,12 @@ prisma/               — Schema + migrations
 | Create Images    | Built       |
 | Graphics Studio  | Built       |
 | Writer           | Built       |
-| Brand Vault      | Built (UI)  |
+| Brand Vault      | Built       |
 | Content Library  | Built       |
-| Social Scheduler | Planned (Phase 2) |
-| Videos           | Planned (Phase 2) |
-| VoiceOver        | Planned (Phase 2) |
+| Music            | Built       |
+| Motion Video     | Built       |
+| Analytics        | Built       |
+| Social Scheduler | Built       |
+| Videos           | Built (Phase 2 gate) |
+| VoiceOver        | Built (Phase 2 gate) |
 | Likeness Video   | Planned (Phase 2) |

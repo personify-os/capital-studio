@@ -1,0 +1,31 @@
+language: "en-US"
+reviews:
+  profile: "assertive"
+  request_changes_workflow: true
+  path_instructions:
+    - path: "app/api/**"
+      instructions: |
+        Every API route must call getServerSession(authOptions) before any data access.
+        All endpoints must be under /api/v1/ (not /api/v1 root or unversioned).
+        All DB queries must include `where: { tenantId: session.user.tenantId }` — no unscoped queries.
+        AI generation endpoints must be rate-limited via lib/ratelimit.ts.
+    - path: "app/api/v1/generate/**"
+      instructions: |
+        Must validate request body with Zod schema from lib/schemas/generate.ts.
+        Must call checkRateLimit from lib/ratelimit.ts.
+        Must save the generated asset to DB with tenantId and correct type/metadata.
+    - path: "prisma/**"
+      instructions: |
+        All multi-tenant tables must have tenantId.
+        Use Prisma query builder only — no raw SQL.
+        Every migration must be reviewed for cross-tenant data leakage.
+    - path: "components/**"
+      instructions: |
+        No hardcoded hex color values — use Tailwind tokens from tailwind.config.ts only.
+        No direct DB calls or fetch to external APIs — all data through /api/v1/ routes.
+        No auth or session logic — consume from NextAuth session only.
+auto_review:
+  enabled: true
+  drafts: false
+chat:
+  auto_reply: true

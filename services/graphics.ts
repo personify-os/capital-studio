@@ -45,9 +45,10 @@ function buildGraphicUserPrompt(input: GraphicGenerateInput): string {
     `Template: ${input.templateId}`,
     `Brand: ${input.brandId}`,
     `Headline: "${input.headline}"`,
-    input.subtext ? `Subtext: "${input.subtext}"` : null,
-    input.cta     ? `Call to action: "${input.cta}"` : null,
-    input.topic   ? `Topic/context: ${input.topic}` : null,
+    input.subtext  ? `Subtext: "${input.subtext}"` : null,
+    input.cta      ? `Call to action: "${input.cta}"` : null,
+    input.topic    ? `Topic/context: ${input.topic}` : null,
+    input.photoUrl ? `Photo to include as background or featured image: ${input.photoUrl}` : null,
   ]
   return parts.filter(Boolean).join('\n')
 }

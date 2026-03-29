@@ -38,6 +38,7 @@ const config: Config = {
           light:   brand.light,
           // aliases used in components
           blue:    brand.azure,
+          green:   '#37ca37', // Personal brand accent green
         },
         'app-bg': brand.offwhite,
         charcoal: brand.charcoal,

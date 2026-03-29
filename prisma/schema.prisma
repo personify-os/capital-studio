@@ -7,8 +7,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
@@ -126,9 +127,10 @@ model Asset {
   metadata    Json?       // prompt, model, dimensions, etc.
   createdAt   DateTime    @default(now())
 
-  tenant Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   User          @relation(fields: [userId], references: [id])
-  brand  BrandProfile? @relation(fields: [brandId], references: [id])
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id])
+  brand          BrandProfile?   @relation(fields: [brandId], references: [id])
+  scheduledPosts ScheduledPost[]
 
   @@index([tenantId, type])
   @@index([tenantId, createdAt(sort: Desc)])
@@ -157,15 +159,18 @@ model ScheduledPost {
   tenantId        String
   socialAccountId String
   assetId         String?
+  imageUrl        String?    // resolved URL used when publishing
   caption         String?
   scheduledFor    DateTime
   status          PostStatus @default(DRAFT)
   publishedAt     DateTime?
+  platformPostId  String?    // ID returned by the platform after publishing
   errorMessage    String?
   createdAt       DateTime   @default(now())
 
   tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   socialAccount SocialAccount @relation(fields: [socialAccountId], references: [id])
+  asset         Asset?        @relation(fields: [assetId], references: [id])
 
   @@index([tenantId, scheduledFor])
   @@index([status, scheduledFor])

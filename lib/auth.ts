@@ -34,11 +34,6 @@ export const authOptions: NextAuthOptions = {
 
         const email = credentials.email.toLowerCase().trim()
 
-        // ── Demo bypass ────────────────────────────────────────────────────
-        if (email === 'demo@lhcapital.com' && credentials.password === 'demo') {
-          return await getOrCreateDemoUser()
-        }
-
         // ── Standard credentials ───────────────────────────────────────────
         const user = await prisma.user.findUnique({ where: { email } })
         if (!user || !user.password) return null

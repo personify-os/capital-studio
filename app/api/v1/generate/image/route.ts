@@ -6,6 +6,7 @@ import { imageGenerateSchema } from '@/lib/schemas/generate'
 import { generateImages } from '@/services/image'
 import { buildBrandPromptContext, getBrandConfig } from '@/lib/brands'
 import { uploadFromUrl, makeAssetKey } from '@/lib/storage'
+import { estimateCost } from '@/lib/cost'
 import type { BrandId } from '@/lib/brands'
 
 export async function POST(req: Request) {
@@ -56,6 +57,7 @@ export async function POST(req: Request) {
             model:       input.model,
             aspectRatio: input.aspectRatio,
             brandId,
+            cost:        estimateCost(input.model),
           },
         },
         select: { id: true, s3Url: true, createdAt: true },

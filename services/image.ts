@@ -14,14 +14,19 @@ function getOpenAI() {
 
 // ─── Model router ─────────────────────────────────────────────────────────────
 
+// Verify model IDs at https://fal.ai/models before deploying new models
 const FAL_MODEL_MAP: Record<string, string> = {
-  'flux-pro':        'fal-ai/flux-pro/v1.1',
-  'fal-flux':        'fal-ai/flux/schnell',
-  'ideogram-v3':     'fal-ai/ideogram/v3',
-  'recraft-v3':      'fal-ai/recraft-v3',
-  'imagen-4':        'fal-ai/imagen4/preview',
-  'seedream-v3':     'fal-ai/seedream/v3',
-  'realistic-vision':'fal-ai/realistic-vision',
+  'flux-pro':         'fal-ai/flux-pro/v1.1',
+  'fal-flux':         'fal-ai/flux/schnell',
+  'ideogram-v3':      'fal-ai/ideogram/v3',
+  'recraft-v3':       'fal-ai/recraft-v3',
+  'imagen-4':         'fal-ai/imagen4/preview',
+  'seedream-v3':      'fal-ai/seedream/v3',
+  'realistic-vision': 'fal-ai/realistic-vision',
+  'nano-banana-2':    'fal-ai/nano-banana/v2',
+  'nano-banana-pro':  'fal-ai/nano-banana/pro',
+  'gemini-flash':     'fal-ai/google/gemini-flash-exp',
+  'gemini-flash-pro': 'fal-ai/google/gemini-flash-pro-exp',
 }
 
 // Aspect ratio string → width/height for fal.ai

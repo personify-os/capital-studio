@@ -11,18 +11,28 @@ import {
   Calendar,
   BookOpen,
   FolderOpen,
+  Film,
+  Mic,
+  Clapperboard,
+  Music,
+  BarChart3,
   LogOut,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
   { href: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/images',      icon: ImageIcon,        label: 'Create Images' },
+  { href: '/images',      icon: ImageIcon,        label: 'Image Studio' },
+  { href: '/videos',      icon: Film,             label: 'Video Studio' },
+  { href: '/motion',      icon: Clapperboard,     label: 'Motion Studio' },
+  { href: '/audio',       icon: Mic,              label: 'VoiceOver Studio' },
+  { href: '/music',       icon: Music,            label: 'Music Studio' },
   { href: '/graphics',    icon: Layers,           label: 'Graphics Studio' },
-  { href: '/writer',      icon: PenSquare,        label: 'Writer' },
+  { href: '/writer',      icon: PenSquare,        label: 'Content Writer' },
   { href: '/scheduler',   icon: Calendar,         label: 'Social Scheduler' },
   { href: '/brand-vault', icon: BookOpen,         label: 'Brand Vault' },
   { href: '/library',     icon: FolderOpen,       label: 'Content Library' },
+  { href: '/analytics',   icon: BarChart3,         label: 'Analytics' },
 ]
 
 export default function Sidebar() {

@@ -11,7 +11,7 @@ async function main() {
   // Ensure tenant exists
   const tenant = await prisma.tenant.upsert({
     where:  { id: 'lhcapital' },
-    create: { id: 'lhcapital', name: 'LH Capital' },
+    create: { id: 'lhcapital', name: 'LH Capital', slug: 'lhcapital' },
     update: {},
   })
 

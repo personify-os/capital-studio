@@ -186,7 +186,10 @@ export async function getXProfile(): Promise<{ id: string; name: string }> {
     headers: { Authorization: xOAuth1Header('GET', url) },
   })
   const json = await res.json()
-  if (!res.ok || json.errors) throw new Error(json.errors?.[0]?.message ?? 'Failed to fetch X profile')
+  if (!res.ok || json.errors) {
+    const detail = json.errors?.[0]?.message ?? json.detail ?? json.title ?? JSON.stringify(json)
+    throw new Error(`X API error (${res.status}): ${detail}`)
+  }
   return { id: json.data.id as string, name: (json.data.name ?? json.data.username ?? 'X') as string }
 }
 

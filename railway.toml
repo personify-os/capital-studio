@@ -2,7 +2,7 @@
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "npm run start"
+startCommand = "next start -p ${PORT:-3004}"
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"

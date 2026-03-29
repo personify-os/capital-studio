@@ -1,8 +1,11 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaNeon } from '@prisma/adapter-neon'
+import { neonConfig } from '@neondatabase/serverless'
+import ws from 'ws'
 
-// PrismaNeon takes a PoolConfig object (connection string) and creates the pool internally.
-// neonConfig.webSocketConstructor is set at module load time via @neondatabase/serverless.
+// Required for PrismaNeon in Node.js (Railway/server) environments
+neonConfig.webSocketConstructor = ws
+
 function createPrismaClient() {
   const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL! })
   return new PrismaClient({ adapter })

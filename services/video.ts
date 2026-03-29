@@ -25,7 +25,7 @@ export async function generateMotionVideo(
     input: {
       image_url:    imageUrl,
       prompt,
-      duration:     parseInt(duration),
+      duration:     duration as '5' | '10',
       aspect_ratio: aspectRatio,
     },
   })
@@ -51,7 +51,7 @@ export async function generateVideo(input: VideoGenerateInput): Promise<string> 
   const result = await fal.run(modelId, {
     input: {
       prompt:       input.prompt,
-      duration:     parseInt(input.duration),
+      duration:     input.duration as '5' | '10',
       aspect_ratio: ASPECT_MAP[input.aspectRatio] ?? '16:9',
     },
   })

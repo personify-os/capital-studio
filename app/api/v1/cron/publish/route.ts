@@ -5,7 +5,15 @@
 import { NextResponse } from 'next/server'
 import { publishDuePosts } from '@/services/publisher'
 
+export async function GET(req: Request) {
+  return handler(req)
+}
+
 export async function POST(req: Request) {
+  return handler(req)
+}
+
+async function handler(req: Request) {
   const secret = process.env.CRON_SECRET
   if (!secret) {
     console.error('CRON_SECRET not configured')

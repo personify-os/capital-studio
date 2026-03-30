@@ -209,6 +209,46 @@ export async function publishToX(
   return (json.data?.id ?? '') as string
 }
 
+// ─── Medium posting ────────────────────────────────────────────────────────────
+
+export async function getMediumProfile(token: string): Promise<{ id: string; name: string }> {
+  const res  = await fetch('https://api.medium.com/v1/me', {
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' },
+  })
+  const json = await res.json()
+  if (!res.ok || json.errors) {
+    throw new Error(json.errors?.[0]?.message ?? 'Failed to fetch Medium profile')
+  }
+  return { id: String(json.data.id), name: json.data.name ?? json.data.username ?? 'Medium' }
+}
+
+export async function publishToMedium(
+  userId:  string,
+  token:   string,
+  caption: string,
+): Promise<string> {
+  // Use first line as title, rest as body
+  const lines  = caption.trim().split('\n')
+  const title  = lines[0].slice(0, 255) || 'New Post'
+  const body   = lines.slice(1).join('\n').trim() || caption
+
+  const res = await fetch(`https://api.medium.com/v1/users/${userId}/posts`, {
+    method:  'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title,
+      contentFormat: 'markdown',
+      content:       body,
+      publishStatus: 'public',
+    }),
+  })
+  const json = await res.json()
+  if (!res.ok || json.errors) {
+    throw new Error(json.errors?.[0]?.message ?? 'Medium publish failed')
+  }
+  return (json.data?.id ?? '') as string
+}
+
 // ─── Instagram posting ─────────────────────────────────────────────────────────
 // Requires image URL. Instagram does not support text-only posts via API.
 

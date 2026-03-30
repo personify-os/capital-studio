@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { encryptToken } from '@/lib/crypto'
 
 // POST — manual token paste (no OAuth redirect needed)
 export async function POST(req: Request) {
@@ -24,8 +25,8 @@ export async function POST(req: Request) {
 
   await prisma.socialAccount.upsert({
     where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'THREADS', accountId: userId } },
-    create: { tenantId: session.user.tenantId, platform: 'THREADS', accountName: username, accountId: userId, accessToken: token.trim() },
-    update: { accountName: username, accessToken: token.trim() },
+    create: { tenantId: session.user.tenantId, platform: 'THREADS', accountName: username, accountId: userId, accessToken: encryptToken(token.trim()) },
+    update: { accountName: username, accessToken: encryptToken(token.trim()) },
   })
 
   return NextResponse.json({ connected: username })

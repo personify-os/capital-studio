@@ -245,6 +245,87 @@ function ConnectFacebookModal({ onClose, onConnected }: { onClose: () => void; o
   )
 }
 
+// ─── Connect Medium Modal ──────────────────────────────────────────────────────
+
+function ConnectMediumModal({ onClose, onConnected }: { onClose: () => void; onConnected: (accts: SocialAccount[]) => void }) {
+  const [token,   setToken]   = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState('')
+
+  async function handleConnect() {
+    if (!token.trim()) return
+    setLoading(true); setError('')
+    try {
+      const res  = await fetch('/api/v1/social/connect/medium', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ token: token.trim() }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setError(json.message ?? 'Connection failed'); return }
+      const acctRes  = await fetch('/api/v1/social/accounts')
+      const acctJson = await acctRes.json()
+      onConnected(acctJson.accounts)
+      onClose()
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-md bg-white rounded-card shadow-card-hover overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <GenericIcon size={16} className="text-black" />
+            <p className="font-semibold text-brand-navy text-sm">Connect Medium</p>
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100">
+            <X size={16} className="text-gray-500" />
+          </button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="bg-gray-50 rounded-lg p-3.5 text-xs text-gray-700 space-y-1.5">
+            <p className="font-semibold">How to get your Medium integration token:</p>
+            <ol className="list-decimal list-inside space-y-1 text-gray-600">
+              <li>Go to <span className="font-mono text-[11px]">medium.com</span> → click your profile photo → Settings</li>
+              <li>Scroll to <strong>Integration tokens</strong> at the bottom</li>
+              <li>Enter a description (e.g. "Capital Studio") and click <strong>Get integration token</strong></li>
+              <li>Paste the token below</li>
+            </ol>
+          </div>
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Integration Token</label>
+            <input
+              type="password"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="2b41e47c3b4d..."
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-azure focus:border-transparent"
+            />
+          </div>
+          {error && (
+            <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <AlertCircle size={13} className="text-red-500 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-red-700">{error}</p>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            Cancel
+          </button>
+          <Button size="sm" loading={loading} disabled={!token.trim()} onClick={handleConnect}>
+            Connect Medium
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Post Card ─────────────────────────────────────────────────────────────────
 
 function PostCard({ post, onDelete, onPublish }: { post: ScheduledPost; onDelete: () => void; onPublish: () => void }) {
@@ -328,7 +409,7 @@ const PLATFORM_META: { platform: Platform; label: string; live: boolean }[] = [
   { platform: 'YOUTUBE',   label: 'YouTube',              live: false },
   { platform: 'TIKTOK',    label: 'TikTok',               live: false },
   { platform: 'SUBSTACK',  label: 'Substack',             live: false },
-  { platform: 'MEDIUM',    label: 'Medium',               live: false },
+  { platform: 'MEDIUM',    label: 'Medium',               live: true },
 ]
 
 function ConnectPickerModal({
@@ -338,7 +419,7 @@ function ConnectPickerModal({
 }: {
   accounts: SocialAccount[]
   onClose: () => void
-  onSelect: (platform: 'facebook' | 'threads' | 'linkedin' | 'x') => void
+  onSelect: (platform: 'facebook' | 'threads' | 'linkedin' | 'x' | 'medium') => void
 }) {
   const connectedPlatforms = new Set(accounts.map((a) => a.platform))
 
@@ -604,7 +685,7 @@ function CalendarView({ posts }: { posts: ScheduledPost[] }) {
 export default function SchedulerClient({ initialAccounts, initialPosts, libraryAssets }: Props) {
   const [accounts,         setAccounts]         = useState(initialAccounts)
   const [posts,            setPosts]            = useState(initialPosts)
-  const [connectModal,     setConnectModal]     = useState<'picker' | 'facebook' | 'threads' | 'linkedin' | 'x' | null>(null)
+  const [connectModal,     setConnectModal]     = useState<'picker' | 'facebook' | 'threads' | 'linkedin' | 'x' | 'medium' | null>(null)
   const [tab,              setTab]              = useState<'upcoming' | 'published'>('upcoming')
   const [view,             setView]             = useState<'list' | 'calendar'>('list')
 
@@ -691,6 +772,7 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
       {connectModal === 'threads'   && <ConnectThreadsModal   onClose={() => setConnectModal(null)} onConnected={(a) => setAccounts(a)} />}
       {connectModal === 'linkedin'  && <ConnectLinkedInModal  onClose={() => setConnectModal(null)} onConnected={(a) => setAccounts(a)} />}
       {connectModal === 'x'         && <ConnectXModal         onClose={() => setConnectModal(null)} onConnected={(a) => setAccounts(a)} />}
+      {connectModal === 'medium'    && <ConnectMediumModal    onClose={() => setConnectModal(null)} onConnected={(a) => setAccounts(a)} />}
 
       {/* ── Left: composer ───────────────────────────────────────────── */}
       <div className="w-[400px] flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto overflow-x-hidden p-5 border-r border-gray-100 bg-white">

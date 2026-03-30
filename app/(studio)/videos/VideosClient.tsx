@@ -13,7 +13,7 @@ import type { BrandId } from '@/lib/brands'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type VideoModel  = 'kling-3.0' | 'kling-2.1' | 'veo-3' | 'minimax' | 'hunyuan' | 'wan'
-type Duration    = '5' | '10'
+type Duration    = '5' | '10' | '30' | '60' | '120'
 type AspectRatio = '16:9' | '9:16' | '1:1'
 
 interface VideoAsset { id: string; url: string }
@@ -169,9 +169,10 @@ export default function VideosClient({ recentVideos: initial }: { recentVideos: 
                 type="button"
                 role="switch"
                 aria-checked={enhanceOn}
-                disabled={!prompt.trim() || enhancing}
+                disabled={prompt.trim().split(/\s+/).filter(Boolean).length < 3 || enhancing}
+                title={prompt.trim().split(/\s+/).filter(Boolean).length < 3 ? 'Enter at least 3 words to enhance' : undefined}
                 onClick={async () => {
-                  if (enhanceOn || !prompt.trim()) { setEnhanceOn(false); return }
+                  if (enhanceOn || prompt.trim().split(/\s+/).filter(Boolean).length < 3) { setEnhanceOn(false); return }
                   setEnhanceOn(true)
                   await handleEnhancePrompt()
                   setEnhanceOn(false)
@@ -211,12 +212,12 @@ export default function VideosClient({ recentVideos: initial }: { recentVideos: 
           <div className="bg-gray-50 rounded-card p-4 space-y-3">
             <div>
               <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">Duration</p>
-              <div className="flex gap-2">
-                {(['5', '10'] as Duration[]).map((d) => (
+              <div className="flex gap-1.5 flex-wrap">
+                {([['5', '5s'], ['10', '10s'], ['30', '30s'], ['60', '1 min'], ['120', '2 min']] as [Duration, string][]).map(([d, label]) => (
                   <button key={d} type="button" onClick={() => setDuration(d)}
-                    className={cn('flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-colors',
+                    className={cn('flex-1 min-w-[48px] py-1.5 rounded-lg text-xs font-semibold border transition-colors',
                       duration === d ? 'bg-brand-azure text-white border-brand-azure' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-azure'
-                    )}>{d}s</button>
+                    )}>{label}</button>
                 ))}
               </div>
             </div>
@@ -235,7 +236,7 @@ export default function VideosClient({ recentVideos: initial }: { recentVideos: 
 
           <div className="flex items-center gap-2 text-xs text-gray-400 px-1">
             <Zap size={11} className="text-brand-teal" />
-            <span>{duration}s · {aspectRatio} · {model}</span>
+            <span>{Number(duration) >= 60 ? `${Number(duration) / 60} min` : `${duration}s`} · {aspectRatio} · {model}</span>
           </div>
           <Button className="w-full" size="lg" disabled={!prompt.trim() || loading} loading={loading} onClick={handleGenerate}>
             Generate Video

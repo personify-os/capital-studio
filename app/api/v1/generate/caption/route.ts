@@ -26,14 +26,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Invalid input' }, { status: 400 })
   }
 
-  const { platform, tone, topic, brandId, includeHashtags, seriesCount } = parsed.data
+  const { platform, tone, topic, brandId, includeHashtags, seriesCount, referenceContent, referenceUrl } = parsed.data
   const brand      = getBrandConfig((brandId ?? 'lhcapital') as BrandId)
   const brandCtx   = buildBrandPromptContext(brand)
   const platGuide  = PLATFORM_GUIDANCE[platform] ?? platform
   const count      = seriesCount ?? 1
   const isMultiple = count > 1
 
-  const prompt = [
+  const promptParts = [
     `Write ${isMultiple ? `${count} social media captions` : 'one social media caption'} for the following:`,
     `Platform: ${platGuide}`,
     `Tone: ${tone}`,
@@ -42,11 +42,23 @@ export async function POST(req: Request) {
     '',
     'Brand context:',
     brandCtx,
+  ]
+
+  if (referenceContent?.trim()) {
+    promptParts.push('', 'Reference material (use as context, do not copy verbatim):', referenceContent.trim())
+  }
+  if (referenceUrl?.trim()) {
+    promptParts.push('', `Reference URL: ${referenceUrl.trim()}`)
+  }
+
+  promptParts.push(
     '',
     isMultiple
       ? `Format your response as a numbered list: 1. [caption] 2. [caption] etc. Each caption should be distinct.`
       : 'Output only the caption text — no labels, no explanation.',
-  ].join('\n')
+  )
+
+  const prompt = promptParts.join('\n')
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   const message = await client.messages.create({

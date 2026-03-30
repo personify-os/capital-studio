@@ -38,7 +38,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={cn(
-        'relative flex-shrink-0 w-9 h-5 rounded-full transition-colors',
+        'relative flex-shrink-0 w-9 h-5 rounded-full transition-colors overflow-hidden',
         checked ? 'bg-brand-teal' : 'bg-gray-300',
       )}
     >

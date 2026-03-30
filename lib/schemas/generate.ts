@@ -33,19 +33,21 @@ export const graphicGenerateSchema = z.object({
 })
 
 export const captionGenerateSchema = z.object({
-  platform:    z.enum(['instagram', 'facebook', 'linkedin', 'x', 'youtube', 'tiktok', 'threads']),
-  tone:        z.enum(['professional', 'casual', 'inspirational', 'educational']),
-  topic:       z.string().min(1).max(200),
-  brandId:     z.enum(['lhcapital', 'simrp', 'personal']).optional(),
-  keywords:    z.array(z.string()).optional(),
-  includeHashtags: z.boolean().optional(),
-  seriesCount: z.number().int().min(1).max(10).optional(),
+  platform:         z.enum(['instagram', 'facebook', 'linkedin', 'x', 'youtube', 'tiktok', 'threads']),
+  tone:             z.enum(['professional', 'casual', 'inspirational', 'educational']),
+  topic:            z.string().min(1).max(200),
+  brandId:          z.enum(['lhcapital', 'simrp', 'personal']).optional(),
+  keywords:         z.array(z.string()).optional(),
+  includeHashtags:  z.boolean().optional(),
+  seriesCount:      z.number().int().min(1).max(10).optional(),
+  referenceContent: z.string().max(4000).optional(),
+  referenceUrl:     z.string().url().optional().or(z.literal('')),
 })
 
 export const videoGenerateSchema = z.object({
   prompt:      z.string().min(1).max(1000),
   model:       z.enum(['kling-3.0', 'kling-2.1', 'veo-3', 'minimax', 'hunyuan', 'wan']),
-  duration:    z.enum(['5', '10']).default('5'),
+  duration:    z.enum(['5', '10', '30', '60', '120']).default('5'),
   aspectRatio: z.enum(['16:9', '9:16', '1:1']).default('16:9'),
   brandId:     z.enum(['lhcapital', 'simrp', 'personal']).optional(),
 })

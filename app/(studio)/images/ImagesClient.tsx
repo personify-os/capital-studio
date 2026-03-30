@@ -180,15 +180,27 @@ export default function ImagesClient({ recentImages: initial }: { recentImages: 
               maxLength={600}
               currentLength={prompt.length}
             />
-            <label className="flex items-center gap-2 mt-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={enhancePrompt}
-                onChange={(e) => setEnhancePrompt(e.target.checked)}
-                className="rounded border-gray-300 text-brand-azure focus:ring-brand-azure"
-              />
-              <span className="text-xs text-gray-600 font-medium">Prompt Enhancer — adds brand visual context</span>
-            </label>
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
+              <div>
+                <p className="text-xs font-medium text-gray-700">Prompt Enhancer</p>
+                <p className="text-[10px] text-gray-400">Adds brand visual context to your prompt</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={enhancePrompt}
+                onClick={() => setEnhancePrompt((v) => !v)}
+                className={cn(
+                  'relative flex-shrink-0 w-9 h-5 rounded-full transition-colors overflow-hidden',
+                  enhancePrompt ? 'bg-brand-teal' : 'bg-gray-300',
+                )}
+              >
+                <span className={cn(
+                  'absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform',
+                  enhancePrompt ? 'translate-x-4' : 'translate-x-0.5',
+                )} />
+              </button>
+            </div>
           </div>
 
           {/* Model */}

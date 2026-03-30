@@ -141,9 +141,10 @@ export default function MotionClient({ recentVideos: initial }: { recentVideos: 
                 type="button"
                 role="switch"
                 aria-checked={enhanceOn}
-                disabled={!prompt.trim() || enhancing}
+                disabled={prompt.trim().split(/\s+/).filter(Boolean).length < 3 || enhancing}
+                title={prompt.trim().split(/\s+/).filter(Boolean).length < 3 ? 'Enter at least 3 words to enhance' : undefined}
                 onClick={async () => {
-                  if (enhanceOn || !prompt.trim()) { setEnhanceOn(false); return }
+                  if (enhanceOn || prompt.trim().split(/\s+/).filter(Boolean).length < 3) { setEnhanceOn(false); return }
                   setEnhanceOn(true)
                   await handleEnhancePrompt()
                   setEnhanceOn(false)

@@ -156,7 +156,7 @@ export default function MotionClient({ recentVideos: initial }: { recentVideos: 
               >
                 {enhancing
                   ? <span className="absolute top-1 left-1 w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  : <span className={cn('absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform', enhanceOn ? 'translate-x-4' : 'translate-x-0.5')} />
+                  : <span className={cn('absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-[left] duration-200', enhanceOn ? 'left-4' : 'left-0.5')} />
                 }
               </button>
             </div>

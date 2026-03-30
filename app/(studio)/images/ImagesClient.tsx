@@ -191,13 +191,13 @@ export default function ImagesClient({ recentImages: initial }: { recentImages: 
                 aria-checked={enhancePrompt}
                 onClick={() => setEnhancePrompt((v) => !v)}
                 className={cn(
-                  'relative flex-shrink-0 w-9 h-5 rounded-full transition-colors overflow-hidden',
+                  'relative flex-shrink-0 w-9 h-5 rounded-full transition-colors',
                   enhancePrompt ? 'bg-brand-teal' : 'bg-gray-300',
                 )}
               >
                 <span className={cn(
-                  'absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform',
-                  enhancePrompt ? 'translate-x-4' : 'translate-x-0.5',
+                  'absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-[left] duration-200',
+                  enhancePrompt ? 'left-4' : 'left-0.5',
                 )} />
               </button>
             </div>

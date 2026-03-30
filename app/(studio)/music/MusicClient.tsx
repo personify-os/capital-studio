@@ -38,14 +38,14 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={cn(
-        'relative flex-shrink-0 w-9 h-5 rounded-full transition-colors overflow-hidden',
+        'relative flex-shrink-0 w-9 h-5 rounded-full transition-colors',
         checked ? 'bg-brand-teal' : 'bg-gray-300',
       )}
     >
       <span
         className={cn(
-          'absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform',
-          checked ? 'translate-x-4' : 'translate-x-0.5',
+          'absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-[left] duration-200',
+          checked ? 'left-4' : 'left-0.5',
         )}
       />
     </button>

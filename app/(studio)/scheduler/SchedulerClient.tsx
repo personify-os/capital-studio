@@ -695,7 +695,7 @@ function ConnectLinkedInModal({ onClose, onConnected }: { onClose: () => void; o
     const json = await res.json()
     if (!res.ok) { setError(json.message ?? 'Failed'); setLoading(false); return }
     const accts = await fetch('/api/v1/social/accounts').then((r) => r.json())
-    onConnected(accts); onClose()
+    onConnected(accts.accounts); onClose()
   }
 
   return (
@@ -767,7 +767,7 @@ function ConnectXModal({ onClose, onConnected }: { onClose: () => void; onConnec
     const json = await res.json()
     if (!res.ok) { setError(json.message ?? 'Failed'); setLoading(false); return }
     const accts = await fetch('/api/v1/social/accounts').then((r) => r.json())
-    onConnected(accts); onClose()
+    onConnected(accts.accounts); onClose()
   }
 
   return (

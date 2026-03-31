@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import {
   Calendar, Plus, Trash2, Send, CheckCircle2, XCircle, Clock,
   Facebook, Instagram, AlertCircle, X, Link as LinkIcon, Eye,
@@ -604,8 +604,8 @@ const PLATFORM_META: { platform: Platform; label: string; live: boolean }[] = [
   { platform: 'LINKEDIN',  label: 'LinkedIn',             live: true },
   { platform: 'X',         label: 'X (Twitter)',          live: true },
   { platform: 'INSTAGRAM', label: 'Instagram',            live: false },
-  { platform: 'YOUTUBE',   label: 'YouTube',              live: false },
-  { platform: 'TIKTOK',    label: 'TikTok',               live: false },
+  { platform: 'YOUTUBE',   label: 'YouTube',              live: true },
+  { platform: 'TIKTOK',    label: 'TikTok',               live: true },
   { platform: 'SUBSTACK',  label: 'Substack',             live: true },
   { platform: 'MEDIUM',    label: 'Medium',               live: true },
   { platform: 'BLUESKY',   label: 'Bluesky',              live: true },
@@ -619,6 +619,7 @@ function ConnectPickerModal({
   accounts: SocialAccount[]
   onClose: () => void
   onSelect: (platform: 'facebook' | 'threads' | 'linkedin' | 'x' | 'medium' | 'substack' | 'bluesky') => void
+  // youtube and tiktok use OAuth redirect — handled inline, not via onSelect
 }) {
   const connectedPlatforms = new Set(accounts.map((a) => a.platform))
 
@@ -651,6 +652,8 @@ function ConnectPickerModal({
                   if (platform === 'MEDIUM')    { onClose(); onSelect('medium')    }
                   if (platform === 'SUBSTACK')  { onClose(); onSelect('substack')  }
                   if (platform === 'BLUESKY')   { onClose(); onSelect('bluesky')   }
+                  if (platform === 'YOUTUBE')   { window.location.href = '/api/v1/social/connect/youtube' }
+                  if (platform === 'TIKTOK')    { window.location.href = '/api/v1/social/connect/tiktok'  }
                 }}
                 className={cn(
                   'flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all text-center',
@@ -927,6 +930,7 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
   const [accounts,         setAccounts]         = useState(initialAccounts)
   const [posts,            setPosts]            = useState(initialPosts)
   const [connectModal,     setConnectModal]     = useState<'picker' | 'facebook' | 'threads' | 'linkedin' | 'x' | 'medium' | 'substack' | 'bluesky' | null>(null)
+  const [oauthBanner,      setOauthBanner]      = useState<string | null>(null)
   const [tab,              setTab]              = useState<'upcoming' | 'published'>('upcoming')
   const [view,             setView]             = useState<'list' | 'calendar'>('list')
 
@@ -941,6 +945,21 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
   const [scheduling,    setScheduling]    = useState(false)
   const [scheduleError, setScheduleError] = useState('')
   const [pickerOpen,    setPickerOpen]    = useState(false)
+
+  // Handle OAuth callback redirects (YouTube, TikTok)
+  useEffect(() => {
+    const params    = new URLSearchParams(window.location.search)
+    const connected = params.get('connected')
+    const error     = params.get('error')
+    if (connected) {
+      setOauthBanner(`${connected.charAt(0).toUpperCase() + connected.slice(1)} connected successfully!`)
+      fetch('/api/v1/social/accounts').then((r) => r.json()).then((j) => setAccounts(j.accounts))
+      window.history.replaceState({}, '', '/scheduler')
+    } else if (error) {
+      setOauthBanner(`Connection failed: ${error.replace(/_/g, ' ')}`)
+      window.history.replaceState({}, '', '/scheduler')
+    }
+  }, [])
 
   function toggleAccount(id: string) {
     setSelectedAccts((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])
@@ -1002,6 +1021,16 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
 
   return (
     <div className="flex bg-app-bg">
+      {oauthBanner && (
+        <div className={cn(
+          'fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-lg text-sm font-medium',
+          oauthBanner.includes('failed') ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700',
+        )}>
+          {oauthBanner.includes('failed') ? <XCircle size={15} /> : <CheckCircle2 size={15} />}
+          {oauthBanner}
+          <button type="button" onClick={() => setOauthBanner(null)} className="ml-1 opacity-60 hover:opacity-100"><X size={13} /></button>
+        </div>
+      )}
       {connectModal === 'picker' && (
         <ConnectPickerModal
           accounts={accounts}
@@ -1092,15 +1121,15 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
             />
           </div>
 
-          {/* Image */}
+          {/* Media URL */}
           <div className="bg-gray-50 rounded-card p-4">
-            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Image <span className="normal-case font-normal text-gray-400">(optional)</span></p>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Media URL <span className="normal-case font-normal text-gray-400">(image or video)</span></p>
             <div className="flex gap-2 mb-2">
               <input
                 type="url"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="Paste image URL..."
+                placeholder="Paste image or video URL..."
                 className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-azure focus:border-transparent"
               />
               <button

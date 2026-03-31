@@ -428,3 +428,146 @@ export async function publishToInstagram(
   }
   return published.id as string
 }
+
+// ─── YouTube (Google OAuth) ────────────────────────────────────────────────────
+
+export async function getYouTubeChannel(accessToken: string): Promise<{ id: string; name: string }> {
+  const res  = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  const json = await res.json()
+  if (!res.ok || !json.items?.length) throw new Error(json.error?.message ?? 'Could not fetch YouTube channel')
+  return { id: json.items[0].id as string, name: json.items[0].snippet.title as string }
+}
+
+export async function refreshYouTubeToken(refreshToken: string): Promise<string> {
+  const res  = await fetch('https://oauth2.googleapis.com/token', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body:    new URLSearchParams({
+      client_id:     process.env.GOOGLE_CLIENT_ID!,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+      refresh_token: refreshToken,
+      grant_type:    'refresh_token',
+    }).toString(),
+  })
+  const json = await res.json()
+  if (!res.ok || !json.access_token) throw new Error(json.error_description ?? 'YouTube token refresh failed')
+  return json.access_token as string
+}
+
+export async function publishToYouTube(
+  _channelId: string,
+  token:      string,   // "access_token|||refresh_token"
+  caption:    string,
+  videoUrl?:  string,
+): Promise<string> {
+  if (!videoUrl) throw new Error('YouTube requires a video URL')
+
+  const [, refreshToken] = token.split('|||')
+  const accessToken      = await refreshYouTubeToken(refreshToken)
+
+  const lines       = caption.trim().split('\n')
+  const title       = lines[0].slice(0, 100) || 'New Video'
+  const description = caption
+
+  const ext         = videoUrl.split('?')[0].split('.').pop()?.toLowerCase()
+  const contentType = ext === 'mov' ? 'video/quicktime' : ext === 'webm' ? 'video/webm' : 'video/mp4'
+
+  // Download video from storage URL
+  const videoRes = await fetch(videoUrl)
+  if (!videoRes.ok) throw new Error('Could not download video from URL')
+  const videoBuffer = Buffer.from(await videoRes.arrayBuffer())
+
+  // Step 1: initialize resumable upload
+  const initRes = await fetch(
+    'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
+    {
+      method:  'POST',
+      headers: {
+        Authorization:             `Bearer ${accessToken}`,
+        'Content-Type':            'application/json',
+        'X-Upload-Content-Type':   contentType,
+        'X-Upload-Content-Length': String(videoBuffer.byteLength),
+      },
+      body: JSON.stringify({
+        snippet: { title, description, categoryId: '22' },
+        status:  { privacyStatus: 'public' },
+      }),
+    }
+  )
+  if (!initRes.ok) {
+    const err = await initRes.json()
+    throw new Error(err.error?.message ?? 'YouTube upload init failed')
+  }
+  const uploadUrl = initRes.headers.get('Location')
+  if (!uploadUrl) throw new Error('YouTube did not return upload URL')
+
+  // Step 2: upload video data
+  const uploadRes  = await fetch(uploadUrl, {
+    method:  'PUT',
+    headers: { 'Content-Type': contentType, 'Content-Length': String(videoBuffer.byteLength) },
+    body:    videoBuffer,
+  })
+  const uploadJson = await uploadRes.json()
+  if (!uploadRes.ok) throw new Error(uploadJson.error?.message ?? 'YouTube video upload failed')
+  return (uploadJson.id ?? '') as string
+}
+
+// ─── TikTok (TikTok Developer API) ────────────────────────────────────────────
+
+export async function getTikTokProfile(accessToken: string): Promise<{ id: string; name: string }> {
+  const res  = await fetch('https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  const json = await res.json()
+  if (!res.ok || json.error?.code !== 'ok') throw new Error(json.error?.message ?? 'Could not fetch TikTok profile')
+  return { id: json.data.user.open_id as string, name: (json.data.user.display_name ?? 'TikTok') as string }
+}
+
+export async function refreshTikTokToken(refreshToken: string): Promise<string> {
+  const res  = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body:    new URLSearchParams({
+      client_key:    process.env.TIKTOK_CLIENT_KEY!,
+      client_secret: process.env.TIKTOK_CLIENT_SECRET!,
+      grant_type:    'refresh_token',
+      refresh_token: refreshToken,
+    }).toString(),
+  })
+  const json = await res.json()
+  if (!res.ok || json.error) throw new Error(json.error_description ?? 'TikTok token refresh failed')
+  return json.access_token as string
+}
+
+export async function publishToTikTok(
+  _userId:  string,
+  token:    string,   // "access_token|||refresh_token"
+  caption:  string,
+  videoUrl?: string,
+): Promise<string> {
+  if (!videoUrl) throw new Error('TikTok requires a video URL')
+
+  const [, refreshToken] = token.split('|||')
+  const accessToken      = await refreshTikTokToken(refreshToken)
+
+  const res  = await fetch('https://open.tiktokapis.com/v2/post/publish/video/init/', {
+    method:  'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json; charset=UTF-8' },
+    body: JSON.stringify({
+      post_info: {
+        title:                    caption.slice(0, 150),
+        privacy_level:            'PUBLIC_TO_EVERYONE',
+        disable_duet:             false,
+        disable_comment:          false,
+        disable_stitch:           false,
+        video_cover_timestamp_ms: 1000,
+      },
+      source_info: { source: 'PULL_FROM_URL', video_url: videoUrl },
+    }),
+  })
+  const json = await res.json()
+  if (!res.ok || json.error?.code !== 'ok') throw new Error(json.error?.message ?? 'TikTok publish failed')
+  return (json.data?.publish_id ?? '') as string
+}

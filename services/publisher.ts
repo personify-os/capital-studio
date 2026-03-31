@@ -11,6 +11,8 @@ import {
   publishToMedium,
   publishToSubstack,
   publishToBluesky,
+  publishToYouTube,
+  publishToTikTok,
 } from '@/services/social'
 
 export async function publishPost(postId: string, tenantId?: string): Promise<{ platformPostId: string }> {
@@ -60,6 +62,12 @@ export async function publishPost(postId: string, tenantId?: string): Promise<{ 
         break
       case 'BLUESKY':
         platformPostId = await publishToBluesky(socialAccount.accountId, token, caption)
+        break
+      case 'YOUTUBE':
+        platformPostId = await publishToYouTube(socialAccount.accountId, token, caption, imageUrl)
+        break
+      case 'TIKTOK':
+        platformPostId = await publishToTikTok(socialAccount.accountId, token, caption, imageUrl)
         break
       default:
         throw new Error(`Publishing to ${socialAccount.platform} not yet supported`)

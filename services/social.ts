@@ -298,11 +298,17 @@ export async function publishToBluesky(
 // ─── Substack posting (internal API via session cookie) ───────────────────────
 
 export async function getSubstackProfile(subdomain: string, cookie: string): Promise<{ id: string; name: string }> {
-  const res  = await fetch(`https://${subdomain}.substack.com/api/v1/profile`, {
+  // connect.sid is a substack.com cookie — verify against main domain
+  const res  = await fetch('https://substack.com/api/v1/profile', {
     headers: { Cookie: `connect.sid=${cookie}`, 'User-Agent': 'Mozilla/5.0' },
   })
+  if (!res.ok) throw new Error('Invalid session cookie — please copy a fresh connect.sid from Chrome DevTools')
+  const contentType = res.headers.get('content-type') ?? ''
+  if (!contentType.includes('application/json')) {
+    throw new Error('Invalid session cookie — please copy a fresh connect.sid from Chrome DevTools')
+  }
   const json = await res.json()
-  if (!res.ok || json.error) throw new Error(json.error ?? 'Invalid session — please check your cookie and publication URL')
+  if (json.error || json.errors) throw new Error('Invalid session cookie — please log in to Substack and try again')
   return {
     id:   subdomain,
     name: json.name ?? json.handle ?? subdomain,

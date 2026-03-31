@@ -1,0 +1,25 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" rx="200" fill="#0B2147"/>
+
+  <!-- Crown shape -->
+  <path d="M 160 680
+           L 160 420
+           L 310 560
+           L 512 220
+           L 714 560
+           L 864 420
+           L 864 680
+           Z"
+        fill="#ed6835"/>
+
+  <!-- Crown base band -->
+  <rect x="160" y="650" width="704" height="80" rx="12" fill="#ed6835"/>
+
+  <!-- Crown jewels -->
+  <circle cx="512" cy="380" r="36" fill="white" opacity="0.9"/>
+  <circle cx="274"  cy="550" r="24" fill="white" opacity="0.7"/>
+  <circle cx="750"  cy="550" r="24" fill="white" opacity="0.7"/>
+
+  <!-- Play button below crown -->
+  <polygon points="420,770 420,920 620,845" fill="#0475ae"/>
+</svg>

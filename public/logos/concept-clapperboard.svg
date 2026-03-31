@@ -1,0 +1,35 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" rx="200" fill="#0B2147"/>
+
+  <!-- Main slate body -->
+  <rect x="148" y="400" width="728" height="460" rx="28" fill="white" opacity="0.94"/>
+
+  <!-- Clapper arm -->
+  <rect x="148" y="196" width="728" height="190" rx="20" fill="#0475ae"/>
+
+  <!-- Diagonal stripes on arm -->
+  <clipPath id="c1"><rect x="148" y="196" width="728" height="190" rx="20"/></clipPath>
+  <g clip-path="url(#c1)">
+    <polygon points="148,196 318,196 208,386 148,386" fill="#ed6835"/>
+    <polygon points="368,196 538,196 428,386 258,386" fill="#ed6835"/>
+    <polygon points="588,196 758,196 648,386 478,386" fill="#ed6835"/>
+    <polygon points="808,196 976,196 876,386 698,386" fill="#ed6835"/>
+  </g>
+
+  <!-- Hinge line -->
+  <rect x="148" y="374" width="728" height="32" fill="#0B2147" opacity="0.25"/>
+
+  <!-- Hinge knobs -->
+  <circle cx="280" cy="390" r="28" fill="white" opacity="0.7"/>
+  <circle cx="744" cy="390" r="28" fill="white" opacity="0.7"/>
+
+  <!-- Content lines on slate -->
+  <rect x="212" y="480" width="360" height="26" rx="10" fill="#0475ae" opacity="0.18"/>
+  <rect x="212" y="534" width="260" height="20" rx="10" fill="#0475ae" opacity="0.13"/>
+  <rect x="212" y="580" width="310" height="20" rx="10" fill="#0475ae" opacity="0.13"/>
+
+  <!-- Record indicator -->
+  <circle cx="738" cy="572" r="68" fill="#ed6835" opacity="0.15"/>
+  <circle cx="738" cy="572" r="48" fill="#ed6835"/>
+  <circle cx="738" cy="572" r="22" fill="white"/>
+</svg>

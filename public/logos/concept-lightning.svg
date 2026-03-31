@@ -1,0 +1,15 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" rx="200" fill="#0B2147"/>
+
+  <!-- Blue glow/shadow behind bolt -->
+  <polygon points="600,120 340,560 510,560 420,910 690,460 510,460 620,120"
+           fill="#0475ae" opacity="0.35" transform="translate(14,14)"/>
+
+  <!-- Main lightning bolt -->
+  <polygon points="600,120 340,560 510,560 420,910 690,460 510,460 620,120"
+           fill="#ed6835"/>
+
+  <!-- Inner highlight -->
+  <polygon points="570,200 410,530 530,530 460,820 630,490 510,490 580,200"
+           fill="white" opacity="0.15"/>
+</svg>

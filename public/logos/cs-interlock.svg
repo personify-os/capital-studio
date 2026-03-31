@@ -1,0 +1,13 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" rx="200" fill="#0B2147"/>
+
+  <!-- C arc — opens to the right, blue -->
+  <!-- Center (380,512), radius 270, opening at right ~60deg -->
+  <path d="M 515 274 A 270 270 0 1 0 515 750"
+        fill="none" stroke="#0475ae" stroke-width="108" stroke-linecap="round"/>
+
+  <!-- S curve — orange, passes through C's opening -->
+  <!-- Two arcs forming an S, centered in the right half -->
+  <path d="M 630 274 C 900 274 900 512 630 512 C 360 512 360 750 630 750"
+        fill="none" stroke="#ed6835" stroke-width="108" stroke-linecap="round"/>
+</svg>

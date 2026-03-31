@@ -52,6 +52,7 @@ enum Platform {
   THREADS
   SUBSTACK
   MEDIUM
+  BLUESKY
 }
 
 enum PostStatus {

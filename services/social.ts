@@ -249,6 +249,52 @@ export async function publishToMedium(
   return (json.data?.id ?? '') as string
 }
 
+// ─── Bluesky posting (AT Protocol) ────────────────────────────────────────────
+
+const BSKY_API = 'https://bsky.social/xrpc'
+
+async function bskyCreateSession(identifier: string, appPassword: string) {
+  const res  = await fetch(`${BSKY_API}/com.atproto.server.createSession`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ identifier, password: appPassword }),
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.message ?? json.error ?? 'Bluesky auth failed')
+  return json as { did: string; handle: string; accessJwt: string }
+}
+
+export async function getBlueskyProfile(handle: string, appPassword: string): Promise<{ id: string; name: string }> {
+  const session = await bskyCreateSession(handle, appPassword)
+  return { id: session.did, name: `@${session.handle}` }
+}
+
+export async function publishToBluesky(
+  did:         string,
+  appPassword: string,
+  caption:     string,
+): Promise<string> {
+  // Bluesky handle is stored as accountName; identifier can be the DID directly
+  const session = await bskyCreateSession(did, appPassword)
+
+  const res  = await fetch(`${BSKY_API}/com.atproto.repo.createRecord`, {
+    method:  'POST',
+    headers: { Authorization: `Bearer ${session.accessJwt}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      repo:       session.did,
+      collection: 'app.bsky.feed.post',
+      record: {
+        $type:     'app.bsky.feed.post',
+        text:      caption.slice(0, 300), // Bluesky 300-char limit
+        createdAt: new Date().toISOString(),
+      },
+    }),
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.message ?? json.error ?? 'Bluesky publish failed')
+  return (json.uri ?? '') as string
+}
+
 // ─── Substack posting (publish-by-email via Resend) ───────────────────────────
 
 export async function publishToSubstack(

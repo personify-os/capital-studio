@@ -12,7 +12,7 @@ import Textarea from '@/components/ui/Textarea'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Platform   = 'FACEBOOK' | 'INSTAGRAM' | 'X' | 'LINKEDIN' | 'YOUTUBE' | 'TIKTOK' | 'THREADS' | 'SUBSTACK' | 'MEDIUM'
+type Platform   = 'FACEBOOK' | 'INSTAGRAM' | 'X' | 'LINKEDIN' | 'YOUTUBE' | 'TIKTOK' | 'THREADS' | 'SUBSTACK' | 'MEDIUM' | 'BLUESKY'
 type PostStatus = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'FAILED'
 
 interface SocialAccount { id: string; platform: Platform; accountName: string; accountId: string; createdAt: string }
@@ -59,6 +59,7 @@ const PLATFORM_ICON: Record<Platform, React.ElementType> = {
   THREADS:   svgIcon('M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 0 1 3.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.586-1.308-.883-2.378-.887h-.018c-.852 0-1.676.228-2.101.592L7.47 8.802c.853-.439 1.895-.6h.017c1.474.008 2.714.473 3.597 1.343 1.09 1.075 1.535 2.6 1.517 4.8-.016 1.73-.485 3.118-1.393 4.12-1.01 1.115-2.535 1.705-4.567 1.756-2.055-.055-3.676-.67-4.807-1.825C.34 17.843-.037 15.83 0 13.355v-.034c-.037-2.474.34-4.486 1.433-5.631C2.56 6.527 4.18 5.91 6.235 5.855 8.26 5.91 9.77 6.487 10.79 7.575c1.107 1.182 1.59 2.852 1.561 5.077v.053l-.003.015c.04 1.665-.358 2.933-1.183 3.771-.812.824-1.976 1.233-3.46 1.233h-.013c-.896-.002-1.697-.166-2.397-.487a2.6 2.6 0 0 1-1.437-1.437c-.322-.7-.486-1.503-.487-2.4v-.013c0-1.454.399-2.61 1.187-3.436.8-.84 1.977-1.274 3.504-1.274h.01a5.51 5.51 0 0 1 1.85.285v-.017c-.146-1.267-.607-2.14-1.387-2.617-.623-.388-1.451-.584-2.474-.584-1.55 0-2.695.469-3.404 1.393C2.6 8.595 2.24 9.778 2.21 11.195c.03 2.893.66 5.025 1.875 6.34 1.099 1.19 2.748 1.802 4.906 1.818 1.73-.016 3.055-.49 3.933-1.408.904-.944 1.36-2.346 1.357-4.167.003-1.813-.44-3.188-1.319-4.085-.913-.935-2.265-1.413-4.014-1.428z'),
   SUBSTACK:  GenericIcon,
   MEDIUM:    GenericIcon,
+  BLUESKY:   svgIcon('M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8z'),
 }
 
 const PLATFORM_COLOR: Record<Platform, string> = {
@@ -71,6 +72,7 @@ const PLATFORM_COLOR: Record<Platform, string> = {
   THREADS:   'text-black',
   SUBSTACK:  'text-[#FF6719]',
   MEDIUM:    'text-black',
+  BLUESKY:   'text-[#0085ff]',
 }
 
 const STATUS_CONFIG: Record<PostStatus, { label: string; icon: React.ElementType; color: string }> = {
@@ -246,6 +248,96 @@ function ConnectFacebookModal({ onClose, onConnected }: { onClose: () => void; o
 }
 
 // ─── Connect Medium Modal ──────────────────────────────────────────────────────
+
+function ConnectBlueskyModal({ onClose, onConnected }: { onClose: () => void; onConnected: (accts: SocialAccount[]) => void }) {
+  const [handle,      setHandle]      = useState('')
+  const [appPassword, setAppPassword] = useState('')
+  const [loading,     setLoading]     = useState(false)
+  const [error,       setError]       = useState('')
+
+  async function handleConnect() {
+    if (!handle.trim() || !appPassword.trim()) return
+    setLoading(true); setError('')
+    try {
+      const res  = await fetch('/api/v1/social/connect/bluesky', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ handle: handle.trim(), appPassword: appPassword.trim() }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setError(json.message ?? 'Connection failed'); return }
+      const acctRes  = await fetch('/api/v1/social/accounts')
+      const acctJson = await acctRes.json()
+      onConnected(acctJson.accounts)
+      onClose()
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-md bg-white rounded-card shadow-card-hover overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <GenericIcon size={16} className="text-sky-500" />
+            <p className="font-semibold text-brand-navy text-sm">Connect Bluesky</p>
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100">
+            <X size={16} className="text-gray-500" />
+          </button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="bg-gray-50 rounded-lg p-3.5 text-xs text-gray-700 space-y-1.5">
+            <p className="font-semibold">How to create a Bluesky App Password:</p>
+            <ol className="list-decimal list-inside space-y-1 text-gray-600">
+              <li>Go to <span className="font-mono text-[11px]">bsky.app</span> → Settings → Privacy and Security</li>
+              <li>Click <strong>App Passwords</strong> → <strong>Add App Password</strong></li>
+              <li>Name it &quot;Capital Studio&quot; and copy the generated password</li>
+              <li>Paste it below — never use your main account password</li>
+            </ol>
+          </div>
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Bluesky Handle</label>
+            <input
+              type="text"
+              value={handle}
+              onChange={(e) => setHandle(e.target.value)}
+              placeholder="yourname.bsky.social"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-azure focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">App Password</label>
+            <input
+              type="password"
+              value={appPassword}
+              onChange={(e) => setAppPassword(e.target.value)}
+              placeholder="xxxx-xxxx-xxxx-xxxx"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-azure focus:border-transparent"
+            />
+          </div>
+          {error && (
+            <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <AlertCircle size={13} className="text-red-500 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-red-700">{error}</p>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            Cancel
+          </button>
+          <Button size="sm" loading={loading} disabled={!handle.trim() || !appPassword.trim()} onClick={handleConnect}>
+            Connect Bluesky
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function ConnectSubstackModal({ onClose, onConnected }: { onClose: () => void; onConnected: (accts: SocialAccount[]) => void }) {
   const [email,       setEmail]       = useState('')
@@ -498,8 +590,9 @@ const PLATFORM_META: { platform: Platform; label: string; live: boolean }[] = [
   { platform: 'INSTAGRAM', label: 'Instagram',            live: false },
   { platform: 'YOUTUBE',   label: 'YouTube',              live: false },
   { platform: 'TIKTOK',    label: 'TikTok',               live: false },
-  { platform: 'SUBSTACK',  label: 'Substack',             live: true },
+  { platform: 'SUBSTACK',  label: 'Substack',             live: false },
   { platform: 'MEDIUM',    label: 'Medium',               live: true },
+  { platform: 'BLUESKY',   label: 'Bluesky',              live: true },
 ]
 
 function ConnectPickerModal({
@@ -509,7 +602,7 @@ function ConnectPickerModal({
 }: {
   accounts: SocialAccount[]
   onClose: () => void
-  onSelect: (platform: 'facebook' | 'threads' | 'linkedin' | 'x' | 'medium' | 'substack') => void
+  onSelect: (platform: 'facebook' | 'threads' | 'linkedin' | 'x' | 'medium' | 'substack' | 'bluesky') => void
 }) {
   const connectedPlatforms = new Set(accounts.map((a) => a.platform))
 
@@ -541,6 +634,7 @@ function ConnectPickerModal({
                   if (platform === 'X')         { onClose(); onSelect('x')         }
                   if (platform === 'MEDIUM')    { onClose(); onSelect('medium')    }
                   if (platform === 'SUBSTACK')  { onClose(); onSelect('substack')  }
+                  if (platform === 'BLUESKY')   { onClose(); onSelect('bluesky')   }
                 }}
                 className={cn(
                   'flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all text-center',
@@ -777,7 +871,7 @@ function CalendarView({ posts }: { posts: ScheduledPost[] }) {
 export default function SchedulerClient({ initialAccounts, initialPosts, libraryAssets }: Props) {
   const [accounts,         setAccounts]         = useState(initialAccounts)
   const [posts,            setPosts]            = useState(initialPosts)
-  const [connectModal,     setConnectModal]     = useState<'picker' | 'facebook' | 'threads' | 'linkedin' | 'x' | 'medium' | 'substack' | null>(null)
+  const [connectModal,     setConnectModal]     = useState<'picker' | 'facebook' | 'threads' | 'linkedin' | 'x' | 'medium' | 'substack' | 'bluesky' | null>(null)
   const [tab,              setTab]              = useState<'upcoming' | 'published'>('upcoming')
   const [view,             setView]             = useState<'list' | 'calendar'>('list')
 
@@ -866,6 +960,7 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
       {connectModal === 'x'         && <ConnectXModal         onClose={() => setConnectModal(null)} onConnected={(a) => setAccounts(a)} />}
       {connectModal === 'medium'    && <ConnectMediumModal    onClose={() => setConnectModal(null)} onConnected={(a) => setAccounts(a)} />}
       {connectModal === 'substack'  && <ConnectSubstackModal  onClose={() => setConnectModal(null)} onConnected={(a) => setAccounts(a)} />}
+      {connectModal === 'bluesky'   && <ConnectBlueskyModal   onClose={() => setConnectModal(null)} onConnected={(a) => setAccounts(a)} />}
 
       {/* ── Left: composer ───────────────────────────────────────────── */}
       <div className="w-[400px] flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto overflow-x-hidden p-5 border-r border-gray-100 bg-white">

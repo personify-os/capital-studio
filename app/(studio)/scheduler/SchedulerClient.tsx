@@ -433,18 +433,18 @@ function ConnectSubstackModal({ onClose, onConnected }: { onClose: () => void; o
 }
 
 function ConnectMediumModal({ onClose, onConnected }: { onClose: () => void; onConnected: (accts: SocialAccount[]) => void }) {
-  const [token,   setToken]   = useState('')
+  const [cookie,  setCookie]  = useState('')
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
 
   async function handleConnect() {
-    if (!token.trim()) return
+    if (!cookie.trim()) return
     setLoading(true); setError('')
     try {
       const res  = await fetch('/api/v1/social/connect/medium', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ token: token.trim() }),
+        body:    JSON.stringify({ cookie: cookie.trim() }),
       })
       const json = await res.json()
       if (!res.ok) { setError(json.message ?? 'Connection failed'); return }
@@ -472,22 +472,23 @@ function ConnectMediumModal({ onClose, onConnected }: { onClose: () => void; onC
           </button>
         </div>
         <div className="p-5 space-y-4">
-          <div className="bg-gray-50 rounded-lg p-3.5 text-xs text-gray-700 space-y-1.5">
-            <p className="font-semibold">How to get your Medium integration token:</p>
-            <ol className="list-decimal list-inside space-y-1 text-gray-600">
-              <li>Go to <span className="font-mono text-[11px]">medium.com</span> → click your profile photo → Settings</li>
-              <li>Scroll to <strong>Integration tokens</strong> at the bottom</li>
-              <li>Enter a description (e.g. "Capital Studio") and click <strong>Get integration token</strong></li>
-              <li>Paste the token below</li>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3.5 text-xs text-amber-800 space-y-1.5">
+            <p className="font-semibold">How to get your Medium session cookie:</p>
+            <ol className="list-decimal list-inside space-y-1 text-amber-700">
+              <li>Log in to <span className="font-mono text-[11px]">medium.com</span> in Chrome</li>
+              <li>Press <strong>F12</strong> to open DevTools → go to <strong>Application</strong> tab</li>
+              <li>Expand <strong>Cookies</strong> → click <strong>https://medium.com</strong></li>
+              <li>Find the cookie named <strong>sid</strong> and copy its value</li>
+              <li>Paste below</li>
             </ol>
           </div>
           <div>
-            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Integration Token</label>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Session Cookie (sid)</label>
             <input
               type="password"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="2b41e47c3b4d..."
+              value={cookie}
+              onChange={(e) => setCookie(e.target.value)}
+              placeholder="1:abc123..."
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-azure focus:border-transparent"
             />
           </div>
@@ -502,7 +503,7 @@ function ConnectMediumModal({ onClose, onConnected }: { onClose: () => void; onC
           <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
             Cancel
           </button>
-          <Button size="sm" loading={loading} disabled={!token.trim()} onClick={handleConnect}>
+          <Button size="sm" loading={loading} disabled={!cookie.trim()} onClick={handleConnect}>
             Connect Medium
           </Button>
         </div>

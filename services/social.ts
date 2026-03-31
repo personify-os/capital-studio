@@ -235,30 +235,30 @@ export async function publishToX(
 
 // ─── Medium posting ────────────────────────────────────────────────────────────
 
-export async function getMediumProfile(token: string): Promise<{ id: string; name: string }> {
-  const res  = await fetch('https://api.medium.com/v1/me', {
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' },
+export async function getMediumProfile(cookie: string): Promise<{ id: string; name: string }> {
+  const res  = await fetch('https://medium.com/me?format=json', {
+    headers: { Cookie: `sid=${cookie}`, Accept: 'application/json' },
   })
+  if (!res.ok) throw new Error('Invalid session cookie — please log in to Medium and try again')
   const json = await res.json()
-  if (!res.ok || json.errors) {
-    throw new Error(json.errors?.[0]?.message ?? 'Failed to fetch Medium profile')
-  }
-  return { id: String(json.data.id), name: json.data.name ?? json.data.username ?? 'Medium' }
+  const user = json?.payload?.value
+  if (!user?.userId) throw new Error('Could not read Medium profile — check your sid cookie and try again')
+  const name = user.name ?? user.username ?? 'Medium'
+  return { id: String(user.userId), name }
 }
 
 export async function publishToMedium(
   userId:  string,
-  token:   string,
+  cookie:  string,
   caption: string,
 ): Promise<string> {
-  // Use first line as title, rest as body
   const lines  = caption.trim().split('\n')
   const title  = lines[0].slice(0, 255) || 'New Post'
   const body   = lines.slice(1).join('\n').trim() || caption
 
-  const res = await fetch(`https://api.medium.com/v1/users/${userId}/posts`, {
+  const res = await fetch(`https://medium.com/_/api/users/${userId}/posts`, {
     method:  'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    headers: { Cookie: `sid=${cookie}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       title,
       contentFormat: 'markdown',
@@ -270,7 +270,7 @@ export async function publishToMedium(
   if (!res.ok || json.errors) {
     throw new Error(json.errors?.[0]?.message ?? 'Medium publish failed')
   }
-  return (json.data?.id ?? '') as string
+  return (json.payload?.value?.id ?? json.data?.id ?? '') as string
 }
 
 // ─── Bluesky posting (AT Protocol) ────────────────────────────────────────────

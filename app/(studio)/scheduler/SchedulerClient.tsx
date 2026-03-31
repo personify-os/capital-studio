@@ -664,10 +664,25 @@ function ConnectPickerModal({
 // ─── Connect LinkedIn Modal ────────────────────────────────────────────────────
 
 function ConnectLinkedInModal({ onClose, onConnected }: { onClose: () => void; onConnected: (a: SocialAccount[]) => void }) {
-  const [token,    setToken]    = useState('')
-  const [personId, setPersonId] = useState('')
-  const [loading,  setLoading]  = useState(false)
-  const [error,    setError]    = useState<string | null>(null)
+  const [token,     setToken]     = useState('')
+  const [personId,  setPersonId]  = useState('')
+  const [loading,   setLoading]   = useState(false)
+  const [fetching,  setFetching]  = useState(false)
+  const [error,     setError]     = useState<string | null>(null)
+
+  async function fetchPersonId() {
+    if (!token.trim()) return
+    setFetching(true); setError(null)
+    const res  = await fetch('/api/v1/social/connect/linkedin/inspect', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ accessToken: token.trim() }),
+    })
+    const json = await res.json()
+    setFetching(false)
+    if (!res.ok) { setError(json.message ?? 'Could not fetch person ID'); return }
+    setPersonId(json.personId)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -696,8 +711,8 @@ function ConnectLinkedInModal({ onClose, onConnected }: { onClose: () => void; o
             <ol className="list-decimal list-inside space-y-0.5 text-blue-600">
               <li>Go to <span className="font-medium">LinkedIn Developer Portal</span> → your app → Auth</li>
               <li>Open <span className="font-medium">OAuth 2.0 Tools</span> → generate token with <span className="font-medium">w_member_social</span></li>
-              <li>On the token details page, copy the token</li>
-              <li>Click <span className="font-medium">Token Inspector</span> tab and copy the <span className="font-medium">sub</span> value (your Person ID)</li>
+              <li>Copy and paste the token below</li>
+              <li>Click <span className="font-medium">Fetch automatically</span> to fill in your Person ID</li>
             </ol>
           </div>
           <div>
@@ -711,12 +726,22 @@ function ConnectLinkedInModal({ onClose, onConnected }: { onClose: () => void; o
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Person ID <span className="normal-case font-normal text-gray-400">(sub from Token Inspector)</span></label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Person ID</label>
+              <button
+                type="button"
+                onClick={fetchPersonId}
+                disabled={!token.trim() || fetching}
+                className="text-[10px] font-medium text-brand-azure hover:underline disabled:opacity-40"
+              >
+                {fetching ? 'Fetching…' : 'Fetch automatically →'}
+              </button>
+            </div>
             <input
               type="text"
               value={personId}
               onChange={(e) => setPersonId(e.target.value)}
-              placeholder="urn:li:person:ABC123 or just ABC123"
+              placeholder="Click 'Fetch automatically' or paste manually"
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-azure"
             />
           </div>

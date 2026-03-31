@@ -297,21 +297,20 @@ export async function publishToBluesky(
 
 // ─── Substack posting (internal API via session cookie) ───────────────────────
 
-export async function getSubstackProfile(subdomain: string, cookie: string): Promise<{ id: string; name: string }> {
-  // connect.sid is a substack.com cookie — verify against main domain
-  const res  = await fetch('https://substack.com/api/v1/profile', {
-    headers: { Cookie: `substack.sid=${cookie}`, 'User-Agent': 'Mozilla/5.0' },
+export async function getSubstackProfile(subdomain: string, _cookie: string): Promise<{ id: string; name: string }> {
+  // Verify the publication exists using the public endpoint (no auth needed)
+  const res = await fetch(`https://${subdomain}.substack.com/api/v1/publication`, {
+    headers: { 'User-Agent': 'Mozilla/5.0' },
   })
-  if (!res.ok) throw new Error('Invalid session cookie — please copy a fresh connect.sid from Chrome DevTools')
+  if (!res.ok) throw new Error(`Publication "${subdomain}" not found — check your publication URL`)
   const contentType = res.headers.get('content-type') ?? ''
   if (!contentType.includes('application/json')) {
-    throw new Error('Invalid session cookie — please copy a fresh connect.sid from Chrome DevTools')
+    throw new Error(`Publication "${subdomain}" not found — check your publication URL`)
   }
   const json = await res.json()
-  if (json.error || json.errors) throw new Error('Invalid session cookie — please log in to Substack and try again')
   return {
     id:   subdomain,
-    name: json.name ?? json.handle ?? subdomain,
+    name: json.name ?? json.hero_text ?? subdomain,
   }
 }
 

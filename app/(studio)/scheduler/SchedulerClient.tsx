@@ -1071,23 +1071,29 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
                 <Plus size={13} /> Connect a platform
               </button>
             ) : (
-              <div className="space-y-1.5">
+              <div className="flex flex-wrap gap-1.5">
                 {accounts.map((a) => {
-                  const Icon = PLATFORM_ICON[a.platform]
-                  const sel  = selectedAccts.includes(a.id)
+                  const Icon          = PLATFORM_ICON[a.platform]
+                  const sel           = selectedAccts.includes(a.id)
+                  const platformLabel = PLATFORM_META.find((p) => p.platform === a.platform)?.label ?? a.platform
                   return (
-                    <div key={a.id} className="flex items-center gap-1">
+                    <div key={a.id} className="group relative">
                       <button
                         type="button"
                         onClick={() => toggleAccount(a.id)}
                         className={cn(
-                          'flex-1 flex items-center gap-2.5 px-3 py-2 rounded-lg border-2 text-left transition-all',
-                          sel ? 'border-brand-azure bg-brand-azure/5' : 'border-gray-200 hover:border-brand-light',
+                          'flex items-center gap-1.5 pl-2.5 pr-6 py-1.5 rounded-full border transition-all',
+                          sel
+                            ? 'border-brand-azure bg-brand-azure/10'
+                            : 'border-gray-200 bg-white hover:border-brand-light',
                         )}
                       >
-                        <Icon size={14} className={cn('flex-shrink-0', PLATFORM_COLOR[a.platform])} />
-                        <span className={cn('text-xs font-medium flex-1', sel ? 'text-brand-azure' : 'text-gray-700')}>{a.accountName}</span>
-                        {sel && <CheckCircle2 size={13} className="text-brand-azure" />}
+                        <Icon size={12} className={cn('flex-shrink-0', sel ? 'text-brand-azure' : PLATFORM_COLOR[a.platform])} />
+                        <div className="text-left">
+                          <div className={cn('text-[11px] font-semibold leading-none', sel ? 'text-brand-azure' : 'text-gray-800')}>{a.accountName}</div>
+                          <div className="text-[9px] text-gray-400 leading-none mt-0.5">{platformLabel}</div>
+                        </div>
+                        {sel && <CheckCircle2 size={10} className="text-brand-azure ml-0.5 flex-shrink-0" />}
                       </button>
                       <button
                         type="button"
@@ -1097,9 +1103,9 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
                           setAccounts((prev) => prev.filter((x) => x.id !== a.id))
                           setSelectedAccts((prev) => prev.filter((x) => x !== a.id))
                         }}
-                        className="p-1.5 text-gray-300 hover:text-red-400 transition-colors flex-shrink-0"
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-400"
                       >
-                        <X size={12} />
+                        <X size={10} />
                       </button>
                     </div>
                   )

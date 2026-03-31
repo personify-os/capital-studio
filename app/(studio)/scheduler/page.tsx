@@ -29,7 +29,7 @@ export default async function SchedulerPage() {
 
   return (
     <>
-      <Topbar title="Social Scheduler" description="Schedule and publish content to Facebook & Instagram" />
+      <Topbar title="Social Scheduler" description="Schedule and publish content to your social platforms" />
       <SchedulerClient
         initialAccounts={accounts.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() }))}
         initialPosts={posts.map((p) => ({

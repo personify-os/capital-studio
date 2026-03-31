@@ -1,0 +1,53 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="200" fill="#0B2147"/>
+
+  <!-- Clapperboard slate body -->
+  <rect x="152" y="448" width="720" height="436" rx="24" fill="white" opacity="0.93"/>
+
+  <!-- Crown (sits where the clapper arm was) -->
+  <path d="M 152 448
+           L 152 368
+           L 272 192
+           L 392 368
+           L 512 128
+           L 632 368
+           L 752 192
+           L 872 368
+           L 872 448
+           Z"
+        fill="#ed6835"/>
+
+  <!-- Clapperboard stripe detail on crown base -->
+  <clipPath id="cb"><rect x="152" y="404" width="720" height="50"/></clipPath>
+  <g clip-path="url(#cb)">
+    <polygon points="152,404 268,404 192,454 152,454" fill="#0B2147" opacity="0.22"/>
+    <polygon points="308,404 424,404 348,454 228,454" fill="#0B2147" opacity="0.22"/>
+    <polygon points="464,404 580,404 504,454 384,454" fill="#0B2147" opacity="0.22"/>
+    <polygon points="620,404 736,404 660,454 540,454" fill="#0B2147" opacity="0.22"/>
+    <polygon points="776,404 872,404 872,454 696,454" fill="#0B2147" opacity="0.22"/>
+  </g>
+
+  <!-- Hinge knobs (clapperboard detail) -->
+  <circle cx="292" cy="450" r="26" fill="white" opacity="0.5"/>
+  <circle cx="732" cy="450" r="26" fill="white" opacity="0.5"/>
+
+  <!-- Crown jewels -->
+  <circle cx="512" cy="210" r="30" fill="white" opacity="0.95"/>
+  <circle cx="512" cy="210" r="14" fill="#ed6835"/>
+  <circle cx="272" cy="272" r="20" fill="white" opacity="0.75"/>
+  <circle cx="752" cy="272" r="20" fill="white" opacity="0.75"/>
+
+  <!-- CS — large, embossed on slate -->
+  <text x="512" y="688"
+        font-family="'Montserrat', 'Segoe UI', system-ui, sans-serif"
+        font-size="220" font-weight="800"
+        fill="#0475ae" opacity="0.14"
+        text-anchor="middle" dominant-baseline="middle"
+        letter-spacing="-8">CS</text>
+
+  <!-- Subtle rule lines on slate (record keeping reference) -->
+  <rect x="210" y="770" width="300" height="18" rx="7" fill="#0475ae" opacity="0.13"/>
+  <rect x="210" y="806" width="220" height="14" rx="7" fill="#0475ae" opacity="0.10"/>
+  <rect x="210" y="836" width="260" height="14" rx="7" fill="#0475ae" opacity="0.10"/>
+</svg>

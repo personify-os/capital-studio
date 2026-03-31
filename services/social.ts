@@ -295,28 +295,62 @@ export async function publishToBluesky(
   return (json.uri ?? '') as string
 }
 
-// ─── Substack posting (publish-by-email via Resend) ───────────────────────────
+// ─── Substack posting (internal API via session cookie) ───────────────────────
+
+export async function getSubstackProfile(subdomain: string, cookie: string): Promise<{ id: string; name: string }> {
+  const res  = await fetch(`https://${subdomain}.substack.com/api/v1/profile`, {
+    headers: { Cookie: `connect.sid=${cookie}`, 'User-Agent': 'Mozilla/5.0' },
+  })
+  const json = await res.json()
+  if (!res.ok || json.error) throw new Error(json.error ?? 'Invalid session — please check your cookie and publication URL')
+  return {
+    id:   subdomain,
+    name: json.name ?? json.handle ?? subdomain,
+  }
+}
 
 export async function publishToSubstack(
-  publishEmail: string,
-  caption:      string,
+  subdomain: string,
+  cookie:    string,
+  caption:   string,
 ): Promise<string> {
-  const { Resend } = await import('resend')
-  const resend = new Resend(process.env.RESEND_API_KEY!)
+  const base    = `https://${subdomain}.substack.com/api/v1`
+  const headers = {
+    Cookie:         `connect.sid=${cookie}`,
+    'Content-Type': 'application/json',
+    'User-Agent':   'Mozilla/5.0',
+  }
 
-  const lines = caption.trim().split('\n')
-  const subject = lines[0].slice(0, 255) || 'New Post'
-  const body    = lines.slice(1).join('\n').trim() || caption
+  const lines    = caption.trim().split('\n')
+  const title    = lines[0].slice(0, 255) || 'New Post'
+  const bodyText = lines.slice(1).join('\n').trim() || caption
+  // Substack draft body is HTML
+  const bodyHtml = bodyText.split('\n\n').map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('')
 
-  const { data, error } = await resend.emails.send({
-    from:    'Capital Studio <studio@lhccapital.org>',
-    to:      publishEmail,
-    subject,
-    text:    body,
+  // Step 1: create draft
+  const draftRes  = await fetch(`${base}/drafts`, {
+    method:  'POST',
+    headers,
+    body: JSON.stringify({
+      draft_title:    title,
+      draft_subtitle: '',
+      draft_body:     JSON.stringify({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: bodyText }] }] }),
+      type:           'newsletter',
+    }),
   })
+  const draft = await draftRes.json()
+  if (!draftRes.ok || draft.error) throw new Error(draft.error ?? 'Substack draft creation failed')
 
-  if (error) throw new Error(error.message ?? 'Substack publish failed')
-  return data?.id ?? ''
+  // Step 2: publish draft
+  const publishRes  = await fetch(`${base}/drafts/${draft.id}/publish`, {
+    method:  'POST',
+    headers,
+    body: JSON.stringify({ send_email: true, free_unlock: false }),
+  })
+  const published = await publishRes.json()
+  if (!publishRes.ok || published.error) throw new Error(published.error ?? 'Substack publish failed')
+
+  return String(draft.id)
 }
 
 // ─── Instagram posting ─────────────────────────────────────────────────────────

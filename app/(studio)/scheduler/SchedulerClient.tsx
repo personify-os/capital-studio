@@ -340,19 +340,19 @@ function ConnectBlueskyModal({ onClose, onConnected }: { onClose: () => void; on
 }
 
 function ConnectSubstackModal({ onClose, onConnected }: { onClose: () => void; onConnected: (accts: SocialAccount[]) => void }) {
-  const [email,       setEmail]       = useState('')
-  const [publication, setPublication] = useState('')
-  const [loading,     setLoading]     = useState(false)
-  const [error,       setError]       = useState('')
+  const [subdomain, setSubdomain] = useState('')
+  const [cookie,    setCookie]    = useState('')
+  const [loading,   setLoading]   = useState(false)
+  const [error,     setError]     = useState('')
 
   async function handleConnect() {
-    if (!email.trim()) return
+    if (!subdomain.trim() || !cookie.trim()) return
     setLoading(true); setError('')
     try {
       const res  = await fetch('/api/v1/social/connect/substack', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email: email.trim(), publication: publication.trim() }),
+        body:    JSON.stringify({ subdomain: subdomain.trim(), cookie: cookie.trim() }),
       })
       const json = await res.json()
       if (!res.ok) { setError(json.message ?? 'Connection failed'); return }
@@ -380,33 +380,36 @@ function ConnectSubstackModal({ onClose, onConnected }: { onClose: () => void; o
           </button>
         </div>
         <div className="p-5 space-y-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+            <strong>Note:</strong> This uses your Substack session. You&apos;ll need to reconnect if you log out of Substack.
+          </div>
           <div className="bg-gray-50 rounded-lg p-3.5 text-xs text-gray-700 space-y-1.5">
-            <p className="font-semibold">How to find your Substack publish-by-email address:</p>
+            <p className="font-semibold">How to get your session cookie:</p>
             <ol className="list-decimal list-inside space-y-1 text-gray-600">
-              <li>Go to <span className="font-mono text-[11px]">substack.com</span> → your publication dashboard</li>
-              <li>Click <strong>Settings</strong> → <strong>Email</strong></li>
-              <li>Scroll to <strong>Publish by email</strong> and copy your unique address</li>
-              <li>Paste it below — emails sent to it will create posts in your Substack</li>
+              <li>Open <span className="font-mono text-[11px]">substack.com</span> in Chrome while logged in</li>
+              <li>Press <strong>F12</strong> → Application tab → Cookies → <span className="font-mono text-[11px]">https://substack.com</span></li>
+              <li>Find <strong>connect.sid</strong> and copy its value</li>
+              <li>Paste below along with your publication subdomain</li>
             </ol>
           </div>
           <div>
-            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Publish-by-Email Address</label>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Publication URL</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="abc123@substack.com"
+              type="text"
+              value={subdomain}
+              onChange={(e) => setSubdomain(e.target.value)}
+              placeholder="lhccapital.substack.com or lhccapital"
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-azure focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Publication Name <span className="normal-case font-normal text-gray-400">(optional)</span></label>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">connect.sid Cookie Value</label>
             <input
-              type="text"
-              value={publication}
-              onChange={(e) => setPublication(e.target.value)}
-              placeholder="My Newsletter"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-azure focus:border-transparent"
+              type="password"
+              value={cookie}
+              onChange={(e) => setCookie(e.target.value)}
+              placeholder="s%3A..."
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-azure focus:border-transparent"
             />
           </div>
           {error && (
@@ -420,7 +423,7 @@ function ConnectSubstackModal({ onClose, onConnected }: { onClose: () => void; o
           <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
             Cancel
           </button>
-          <Button size="sm" loading={loading} disabled={!email.trim()} onClick={handleConnect}>
+          <Button size="sm" loading={loading} disabled={!subdomain.trim() || !cookie.trim()} onClick={handleConnect}>
             Connect Substack
           </Button>
         </div>
@@ -590,7 +593,7 @@ const PLATFORM_META: { platform: Platform; label: string; live: boolean }[] = [
   { platform: 'INSTAGRAM', label: 'Instagram',            live: false },
   { platform: 'YOUTUBE',   label: 'YouTube',              live: false },
   { platform: 'TIKTOK',    label: 'TikTok',               live: false },
-  { platform: 'SUBSTACK',  label: 'Substack',             live: false },
+  { platform: 'SUBSTACK',  label: 'Substack',             live: true },
   { platform: 'MEDIUM',    label: 'Medium',               live: true },
   { platform: 'BLUESKY',   label: 'Bluesky',              live: true },
 ]

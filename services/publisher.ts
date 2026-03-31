@@ -55,7 +55,8 @@ export async function publishPost(postId: string, tenantId?: string): Promise<{ 
         platformPostId = await publishToMedium(socialAccount.accountId, token, caption)
         break
       case 'SUBSTACK':
-        platformPostId = await publishToSubstack(socialAccount.accountId, caption)
+        // accountId = subdomain, token = decrypted connect.sid cookie
+        platformPostId = await publishToSubstack(socialAccount.accountId, token, caption)
         break
       case 'BLUESKY':
         platformPostId = await publishToBluesky(socialAccount.accountId, token, caption)

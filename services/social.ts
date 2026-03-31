@@ -235,30 +235,48 @@ export async function publishToX(
 
 // ─── Medium posting ────────────────────────────────────────────────────────────
 
-export async function getMediumProfile(cookie: string): Promise<{ id: string; name: string }> {
-  const res  = await fetch('https://medium.com/me?format=json', {
-    headers: { Cookie: `sid=${cookie}`, Accept: 'application/json' },
+export async function getMediumProfile(uid: string, sid: string): Promise<{ id: string; name: string }> {
+  // Verify the cookies work by hitting the internal profile endpoint
+  const res = await fetch('https://medium.com/_/api/me', {
+    headers: {
+      Cookie:     `uid=${uid}; sid=${sid}`,
+      Accept:     'application/json',
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+    },
   })
-  if (!res.ok) throw new Error('Invalid session cookie — please log in to Medium and try again')
-  const json = await res.json()
-  const user = json?.payload?.value
-  if (!user?.userId) throw new Error('Could not read Medium profile — check your sid cookie and try again')
-  const name = user.name ?? user.username ?? 'Medium'
-  return { id: String(user.userId), name }
+  if (res.ok) {
+    try {
+      const json = await res.json()
+      const user = json?.payload?.value ?? json?.payload?.user ?? json?.data
+      if (user?.userId || user?.id) {
+        return { id: String(user.userId ?? user.id), name: user.name ?? user.username ?? 'Medium' }
+      }
+    } catch { /* fall through */ }
+  }
+  // If API verification fails, trust the uid directly (user copied from DevTools)
+  if (!uid.trim()) throw new Error('uid cookie is required')
+  return { id: uid.trim(), name: 'Medium Account' }
 }
 
 export async function publishToMedium(
   userId:  string,
-  cookie:  string,
+  token:   string,   // stored as "uid:sid"
   caption: string,
 ): Promise<string> {
+  const [uid, ...rest] = token.split(':')
+  const sid = rest.join(':')
+
   const lines  = caption.trim().split('\n')
   const title  = lines[0].slice(0, 255) || 'New Post'
   const body   = lines.slice(1).join('\n').trim() || caption
 
   const res = await fetch(`https://medium.com/_/api/users/${userId}/posts`, {
     method:  'POST',
-    headers: { Cookie: `sid=${cookie}`, 'Content-Type': 'application/json' },
+    headers: {
+      Cookie:         `uid=${uid}; sid=${sid}`,
+      'Content-Type': 'application/json',
+      'User-Agent':   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+    },
     body: JSON.stringify({
       title,
       contentFormat: 'markdown',

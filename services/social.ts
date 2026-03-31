@@ -108,11 +108,22 @@ export async function publishToThreads(
 // ─── LinkedIn posting ──────────────────────────────────────────────────────────
 
 export async function getLinkedInProfile(token: string): Promise<{ id: string; name: string }> {
+  // Try to decode person ID from JWT sub claim (avoids needing openid/profile scopes)
+  try {
+    const parts   = token.split('.')
+    if (parts.length === 3) {
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString())
+      const id      = payload.sub ?? payload.id
+      if (id) return { id: String(id), name: 'LinkedIn Account' }
+    }
+  } catch { /* fall through to API call */ }
+
+  // Fallback: try userinfo endpoint (requires openid + profile scopes)
   const res  = await fetch('https://api.linkedin.com/v2/userinfo', {
     headers: { Authorization: `Bearer ${token}` },
   })
   const json = await res.json()
-  if (!res.ok) throw new Error(json.message ?? 'Failed to fetch LinkedIn profile')
+  if (!res.ok) throw new Error(json.message ?? 'Failed to fetch LinkedIn profile — ensure your token has openid and profile scopes')
   return { id: json.sub as string, name: (json.name ?? json.email ?? 'LinkedIn') as string }
 }
 

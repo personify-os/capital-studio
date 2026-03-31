@@ -300,7 +300,7 @@ export async function publishToBluesky(
 export async function getSubstackProfile(subdomain: string, cookie: string): Promise<{ id: string; name: string }> {
   // connect.sid is a substack.com cookie — verify against main domain
   const res  = await fetch('https://substack.com/api/v1/profile', {
-    headers: { Cookie: `connect.sid=${cookie}`, 'User-Agent': 'Mozilla/5.0' },
+    headers: { Cookie: `substack.sid=${cookie}`, 'User-Agent': 'Mozilla/5.0' },
   })
   if (!res.ok) throw new Error('Invalid session cookie — please copy a fresh connect.sid from Chrome DevTools')
   const contentType = res.headers.get('content-type') ?? ''
@@ -322,7 +322,7 @@ export async function publishToSubstack(
 ): Promise<string> {
   const base    = `https://${subdomain}.substack.com/api/v1`
   const headers = {
-    Cookie:         `connect.sid=${cookie}`,
+    Cookie:         `substack.sid=${cookie}`,
     'Content-Type': 'application/json',
     'User-Agent':   'Mozilla/5.0',
   }

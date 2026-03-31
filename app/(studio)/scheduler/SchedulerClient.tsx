@@ -388,7 +388,7 @@ function ConnectSubstackModal({ onClose, onConnected }: { onClose: () => void; o
             <ol className="list-decimal list-inside space-y-1 text-gray-600">
               <li>Open <span className="font-mono text-[11px]">substack.com</span> in Chrome while logged in</li>
               <li>Press <strong>F12</strong> → Application tab → Cookies → <span className="font-mono text-[11px]">https://substack.com</span></li>
-              <li>Find <strong>connect.sid</strong> and copy its value</li>
+              <li>Find <strong>substack.sid</strong> and copy its value</li>
               <li>Paste below along with your publication subdomain</li>
             </ol>
           </div>
@@ -403,7 +403,7 @@ function ConnectSubstackModal({ onClose, onConnected }: { onClose: () => void; o
             />
           </div>
           <div>
-            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">connect.sid Cookie Value</label>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">substack.sid Cookie Value</label>
             <input
               type="password"
               value={cookie}

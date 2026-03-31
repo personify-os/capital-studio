@@ -9,6 +9,7 @@ import {
   publishToLinkedIn,
   publishToX,
   publishToMedium,
+  publishToSubstack,
 } from '@/services/social'
 
 export async function publishPost(postId: string, tenantId?: string): Promise<{ platformPostId: string }> {
@@ -51,6 +52,10 @@ export async function publishPost(postId: string, tenantId?: string): Promise<{ 
         break
       case 'MEDIUM':
         platformPostId = await publishToMedium(socialAccount.accountId, token, caption)
+        break
+      case 'SUBSTACK':
+        // accountId is the publish-by-email address; no token needed
+        platformPostId = await publishToSubstack(socialAccount.accountId, caption)
         break
       default:
         throw new Error(`Publishing to ${socialAccount.platform} not yet supported`)

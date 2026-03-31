@@ -247,6 +247,96 @@ function ConnectFacebookModal({ onClose, onConnected }: { onClose: () => void; o
 
 // ─── Connect Medium Modal ──────────────────────────────────────────────────────
 
+function ConnectSubstackModal({ onClose, onConnected }: { onClose: () => void; onConnected: (accts: SocialAccount[]) => void }) {
+  const [email,       setEmail]       = useState('')
+  const [publication, setPublication] = useState('')
+  const [loading,     setLoading]     = useState(false)
+  const [error,       setError]       = useState('')
+
+  async function handleConnect() {
+    if (!email.trim()) return
+    setLoading(true); setError('')
+    try {
+      const res  = await fetch('/api/v1/social/connect/substack', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: email.trim(), publication: publication.trim() }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setError(json.message ?? 'Connection failed'); return }
+      const acctRes  = await fetch('/api/v1/social/accounts')
+      const acctJson = await acctRes.json()
+      onConnected(acctJson.accounts)
+      onClose()
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-md bg-white rounded-card shadow-card-hover overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <GenericIcon size={16} className="text-brand-orange" />
+            <p className="font-semibold text-brand-navy text-sm">Connect Substack</p>
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100">
+            <X size={16} className="text-gray-500" />
+          </button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="bg-gray-50 rounded-lg p-3.5 text-xs text-gray-700 space-y-1.5">
+            <p className="font-semibold">How to find your Substack publish-by-email address:</p>
+            <ol className="list-decimal list-inside space-y-1 text-gray-600">
+              <li>Go to <span className="font-mono text-[11px]">substack.com</span> → your publication dashboard</li>
+              <li>Click <strong>Settings</strong> → <strong>Email</strong></li>
+              <li>Scroll to <strong>Publish by email</strong> and copy your unique address</li>
+              <li>Paste it below — emails sent to it will create posts in your Substack</li>
+            </ol>
+          </div>
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Publish-by-Email Address</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="abc123@substack.com"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-azure focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Publication Name <span className="normal-case font-normal text-gray-400">(optional)</span></label>
+            <input
+              type="text"
+              value={publication}
+              onChange={(e) => setPublication(e.target.value)}
+              placeholder="My Newsletter"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-azure focus:border-transparent"
+            />
+          </div>
+          {error && (
+            <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <AlertCircle size={13} className="text-red-500 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-red-700">{error}</p>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            Cancel
+          </button>
+          <Button size="sm" loading={loading} disabled={!email.trim()} onClick={handleConnect}>
+            Connect Substack
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ConnectMediumModal({ onClose, onConnected }: { onClose: () => void; onConnected: (accts: SocialAccount[]) => void }) {
   const [token,   setToken]   = useState('')
   const [loading, setLoading] = useState(false)
@@ -408,7 +498,7 @@ const PLATFORM_META: { platform: Platform; label: string; live: boolean }[] = [
   { platform: 'INSTAGRAM', label: 'Instagram',            live: false },
   { platform: 'YOUTUBE',   label: 'YouTube',              live: false },
   { platform: 'TIKTOK',    label: 'TikTok',               live: false },
-  { platform: 'SUBSTACK',  label: 'Substack',             live: false },
+  { platform: 'SUBSTACK',  label: 'Substack',             live: true },
   { platform: 'MEDIUM',    label: 'Medium',               live: true },
 ]
 
@@ -419,7 +509,7 @@ function ConnectPickerModal({
 }: {
   accounts: SocialAccount[]
   onClose: () => void
-  onSelect: (platform: 'facebook' | 'threads' | 'linkedin' | 'x' | 'medium') => void
+  onSelect: (platform: 'facebook' | 'threads' | 'linkedin' | 'x' | 'medium' | 'substack') => void
 }) {
   const connectedPlatforms = new Set(accounts.map((a) => a.platform))
 
@@ -449,6 +539,8 @@ function ConnectPickerModal({
                   if (platform === 'THREADS')   { onClose(); onSelect('threads')   }
                   if (platform === 'LINKEDIN')  { onClose(); onSelect('linkedin')  }
                   if (platform === 'X')         { onClose(); onSelect('x')         }
+                  if (platform === 'MEDIUM')    { onClose(); onSelect('medium')    }
+                  if (platform === 'SUBSTACK')  { onClose(); onSelect('substack')  }
                 }}
                 className={cn(
                   'flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all text-center',
@@ -685,7 +777,7 @@ function CalendarView({ posts }: { posts: ScheduledPost[] }) {
 export default function SchedulerClient({ initialAccounts, initialPosts, libraryAssets }: Props) {
   const [accounts,         setAccounts]         = useState(initialAccounts)
   const [posts,            setPosts]            = useState(initialPosts)
-  const [connectModal,     setConnectModal]     = useState<'picker' | 'facebook' | 'threads' | 'linkedin' | 'x' | 'medium' | null>(null)
+  const [connectModal,     setConnectModal]     = useState<'picker' | 'facebook' | 'threads' | 'linkedin' | 'x' | 'medium' | 'substack' | null>(null)
   const [tab,              setTab]              = useState<'upcoming' | 'published'>('upcoming')
   const [view,             setView]             = useState<'list' | 'calendar'>('list')
 
@@ -773,6 +865,7 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
       {connectModal === 'linkedin'  && <ConnectLinkedInModal  onClose={() => setConnectModal(null)} onConnected={(a) => setAccounts(a)} />}
       {connectModal === 'x'         && <ConnectXModal         onClose={() => setConnectModal(null)} onConnected={(a) => setAccounts(a)} />}
       {connectModal === 'medium'    && <ConnectMediumModal    onClose={() => setConnectModal(null)} onConnected={(a) => setAccounts(a)} />}
+      {connectModal === 'substack'  && <ConnectSubstackModal  onClose={() => setConnectModal(null)} onConnected={(a) => setAccounts(a)} />}
 
       {/* ── Left: composer ───────────────────────────────────────────── */}
       <div className="w-[400px] flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto overflow-x-hidden p-5 border-r border-gray-100 bg-white">

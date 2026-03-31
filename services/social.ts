@@ -249,6 +249,30 @@ export async function publishToMedium(
   return (json.data?.id ?? '') as string
 }
 
+// ─── Substack posting (publish-by-email via Resend) ───────────────────────────
+
+export async function publishToSubstack(
+  publishEmail: string,
+  caption:      string,
+): Promise<string> {
+  const { Resend } = await import('resend')
+  const resend = new Resend(process.env.RESEND_API_KEY!)
+
+  const lines = caption.trim().split('\n')
+  const subject = lines[0].slice(0, 255) || 'New Post'
+  const body    = lines.slice(1).join('\n').trim() || caption
+
+  const { data, error } = await resend.emails.send({
+    from:    'Capital Studio <studio@lhccapital.org>',
+    to:      publishEmail,
+    subject,
+    text:    body,
+  })
+
+  if (error) throw new Error(error.message ?? 'Substack publish failed')
+  return data?.id ?? ''
+}
+
 // ─── Instagram posting ─────────────────────────────────────────────────────────
 // Requires image URL. Instagram does not support text-only posts via API.
 

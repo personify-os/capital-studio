@@ -664,14 +664,19 @@ function ConnectPickerModal({
 // ─── Connect LinkedIn Modal ────────────────────────────────────────────────────
 
 function ConnectLinkedInModal({ onClose, onConnected }: { onClose: () => void; onConnected: (a: SocialAccount[]) => void }) {
-  const [token,   setToken]   = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error,   setError]   = useState<string | null>(null)
+  const [token,    setToken]    = useState('')
+  const [personId, setPersonId] = useState('')
+  const [loading,  setLoading]  = useState(false)
+  const [error,    setError]    = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true); setError(null)
-    const res  = await fetch('/api/v1/social/connect/linkedin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accessToken: token.trim() }) })
+    const res  = await fetch('/api/v1/social/connect/linkedin', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ accessToken: token.trim(), personId: personId.trim() }),
+    })
     const json = await res.json()
     if (!res.ok) { setError(json.message ?? 'Failed'); setLoading(false); return }
     const accts = await fetch('/api/v1/social/accounts').then((r) => r.json())
@@ -687,13 +692,12 @@ function ConnectLinkedInModal({ onClose, onConnected }: { onClose: () => void; o
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-700 space-y-1">
-            <p className="font-semibold">How to get your LinkedIn access token:</p>
+            <p className="font-semibold">How to connect LinkedIn:</p>
             <ol className="list-decimal list-inside space-y-0.5 text-blue-600">
-              <li>Go to <span className="font-medium">LinkedIn Developer Portal</span> → your app</li>
-              <li>Enable the <span className="font-medium">&quot;Share on LinkedIn&quot;</span> product</li>
-              <li>Open the <span className="font-medium">OAuth 2.0 Tools</span> tab</li>
-              <li>Generate a token with <span className="font-medium">w_member_social</span> scope</li>
-              <li>Paste the token below</li>
+              <li>Go to <span className="font-medium">LinkedIn Developer Portal</span> → your app → Auth</li>
+              <li>Open <span className="font-medium">OAuth 2.0 Tools</span> → generate token with <span className="font-medium">w_member_social</span></li>
+              <li>On the token details page, copy the token</li>
+              <li>Click <span className="font-medium">Token Inspector</span> tab and copy the <span className="font-medium">sub</span> value (your Person ID)</li>
             </ol>
           </div>
           <div>
@@ -706,8 +710,18 @@ function ConnectLinkedInModal({ onClose, onConnected }: { onClose: () => void; o
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-azure resize-none"
             />
           </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Person ID <span className="normal-case font-normal text-gray-400">(sub from Token Inspector)</span></label>
+            <input
+              type="text"
+              value={personId}
+              onChange={(e) => setPersonId(e.target.value)}
+              placeholder="urn:li:person:ABC123 or just ABC123"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-azure"
+            />
+          </div>
           {error && <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>}
-          <button type="submit" disabled={loading || !token.trim()} className="w-full py-2.5 bg-brand-azure hover:bg-brand-navy disabled:opacity-60 text-white font-semibold text-sm rounded-lg transition-colors">
+          <button type="submit" disabled={loading || !token.trim() || !personId.trim()} className="w-full py-2.5 bg-brand-azure hover:bg-brand-navy disabled:opacity-60 text-white font-semibold text-sm rounded-lg transition-colors">
             {loading ? 'Connecting…' : 'Connect LinkedIn'}
           </button>
         </form>

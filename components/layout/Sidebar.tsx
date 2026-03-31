@@ -45,7 +45,7 @@ export default function Sidebar() {
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logos/capital-studio-icon.svg" alt="Capital Studio" className="w-full h-full" />
+            <img src="/logos/capital-studio-icon-sidebar.svg" alt="Capital Studio" className="w-full h-full" />
           </div>
           <div className="leading-none">
             <p className="text-white font-semibold text-sm">Capital Studio</p>

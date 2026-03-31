@@ -298,20 +298,16 @@ export async function publishToBluesky(
 // ─── Substack posting (internal API via session cookie) ───────────────────────
 
 export async function getSubstackProfile(subdomain: string, _cookie: string): Promise<{ id: string; name: string }> {
-  // Verify the publication exists using the public endpoint (no auth needed)
-  const res = await fetch(`https://${subdomain}.substack.com/api/v1/publication`, {
+  // Verify the subdomain resolves to a real Substack publication
+  const res = await fetch(`https://${subdomain}.substack.com/`, {
+    method:  'HEAD',
     headers: { 'User-Agent': 'Mozilla/5.0' },
+    redirect: 'follow',
   })
-  if (!res.ok) throw new Error(`Publication "${subdomain}" not found — check your publication URL`)
-  const contentType = res.headers.get('content-type') ?? ''
-  if (!contentType.includes('application/json')) {
+  if (!res.ok && res.status !== 405) {
     throw new Error(`Publication "${subdomain}" not found — check your publication URL`)
   }
-  const json = await res.json()
-  return {
-    id:   subdomain,
-    name: json.name ?? json.hero_text ?? subdomain,
-  }
+  return { id: subdomain, name: subdomain }
 }
 
 export async function publishToSubstack(

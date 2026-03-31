@@ -1,0 +1,19 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="220" fill="#0B2147"/>
+
+  <!-- Outer arc — faintest -->
+  <path d="M 82 760 A 430 430 0 0 0 942 760"
+        fill="none" stroke="#0475ae" stroke-width="58" stroke-linecap="round" opacity="0.35"/>
+
+  <!-- Middle arc -->
+  <path d="M 222 760 A 290 290 0 0 0 802 760"
+        fill="none" stroke="#0475ae" stroke-width="63" stroke-linecap="round" opacity="0.65"/>
+
+  <!-- Inner arc — full opacity -->
+  <path d="M 362 760 A 150 150 0 0 0 662 760"
+        fill="none" stroke="#0475ae" stroke-width="68" stroke-linecap="round"/>
+
+  <!-- Center dot -->
+  <circle cx="512" cy="760" r="62" fill="#ed6835"/>
+</svg>

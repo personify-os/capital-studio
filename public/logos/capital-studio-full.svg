@@ -1,0 +1,27 @@
+<svg viewBox="0 0 560 140" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icon background -->
+  <rect x="0" y="0" width="140" height="140" rx="28" fill="#0B2147"/>
+
+  <!-- Outer arc -->
+  <path d="M 11 108 A 59 59 0 0 0 129 108"
+        fill="none" stroke="#0475ae" stroke-width="8" stroke-linecap="round" opacity="0.35"/>
+
+  <!-- Middle arc -->
+  <path d="M 31 108 A 39 39 0 0 0 109 108"
+        fill="none" stroke="#0475ae" stroke-width="9" stroke-linecap="round" opacity="0.65"/>
+
+  <!-- Inner arc -->
+  <path d="M 51 108 A 19 19 0 0 0 89 108"
+        fill="none" stroke="#0475ae" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Center dot -->
+  <circle cx="70" cy="108" r="9" fill="#ed6835"/>
+
+  <!-- Wordmark -->
+  <text x="164" y="72"
+        font-family="'Montserrat', 'Segoe UI', system-ui, sans-serif"
+        font-size="42" font-weight="700" fill="#0B2147" letter-spacing="-0.5">Capital</text>
+  <text x="164" y="114"
+        font-family="'Montserrat', 'Segoe UI', system-ui, sans-serif"
+        font-size="30" font-weight="500" fill="#0475ae" letter-spacing="4">STUDIO</text>
+</svg>

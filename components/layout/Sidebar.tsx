@@ -43,8 +43,9 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-white/10">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-brand-azure flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-xs">LHC</span>
+          <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logos/capital-studio-icon.svg" alt="Capital Studio" className="w-full h-full" />
           </div>
           <div className="leading-none">
             <p className="text-white font-semibold text-sm">Capital Studio</p>

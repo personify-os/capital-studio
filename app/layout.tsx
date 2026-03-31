@@ -12,6 +12,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Capital Studio',
   description: 'AI-powered content creation for LH Capital & The SIMRP',
+  icons: { icon: '/logos/capital-studio-icon.svg' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

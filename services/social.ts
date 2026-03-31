@@ -108,23 +108,29 @@ export async function publishToThreads(
 // ─── LinkedIn posting ──────────────────────────────────────────────────────────
 
 export async function getLinkedInProfile(token: string): Promise<{ id: string; name: string }> {
-  // Try to decode person ID from JWT sub claim (avoids needing openid/profile scopes)
-  try {
-    const parts   = token.split('.')
-    if (parts.length === 3) {
-      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString())
-      const id      = payload.sub ?? payload.id
-      if (id) return { id: String(id), name: 'LinkedIn Account' }
-    }
-  } catch { /* fall through to API call */ }
+  // Use token introspection with client credentials to get person sub/ID
+  const clientId     = process.env.LINKEDIN_CLIENT_ID
+  const clientSecret = process.env.LINKEDIN_CLIENT_SECRET
 
-  // Fallback: try userinfo endpoint (requires openid + profile scopes)
+  if (clientId && clientSecret) {
+    const introspectRes = await fetch('https://www.linkedin.com/oauth/v2/introspectToken', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    new URLSearchParams({ client_id: clientId, client_secret: clientSecret, token }).toString(),
+    })
+    const data = await introspectRes.json()
+    if (introspectRes.ok && data.sub) {
+      return { id: String(data.sub), name: 'LinkedIn Account' }
+    }
+  }
+
+  // Fallback: try userinfo endpoint
   const res  = await fetch('https://api.linkedin.com/v2/userinfo', {
     headers: { Authorization: `Bearer ${token}` },
   })
   const json = await res.json()
-  if (!res.ok) throw new Error(json.message ?? 'Failed to fetch LinkedIn profile — ensure your token has openid and profile scopes')
-  return { id: json.sub as string, name: (json.name ?? json.email ?? 'LinkedIn') as string }
+  if (!res.ok) throw new Error(json.message ?? 'Failed to fetch LinkedIn profile')
+  return { id: json.sub as string, name: (json.name ?? 'LinkedIn') as string }
 }
 
 export async function publishToLinkedIn(

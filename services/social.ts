@@ -108,28 +108,35 @@ export async function publishToThreads(
 // ─── LinkedIn posting ──────────────────────────────────────────────────────────
 
 export async function getLinkedInProfile(token: string): Promise<{ id: string; name: string }> {
-  // Use token introspection with client credentials to get person sub/ID
+  const headers = { Authorization: `Bearer ${token}`, 'X-Restli-Protocol-Version': '2.0.0' }
+
+  // Try /v2/me first (works with w_member_social in some cases)
+  const meRes  = await fetch('https://api.linkedin.com/v2/me', { headers })
+  if (meRes.ok) {
+    const me = await meRes.json()
+    if (me.id) {
+      const name = [me.localizedFirstName, me.localizedLastName].filter(Boolean).join(' ') || 'LinkedIn Account'
+      return { id: String(me.id), name }
+    }
+  }
+
+  // Fallback: token introspection via client credentials
   const clientId     = process.env.LINKEDIN_CLIENT_ID
   const clientSecret = process.env.LINKEDIN_CLIENT_SECRET
-
   if (clientId && clientSecret) {
-    const introspectRes = await fetch('https://www.linkedin.com/oauth/v2/introspectToken', {
+    const res  = await fetch('https://www.linkedin.com/oauth/v2/introspectToken', {
       method:  'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body:    new URLSearchParams({ client_id: clientId, client_secret: clientSecret, token }).toString(),
     })
-    const data = await introspectRes.json()
-    if (introspectRes.ok && data.sub) {
-      return { id: String(data.sub), name: 'LinkedIn Account' }
-    }
+    const data = await res.json()
+    if (res.ok && data.sub) return { id: String(data.sub), name: 'LinkedIn Account' }
   }
 
-  // Fallback: try userinfo endpoint
-  const res  = await fetch('https://api.linkedin.com/v2/userinfo', {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  // Last resort: userinfo (requires openid + profile scopes)
+  const res  = await fetch('https://api.linkedin.com/v2/userinfo', { headers: { Authorization: `Bearer ${token}` } })
   const json = await res.json()
-  if (!res.ok) throw new Error(json.message ?? 'Failed to fetch LinkedIn profile')
+  if (!res.ok) throw new Error('Could not verify LinkedIn token — please ensure w_member_social scope is selected')
   return { id: json.sub as string, name: (json.name ?? 'LinkedIn') as string }
 }
 

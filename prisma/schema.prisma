@@ -33,6 +33,7 @@ enum AssetType {
   AUDIO
   VOICEOVER
   DOCUMENT
+  CAPTION
 }
 
 enum AssetStatus {

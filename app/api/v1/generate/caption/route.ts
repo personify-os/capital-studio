@@ -7,6 +7,8 @@ import { buildIntentContext } from '@/lib/content-intent'
 import type { ContentIntent } from '@/lib/content-intent'
 import Anthropic from '@anthropic-ai/sdk'
 import type { BrandId } from '@/lib/brands'
+import { prisma } from '@/lib/db'
+import { estimateCost } from '@/lib/cost'
 
 const PLATFORM_GUIDANCE: Record<string, string> = {
   instagram:  'Instagram: engaging, visual-first, 150–220 chars + 5–10 hashtags',
@@ -120,6 +122,35 @@ export async function POST(req: Request) {
   })
 
   const text = message.content.find((b) => b.type === 'text')?.text?.trim() ?? ''
+
+  // Persist CAPTION asset for analytics tracking
+  try {
+    await prisma.asset.create({
+      data: {
+        tenantId: session.user.tenantId,
+        userId:   session.user.id,
+        brandId:  brandId ?? null,
+        type:     'CAPTION',
+        status:   'READY',
+        metadata: {
+          model:       'claude-haiku-4-5-20251001',
+          platform,
+          seriesCount: count,
+          cost:        estimateCost('claude-haiku-4-5-20251001'),
+          intent: {
+            tier1Id:      intentTier1Id      ?? null,
+            tier2Id:      intentTier2Id      ?? null,
+            purposeId:    intentPurposeId    ?? null,
+            ctaId:        intentCtaId        ?? null,
+            hasCustomCta: !!(intentCustomCta),
+          },
+        },
+      },
+    })
+  } catch (err) {
+    console.error('[caption] asset save failed:', err)
+    // Non-fatal — generation already succeeded
+  }
 
   if (isMultiple) {
     const captions = text

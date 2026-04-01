@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ImageIcon, Film, Mic, Layers, BarChart3 } from 'lucide-react'
+import { ImageIcon, Film, Mic, Layers, BarChart3, FileText } from 'lucide-react'
+import { TOPIC_TIERS, PURPOSES } from '@/lib/content-intent'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,7 @@ const MODULE_CONFIG: { type: string; label: string; Icon: React.ElementType }[] 
   { type: 'VIDEO',     label: 'Videos',     Icon: Film },
   { type: 'VOICEOVER', label: 'Voiceover',  Icon: Mic },
   { type: 'GRAPHIC',   label: 'Graphics',   Icon: Layers },
+  { type: 'CAPTION',   label: 'Captions',   Icon: FileText },
 ]
 
 function cutoffDate(days: number): Date {
@@ -112,6 +114,43 @@ export default function AnalyticsClient({ assets }: Props) {
       if (typeof cost === 'number') { sum += cost; hasCost = true }
     }
     return hasCost ? sum : null
+  }, [filtered])
+
+  // Intent insights — sourced from CAPTION assets only
+  const intentInsights = useMemo(() => {
+    const captions = filtered.filter((a) => a.type === 'CAPTION')
+    if (captions.length === 0) return null
+
+    const tier1Map: Record<string, number> = {}
+    const purposeMap: Record<string, number> = {}
+    let ctaCount = 0
+
+    for (const a of captions) {
+      const intent = (a.metadata as any)?.intent
+      if (!intent) continue
+      if (intent.tier1Id) tier1Map[intent.tier1Id] = (tier1Map[intent.tier1Id] ?? 0) + 1
+      if (intent.purposeId) purposeMap[intent.purposeId] = (purposeMap[intent.purposeId] ?? 0) + 1
+      if (intent.ctaId || intent.hasCustomCta) ctaCount++
+    }
+
+    const topTopics = Object.entries(tier1Map)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([id, count]) => {
+        const cat = TOPIC_TIERS.find((t) => t.id === id)
+        return { id, label: cat ? `${cat.icon} ${cat.label}` : id, count }
+      })
+
+    const topPurposes = Object.entries(purposeMap)
+      .sort((a, b) => b[1] - a[1])
+      .map(([id, count]) => {
+        const p = PURPOSES.find((p) => p.id === id)
+        return { id, label: p?.label ?? id, count }
+      })
+
+    const ctaPct = captions.length > 0 ? Math.round((ctaCount / captions.length) * 100) : 0
+
+    return { total: captions.length, topTopics, topPurposes, ctaCount, ctaPct }
   }, [filtered])
 
   return (
@@ -249,12 +288,98 @@ export default function AnalyticsClient({ assets }: Props) {
 
       {/* Estimated Cost */}
       {totalCost !== null && (
-        <div className="bg-white rounded-card shadow-card p-5">
+        <div className="bg-white rounded-card shadow-card p-5 mb-8">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Estimated Cost</p>
           <p className="text-3xl font-bold text-brand-navy">
             ${totalCost.toFixed(4)}
           </p>
           <p className="text-xs text-gray-400 mt-1">Based on cost data stored in asset metadata for this period.</p>
+        </div>
+      )}
+
+      {/* Intent Insights */}
+      {intentInsights && (
+        <div className="bg-white rounded-card shadow-card p-5">
+          <div className="flex items-center gap-2 mb-5">
+            <FileText size={14} className="text-brand-azure" />
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
+              Caption Intent Insights
+            </p>
+            <span className="text-[10px] bg-brand-azure/10 text-brand-azure font-semibold px-2 py-0.5 rounded-badge">
+              {intentInsights.total} captions
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Top Topics */}
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Top Topics</p>
+              {intentInsights.topTopics.length === 0 ? (
+                <p className="text-sm text-gray-400">No topic data yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {intentInsights.topTopics.map(({ id, label, count }) => {
+                    const pct = intentInsights.total > 0 ? Math.round((count / intentInsights.total) * 100) : 0
+                    return (
+                      <div key={id}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-gray-700 font-medium truncate flex-1">{label}</span>
+                          <span className="text-xs font-semibold text-brand-navy ml-2">{count}</span>
+                          <span className="text-[10px] text-gray-400 w-8 text-right">{pct}%</span>
+                        </div>
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-brand-azure rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Top Purposes */}
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Top Purposes</p>
+              {intentInsights.topPurposes.length === 0 ? (
+                <p className="text-sm text-gray-400">No purpose data yet.</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {intentInsights.topPurposes.map(({ id, label, count }) => (
+                    <div
+                      key={id}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-navy/5 border border-brand-navy/10"
+                    >
+                      <span className="text-xs font-medium text-brand-navy">{label}</span>
+                      <span className="text-[10px] text-brand-navy/60 font-semibold">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* CTA Usage */}
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">CTA Usage</p>
+              <div className="flex flex-col items-start gap-2">
+                <p className="text-3xl font-bold text-brand-orange">{intentInsights.ctaPct}%</p>
+                <p className="text-xs text-gray-500">
+                  of captions included a call to action
+                </p>
+                <p className="text-[10px] text-gray-400">
+                  {intentInsights.ctaCount} of {intentInsights.total} generated
+                </p>
+                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mt-1">
+                  <div
+                    className="h-full bg-brand-orange rounded-full transition-all duration-500"
+                    style={{ width: `${intentInsights.ctaPct}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

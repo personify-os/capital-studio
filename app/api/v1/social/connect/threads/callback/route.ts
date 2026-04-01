@@ -56,10 +56,11 @@ export async function GET(req: Request) {
 
   // Step 4: upsert SocialAccount (token encrypted at rest)
   const encryptedToken = encryptToken(longToken)
+  const tokenExpiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) // long-lived token: 60 days
   await prisma.socialAccount.upsert({
     where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'THREADS', accountId: userId } },
-    create: { tenantId: session.user.tenantId, platform: 'THREADS', accountName: username, accountId: userId, accessToken: encryptedToken },
-    update: { accountName: username, accessToken: encryptedToken },
+    create: { tenantId: session.user.tenantId, platform: 'THREADS', accountName: username, accountId: userId, accessToken: encryptedToken, expiresAt: tokenExpiresAt },
+    update: { accountName: username, accessToken: encryptedToken, expiresAt: tokenExpiresAt },
   })
 
   return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/scheduler?connected=threads`)

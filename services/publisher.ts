@@ -1,7 +1,7 @@
 // Shared post-publishing logic used by both the per-post route and the cron scheduler.
 
 import { prisma } from '@/lib/db'
-import { decryptToken } from '@/lib/crypto'
+import { decryptToken, encryptToken } from '@/lib/crypto'
 import {
   publishToFacebook,
   publishToInstagram,
@@ -13,6 +13,8 @@ import {
   publishToBluesky,
   publishToYouTube,
   publishToTikTok,
+  refreshTikTokToken,
+  refreshYouTubeToken,
 } from '@/services/social'
 
 export async function publishPost(postId: string, tenantId?: string): Promise<{ platformPostId: string }> {
@@ -29,6 +31,13 @@ export async function publishPost(postId: string, tenantId?: string): Promise<{ 
   if (post.status === 'PUBLISHED') throw new Error('Already published')
 
   const { socialAccount } = post
+
+  // For platforms that can't auto-refresh, reject if token is expired
+  const NON_REFRESHABLE: string[] = ['FACEBOOK', 'INSTAGRAM', 'LINKEDIN', 'THREADS']
+  if (NON_REFRESHABLE.includes(socialAccount.platform) && socialAccount.expiresAt && socialAccount.expiresAt < new Date()) {
+    throw new Error(`${socialAccount.platform} token expired — please reconnect this account in the Scheduler`)
+  }
+
   const token    = decryptToken(socialAccount.accessToken)
   const caption  = post.caption ?? ''
   const imageUrl = post.imageUrl ?? undefined
@@ -63,12 +72,31 @@ export async function publishPost(postId: string, tenantId?: string): Promise<{ 
       case 'BLUESKY':
         platformPostId = await publishToBluesky(socialAccount.accountId, token, caption)
         break
-      case 'YOUTUBE':
-        platformPostId = await publishToYouTube(socialAccount.accountId, token, caption, imageUrl)
+      case 'YOUTUBE': {
+        const [, ytRefresh] = token.split('|||')
+        const freshAccessToken = await refreshYouTubeToken(ytRefresh)
+        // Persist refreshed access token (Google refresh tokens don't expire, same token reused)
+        await prisma.socialAccount.update({
+          where: { id: socialAccount.id },
+          data:  { accessToken: encryptToken(`${freshAccessToken}|||${ytRefresh}`) },
+        })
+        platformPostId = await publishToYouTube(socialAccount.accountId, freshAccessToken, caption, imageUrl)
         break
-      case 'TIKTOK':
-        platformPostId = await publishToTikTok(socialAccount.accountId, token, caption, imageUrl)
+      }
+      case 'TIKTOK': {
+        const [, storedRefresh] = token.split('|||')
+        const refreshed = await refreshTikTokToken(storedRefresh)
+        // Persist the new tokens so the refresh token lifetime is tracked
+        await prisma.socialAccount.update({
+          where: { id: socialAccount.id },
+          data: {
+            accessToken: encryptToken(`${refreshed.accessToken}|||${refreshed.refreshToken}`),
+            expiresAt:   new Date(Date.now() + refreshed.refreshExpiresIn * 1000),
+          },
+        })
+        platformPostId = await publishToTikTok(socialAccount.accountId, refreshed.accessToken, caption, imageUrl)
         break
+      }
       default:
         throw new Error(`Publishing to ${socialAccount.platform} not yet supported`)
     }

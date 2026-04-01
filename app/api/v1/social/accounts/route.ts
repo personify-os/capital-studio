@@ -10,7 +10,7 @@ export async function GET() {
   const accounts = await prisma.socialAccount.findMany({
     where:   { tenantId: session.user.tenantId },
     orderBy: { createdAt: 'asc' },
-    select:  { id: true, platform: true, accountName: true, accountId: true, createdAt: true },
+    select:  { id: true, platform: true, accountName: true, accountId: true, createdAt: true, expiresAt: true },
   })
 
   return NextResponse.json({ accounts })

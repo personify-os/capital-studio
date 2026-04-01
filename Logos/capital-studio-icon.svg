@@ -1,0 +1,21 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" rx="200" fill="#0B2147"/>
+
+  <defs>
+    <linearGradient id="csGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#0475ae"/>
+      <stop offset="52%"  stop-color="#0475ae"/>
+      <stop offset="100%" stop-color="#ed6835"/>
+    </linearGradient>
+  </defs>
+
+  <text x="512" y="512"
+        font-family="'Montserrat', 'Segoe UI', system-ui, sans-serif"
+        font-size="520" font-weight="800"
+        fill="url(#csGrad)"
+        text-anchor="middle" dominant-baseline="middle"
+        letter-spacing="-60">CS</text>
+
+  <!-- Orange underline accent under S -->
+  <rect x="400" y="742" width="296" height="18" rx="9" fill="#ed6835"/>
+</svg>

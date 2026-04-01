@@ -1,0 +1,38 @@
+<svg viewBox="0 0 390 140" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#0475ae"/>
+      <stop offset="52%"  stop-color="#0475ae"/>
+      <stop offset="100%" stop-color="#ed6835"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon background -->
+  <rect x="0" y="0" width="140" height="140" rx="28" fill="#0B2147"/>
+
+  <!-- CS mark -->
+  <text x="70" y="70"
+        font-family="'Montserrat', 'Segoe UI', system-ui, sans-serif"
+        font-size="72" font-weight="800"
+        fill="url(#iconGrad)"
+        text-anchor="middle" dominant-baseline="middle"
+        letter-spacing="-8">CS</text>
+
+  <!-- Underline accent -->
+  <rect x="55" y="103" width="42" height="3" rx="1.5" fill="#ed6835"/>
+
+  <!-- Wordmark -->
+  <text x="164" y="70"
+        font-family="'Montserrat', 'Segoe UI', system-ui, sans-serif"
+        font-size="42" font-weight="700"
+        fill="#0B2147"
+        dominant-baseline="middle"
+        letter-spacing="-0.5">Capital</text>
+
+  <text x="164" y="112"
+        font-family="'Montserrat', 'Segoe UI', system-ui, sans-serif"
+        font-size="28" font-weight="500"
+        fill="#0475ae"
+        dominant-baseline="middle"
+        letter-spacing="5">STUDIO</text>
+</svg>

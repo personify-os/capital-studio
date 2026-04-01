@@ -43,7 +43,7 @@ export const authOptions: NextAuthOptions = {
             break
           } catch (e) {
             if (attempt === 2) { console.error('[auth] DB error after retry:', e); return null }
-            await new Promise((r) => setTimeout(r, 1500))
+            await new Promise((r) => setTimeout(r, 2500))
           }
         }
         if (!user || !user.password) return null

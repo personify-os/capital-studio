@@ -23,10 +23,11 @@ export async function POST(req: Request) {
   const userId   = String(me.id)
   const username = me.username ? `@${me.username}` : `Threads (${userId})`
 
+  const tokenExpiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) // 60 days
   await prisma.socialAccount.upsert({
     where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'THREADS', accountId: userId } },
-    create: { tenantId: session.user.tenantId, platform: 'THREADS', accountName: username, accountId: userId, accessToken: encryptToken(token.trim()) },
-    update: { accountName: username, accessToken: encryptToken(token.trim()) },
+    create: { tenantId: session.user.tenantId, platform: 'THREADS', accountName: username, accountId: userId, accessToken: encryptToken(token.trim()), expiresAt: tokenExpiresAt },
+    update: { accountName: username, accessToken: encryptToken(token.trim()), expiresAt: tokenExpiresAt },
   })
 
   return NextResponse.json({ connected: username })

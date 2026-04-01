@@ -11,8 +11,9 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     const result = await publishPost(params.id, session.user.tenantId)
     return NextResponse.json({ ok: true, ...result })
   } catch (err: any) {
-    const status = err.message === 'Post not found' ? 404
-      : err.message === 'Already published'         ? 400
+    const status = err.message === 'Post not found'              ? 404
+      : err.message === 'Already published'                      ? 400
+      : err.message?.includes('token expired')                   ? 422
       : 502
     return NextResponse.json({ message: err.message ?? 'Publish failed' }, { status })
   }

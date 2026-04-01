@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, ShieldCheck, TrendingUp, Users, BarChart3 } from 'lucide-react'
@@ -19,6 +19,9 @@ export default function LoginForm() {
   const [showPw,   setShowPw]   = useState(false)
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState<string | null>(null)
+
+  // Wake Neon DB as soon as the login page loads so it's warm by sign-in time
+  useEffect(() => { fetch('/api/v1/health').catch(() => {}) }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

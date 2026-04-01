@@ -23,10 +23,11 @@ export async function POST(req: Request) {
   // Strip urn:li:person: prefix if user pasted the full URN
   const id = personId.replace('urn:li:person:', '').trim()
 
+  const tokenExpiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) // 60 days
   await prisma.socialAccount.upsert({
     where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'LINKEDIN', accountId: id } },
-    create: { tenantId: session.user.tenantId, platform: 'LINKEDIN', accountName: 'LinkedIn Account', accountId: id, accessToken: encryptToken(accessToken) },
-    update: { accountName: 'LinkedIn Account', accessToken: encryptToken(accessToken) },
+    create: { tenantId: session.user.tenantId, platform: 'LINKEDIN', accountName: 'LinkedIn Account', accountId: id, accessToken: encryptToken(accessToken), expiresAt: tokenExpiresAt },
+    update: { accountName: 'LinkedIn Account', accessToken: encryptToken(accessToken), expiresAt: tokenExpiresAt },
   })
 
   return NextResponse.json({ connected: 'LinkedIn Account' })

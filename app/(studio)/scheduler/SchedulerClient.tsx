@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import {
   Calendar, Plus, Trash2, Send, CheckCircle2, XCircle, Clock,
   Facebook, Instagram, AlertCircle, X, Link as LinkIcon, Eye,
-  ChevronLeft, ChevronRight, LayoutList, CalendarDays,
+  ChevronLeft, ChevronRight, LayoutList, CalendarDays, PenSquare,
 } from 'lucide-react'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import Button from '@/components/ui/Button'
@@ -15,7 +15,7 @@ import Textarea from '@/components/ui/Textarea'
 type Platform   = 'FACEBOOK' | 'INSTAGRAM' | 'X' | 'LINKEDIN' | 'YOUTUBE' | 'TIKTOK' | 'THREADS' | 'SUBSTACK' | 'MEDIUM' | 'BLUESKY'
 type PostStatus = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'FAILED'
 
-interface SocialAccount { id: string; platform: Platform; accountName: string; accountId: string; createdAt: string }
+interface SocialAccount { id: string; platform: Platform; accountName: string; accountId: string; createdAt: string; expiresAt: string | null }
 interface ScheduledPost {
   id: string; caption: string | null; imageUrl: string | null; assetId: string | null
   scheduledFor: string; status: PostStatus; publishedAt: string | null
@@ -80,6 +80,25 @@ const STATUS_CONFIG: Record<PostStatus, { label: string; icon: React.ElementType
   SCHEDULED: { label: 'Scheduled', icon: Clock,         color: 'text-brand-azure bg-brand-azure/5 border-brand-azure/20' },
   PUBLISHED: { label: 'Published', icon: CheckCircle2,  color: 'text-green-600 bg-green-50 border-green-200' },
   FAILED:    { label: 'Failed',    icon: XCircle,       color: 'text-red-600 bg-red-50 border-red-200' },
+}
+
+// ─── Token expiry helpers ─────────────────────────────────────────────────────
+
+function tokenStatus(expiresAt: string | null): 'ok' | 'soon' | 'expired' {
+  if (!expiresAt) return 'ok'
+  const ms  = new Date(expiresAt).getTime() - Date.now()
+  if (ms <= 0)                       return 'expired'
+  if (ms <= 7 * 24 * 60 * 60 * 1000) return 'soon'
+  return 'ok'
+}
+
+function reconnectPlatform(platform: Platform): 'facebook' | 'threads' | 'linkedin' | 'oauth-tiktok' | 'oauth-youtube' | null {
+  if (platform === 'FACEBOOK' || platform === 'INSTAGRAM') return 'facebook'
+  if (platform === 'THREADS')  return 'threads'
+  if (platform === 'LINKEDIN') return 'linkedin'
+  if (platform === 'TIKTOK')   return 'oauth-tiktok'
+  if (platform === 'YOUTUBE')  return 'oauth-youtube'
+  return null
 }
 
 // ─── Connect Threads Modal ─────────────────────────────────────────────────────
@@ -1075,27 +1094,70 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
                 <Plus size={13} /> Connect a platform
               </button>
             ) : (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
                 {accounts.filter((a) => a.platform !== 'INSTAGRAM').map((a) => {
                   const Icon          = PLATFORM_ICON[a.platform]
                   const sel           = selectedAccts.includes(a.id)
                   const platformLabel = PLATFORM_META.find((p) => p.platform === a.platform)?.label ?? a.platform
+                  const expiry        = tokenStatus(a.expiresAt)
+                  const reconnectTo   = reconnectPlatform(a.platform)
+
+                  if (expiry === 'expired' && reconnectTo) {
+                    return (
+                      <div key={a.id} className="group relative">
+                        <div className="w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-red-200 bg-red-50">
+                          <Icon size={12} className="flex-shrink-0 text-red-400" />
+                          <div className="text-left min-w-0 flex-1">
+                            <div className="text-[11px] font-semibold leading-none text-red-600 truncate">{a.accountName}</div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (reconnectTo === 'oauth-tiktok')      { window.location.href = '/api/v1/social/connect/tiktok'   }
+                                else if (reconnectTo === 'oauth-youtube') { window.location.href = '/api/v1/social/connect/youtube'  }
+                                else if (reconnectTo)                     { setConnectModal(reconnectTo) }
+                              }}
+                              className="text-[9px] font-semibold text-red-500 hover:text-red-700 underline leading-none mt-0.5 block"
+                            >
+                              Reconnect
+                            </button>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          title="Disconnect"
+                          onClick={async () => {
+                            await fetch(`/api/v1/social/accounts/${a.id}`, { method: 'DELETE' })
+                            setAccounts((prev) => prev.filter((x) => x.id !== a.id))
+                            setSelectedAccts((prev) => prev.filter((x) => x !== a.id))
+                          }}
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-400"
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    )
+                  }
+
                   return (
                     <div key={a.id} className="group relative">
                       <button
                         type="button"
                         onClick={() => toggleAccount(a.id)}
                         className={cn(
-                          'flex items-center gap-1.5 pl-2.5 pr-6 py-1.5 rounded-full border transition-all',
+                          'w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all',
                           sel
                             ? 'border-brand-azure bg-brand-azure/10'
-                            : 'border-gray-200 bg-white hover:border-brand-light',
+                            : expiry === 'soon'
+                              ? 'border-amber-300 bg-amber-50 hover:border-amber-400'
+                              : 'border-gray-200 bg-white hover:border-brand-light',
                         )}
                       >
                         <Icon size={12} className={cn('flex-shrink-0', sel ? 'text-brand-azure' : PLATFORM_COLOR[a.platform])} />
-                        <div className="text-left">
-                          <div className={cn('text-[11px] font-semibold leading-none', sel ? 'text-brand-azure' : 'text-gray-800')}>{a.accountName}</div>
-                          <div className="text-[9px] text-gray-400 leading-none mt-0.5">{platformLabel}</div>
+                        <div className="text-left min-w-0 flex-1">
+                          <div className={cn('text-[11px] font-semibold leading-none truncate', sel ? 'text-brand-azure' : 'text-gray-800')}>{a.accountName}</div>
+                          <div className={cn('text-[9px] leading-none mt-0.5', expiry === 'soon' ? 'text-amber-500' : 'text-gray-400')}>
+                            {expiry === 'soon' ? 'Expiring soon' : platformLabel}
+                          </div>
                         </div>
                         {sel && <CheckCircle2 size={10} className="text-brand-azure ml-0.5 flex-shrink-0" />}
                       </button>
@@ -1118,11 +1180,19 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
             )}
           </div>
 
-          {/* Caption */}
+          {/* Post Copy */}
           <div className="bg-gray-50 rounded-card p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Post Copy</p>
+              <a
+                href="/writer"
+                className="flex items-center gap-1 text-[10px] text-brand-azure hover:text-brand-navy font-semibold transition-colors"
+              >
+                <PenSquare size={10} /> Content Writer
+              </a>
+            </div>
             <Textarea
-              label="Caption"
-              placeholder="Write your post caption..."
+              placeholder="Paste copy from the Content Writer, or type directly..."
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
               rows={5}
@@ -1132,8 +1202,8 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
             {hasFacebook && (
               <div className="border-t border-gray-200 pt-3">
                 <Textarea
-                  label="Instagram caption (optional — leave blank to auto-truncate)"
-                  placeholder="Write a shorter Instagram-specific caption (max 2,200 chars)..."
+                  label="Instagram copy (optional — leave blank to auto-trim)"
+                  placeholder="Shorter Instagram version (max 2,200 chars)..."
                   value={igCaption}
                   onChange={(e) => setIgCaption(e.target.value)}
                   rows={3}
@@ -1278,15 +1348,6 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
               </button>
             </div>
 
-            {/* Connected accounts summary */}
-            {accounts.map((a) => {
-              const Icon = PLATFORM_ICON[a.platform]
-              return (
-                <div key={a.id} className={cn('flex items-center gap-1 text-[11px] font-medium', PLATFORM_COLOR[a.platform])}>
-                  <Icon size={12} /> <span className="text-gray-500">{a.accountName}</span>
-                </div>
-              )
-            })}
           </div>
         </div>
 

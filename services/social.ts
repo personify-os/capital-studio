@@ -457,15 +457,12 @@ export async function refreshYouTubeToken(refreshToken: string): Promise<string>
 }
 
 export async function publishToYouTube(
-  _channelId: string,
-  token:      string,   // "access_token|||refresh_token"
-  caption:    string,
-  videoUrl?:  string,
+  _channelId:  string,
+  accessToken: string,  // plain access token (caller must refresh and persist before calling)
+  caption:     string,
+  videoUrl?:   string,
 ): Promise<string> {
   if (!videoUrl) throw new Error('YouTube requires a video URL')
-
-  const [, refreshToken] = token.split('|||')
-  const accessToken      = await refreshYouTubeToken(refreshToken)
 
   const lines       = caption.trim().split('\n')
   const title       = lines[0].slice(0, 100) || 'New Video'
@@ -525,7 +522,7 @@ export async function getTikTokProfile(accessToken: string): Promise<{ id: strin
   return { id: json.data.user.open_id as string, name: (json.data.user.display_name ?? 'TikTok') as string }
 }
 
-export async function refreshTikTokToken(refreshToken: string): Promise<string> {
+export async function refreshTikTokToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string; refreshExpiresIn: number }> {
   const res  = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
     method:  'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -538,19 +535,20 @@ export async function refreshTikTokToken(refreshToken: string): Promise<string> 
   })
   const json = await res.json()
   if (!res.ok || json.error) throw new Error(json.error_description ?? 'TikTok token refresh failed')
-  return json.access_token as string
+  return {
+    accessToken:      json.access_token as string,
+    refreshToken:     (json.refresh_token ?? refreshToken) as string,
+    refreshExpiresIn: (json.refresh_expires_in ?? 365 * 24 * 60 * 60) as number,
+  }
 }
 
 export async function publishToTikTok(
-  _userId:  string,
-  token:    string,   // "access_token|||refresh_token"
-  caption:  string,
-  videoUrl?: string,
+  _userId:     string,
+  accessToken: string,  // plain access token (caller must refresh and persist before calling)
+  caption:     string,
+  videoUrl?:   string,
 ): Promise<string> {
   if (!videoUrl) throw new Error('TikTok requires a video URL')
-
-  const [, refreshToken] = token.split('|||')
-  const accessToken      = await refreshTikTokToken(refreshToken)
 
   const res  = await fetch('https://open.tiktokapis.com/v2/post/publish/video/init/', {
     method:  'POST',

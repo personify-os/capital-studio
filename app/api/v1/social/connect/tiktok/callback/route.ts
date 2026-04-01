@@ -45,11 +45,13 @@ export async function GET(req: Request) {
   }
 
   const combined = `${tokens.access_token}|||${tokens.refresh_token}`
+  // Track refresh token expiry (365 days); access token auto-refreshed on each publish
+  const tokenExpiresAt = new Date(Date.now() + (tokens.refresh_expires_in ?? 365 * 24 * 60 * 60) * 1000)
 
   await prisma.socialAccount.upsert({
     where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'TIKTOK', accountId: profile.id } },
-    create: { tenantId: session.user.tenantId, platform: 'TIKTOK', accountName: profile.name, accountId: profile.id, accessToken: encryptToken(combined) },
-    update: { accountName: profile.name, accessToken: encryptToken(combined) },
+    create: { tenantId: session.user.tenantId, platform: 'TIKTOK', accountName: profile.name, accountId: profile.id, accessToken: encryptToken(combined), expiresAt: tokenExpiresAt },
+    update: { accountName: profile.name, accessToken: encryptToken(combined), expiresAt: tokenExpiresAt },
   })
 
   return NextResponse.redirect(new URL('/scheduler?connected=tiktok', process.env.NEXTAUTH_URL!))

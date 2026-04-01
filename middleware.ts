@@ -45,6 +45,15 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
+  // ── General API rate limit (all other /api/v1/ routes) ───────────────────
+  if (pathname.startsWith('/api/v1/')) {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+    const id    = token?.tenantId ?? clientIp(req)
+    const { allowed, resetAt } = checkRateLimit(`api:${id}`, LIMITS.API.limit, LIMITS.API.windowMs)
+    if (!allowed) return tooManyRequests(resetAt)
+    return NextResponse.next()
+  }
+
   // ── Protect all studio routes — redirect to login if unauthenticated ──────
   if (pathname.startsWith('/dashboard') ||
       pathname.startsWith('/images')    ||
@@ -68,7 +77,7 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     '/api/auth/:path*',
-    '/api/v1/generate/:path*',
+    '/api/v1/:path*',
     '/dashboard/:path*',
     '/images/:path*',
     '/videos/:path*',

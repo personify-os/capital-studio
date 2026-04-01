@@ -35,12 +35,16 @@ export const authOptions: NextAuthOptions = {
         const email = credentials.email.toLowerCase().trim()
 
         // ── Standard credentials ───────────────────────────────────────────
+        // Retry once — Neon cold-starts can cause the first query to fail
         let user
-        try {
-          user = await prisma.user.findUnique({ where: { email } })
-        } catch (e) {
-          console.error('[auth] DB error:', e)
-          return null
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            user = await prisma.user.findUnique({ where: { email } })
+            break
+          } catch (e) {
+            if (attempt === 2) { console.error('[auth] DB error after retry:', e); return null }
+            await new Promise((r) => setTimeout(r, 1500))
+          }
         }
         if (!user || !user.password) return null
 

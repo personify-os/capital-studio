@@ -936,6 +936,7 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
 
   // Composer state
   const [caption,       setCaption]       = useState('')
+  const [igCaption,     setIgCaption]     = useState('')
   const [imageUrl,      setImageUrl]      = useState('')
   const [selectedAccts, setSelectedAccts] = useState<string[]>([])
   const [scheduledFor,  setScheduledFor]  = useState(() => {
@@ -945,6 +946,8 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
   const [scheduling,    setScheduling]    = useState(false)
   const [scheduleError, setScheduleError] = useState('')
   const [pickerOpen,    setPickerOpen]    = useState(false)
+
+  const hasFacebook = selectedAccts.some((id) => accounts.find((a) => a.id === id)?.platform === 'FACEBOOK')
 
   // Handle OAuth callback redirects (YouTube, TikTok)
   useEffect(() => {
@@ -973,10 +976,11 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          socialAccountIds: selectedAccts,
-          caption:          caption.trim(),
-          imageUrl:         imageUrl.trim() || undefined,
-          scheduledFor:     publishNow ? new Date().toISOString() : new Date(scheduledFor).toISOString(),
+          socialAccountIds:  selectedAccts,
+          caption:           caption.trim(),
+          instagramCaption:  igCaption.trim() || undefined,
+          imageUrl:          imageUrl.trim() || undefined,
+          scheduledFor:      publishNow ? new Date().toISOString() : new Date(scheduledFor).toISOString(),
         }),
       })
       const json = await res.json()
@@ -995,11 +999,11 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
         }
       }
 
-      setCaption(''); setImageUrl(''); setSelectedAccts([])
+      setCaption(''); setIgCaption(''); setImageUrl(''); setSelectedAccts([])
     } finally {
       setScheduling(false)
     }
-  }, [caption, imageUrl, selectedAccts, scheduledFor])
+  }, [caption, igCaption, imageUrl, selectedAccts, scheduledFor])
 
   async function handleDelete(id: string) {
     await fetch(`/api/v1/social/posts/${id}`, { method: 'DELETE' })
@@ -1072,7 +1076,7 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
               </button>
             ) : (
               <div className="flex flex-wrap gap-1.5">
-                {accounts.map((a) => {
+                {accounts.filter((a) => a.platform !== 'INSTAGRAM').map((a) => {
                   const Icon          = PLATFORM_ICON[a.platform]
                   const sel           = selectedAccts.includes(a.id)
                   const platformLabel = PLATFORM_META.find((p) => p.platform === a.platform)?.label ?? a.platform
@@ -1115,16 +1119,29 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
           </div>
 
           {/* Caption */}
-          <div className="bg-gray-50 rounded-card p-4">
+          <div className="bg-gray-50 rounded-card p-4 space-y-3">
             <Textarea
               label="Caption"
               placeholder="Write your post caption..."
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
               rows={5}
-              maxLength={2200}
+              maxLength={5000}
               currentLength={caption.length}
             />
+            {hasFacebook && (
+              <div className="border-t border-gray-200 pt-3">
+                <Textarea
+                  label="Instagram caption (optional — leave blank to auto-truncate)"
+                  placeholder="Write a shorter Instagram-specific caption (max 2,200 chars)..."
+                  value={igCaption}
+                  onChange={(e) => setIgCaption(e.target.value)}
+                  rows={3}
+                  maxLength={2200}
+                  currentLength={igCaption.length}
+                />
+              </div>
+            )}
           </div>
 
           {/* Media URL */}

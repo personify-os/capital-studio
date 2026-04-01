@@ -5,11 +5,12 @@ import { prisma } from '@/lib/db'
 import { z } from 'zod'
 
 const createSchema = z.object({
-  socialAccountIds: z.array(z.string()).min(1),
-  caption:          z.string().min(1).max(2200),
-  imageUrl:         z.string().url().optional(),
-  assetId:          z.string().optional(),
-  scheduledFor:     z.string().datetime(),
+  socialAccountIds:  z.array(z.string()).min(1),
+  caption:           z.string().min(1).max(63206), // Facebook's actual limit
+  instagramCaption:  z.string().min(1).max(2200).optional(),
+  imageUrl:          z.string().url().optional(),
+  assetId:           z.string().optional(),
+  scheduledFor:      z.string().datetime(),
 })
 
 export async function GET() {
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
   const parsed = createSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ message: 'Invalid input' }, { status: 400 })
 
-  const { socialAccountIds, caption, imageUrl, assetId, scheduledFor } = parsed.data
+  const { socialAccountIds, caption, instagramCaption, imageUrl, assetId, scheduledFor } = parsed.data
 
   // Verify all accounts belong to this tenant
   const accounts = await prisma.socialAccount.findMany({
@@ -44,19 +45,54 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Invalid accounts' }, { status: 400 })
   }
 
-  // Create one ScheduledPost per account
+  // For each selected FACEBOOK account, auto-include its paired Instagram account
+  const facebookAccounts = accounts.filter((a) => a.platform === 'FACEBOOK')
+  const extraInstagramPosts: { accountId: string; igCaption: string }[] = []
+
+  if (facebookAccounts.length > 0) {
+    const igAccounts = await prisma.socialAccount.findMany({
+      where: { tenantId: session.user.tenantId, platform: 'INSTAGRAM' },
+    })
+
+    for (const fb of facebookAccounts) {
+      // Match by naming convention: "Page Name" → "Page Name (Instagram)"
+      const paired = igAccounts.find((ig) => ig.accountName === `${fb.accountName} (Instagram)`)
+      if (paired && !socialAccountIds.includes(paired.id)) {
+        extraInstagramPosts.push({
+          accountId: paired.id,
+          igCaption: instagramCaption ?? caption.slice(0, 2200),
+        })
+      }
+    }
+  }
+
+  const postDate = new Date(scheduledFor)
+
+  const allPostData = [
+    ...socialAccountIds.map((accountId) => ({
+      tenantId:        session.user.tenantId,
+      socialAccountId: accountId,
+      caption,
+      imageUrl:        imageUrl ?? null,
+      assetId:         assetId ?? null,
+      scheduledFor:    postDate,
+      status:          'SCHEDULED' as const,
+    })),
+    ...extraInstagramPosts.map(({ accountId, igCaption }) => ({
+      tenantId:        session.user.tenantId,
+      socialAccountId: accountId,
+      caption:         igCaption,
+      imageUrl:        imageUrl ?? null,
+      assetId:         assetId ?? null,
+      scheduledFor:    postDate,
+      status:          'SCHEDULED' as const,
+    })),
+  ]
+
   const posts = await prisma.$transaction(
-    socialAccountIds.map((accountId) =>
+    allPostData.map((data) =>
       prisma.scheduledPost.create({
-        data: {
-          tenantId:       session.user.tenantId,
-          socialAccountId: accountId,
-          caption,
-          imageUrl:        imageUrl ?? null,
-          assetId:         assetId ?? null,
-          scheduledFor:    new Date(scheduledFor),
-          status:          'SCHEDULED',
-        },
+        data,
         include: { socialAccount: { select: { id: true, platform: true, accountName: true } } },
       }),
     ),

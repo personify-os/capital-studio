@@ -3,7 +3,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { PenSquare, AlertCircle, Copy, Check, Sparkles, Link, FileText, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useGenerate } from '@/hooks/useGenerate'
 import BrandSelector from '@/components/shared/BrandSelector'
 import Button from '@/components/ui/Button'
 import Textarea from '@/components/ui/Textarea'
@@ -22,6 +21,8 @@ type SeriesCount = 3 | 5 | 10
 
 interface CaptionResponse { caption?: string; captions?: string[] }
 
+interface PlatformResult { platform: Platform; captions: string[] }
+
 const PLATFORMS: { value: Platform; label: string }[] = [
   { value: 'instagram', label: 'Instagram' },
   { value: 'linkedin',  label: 'LinkedIn' },
@@ -31,6 +32,8 @@ const PLATFORMS: { value: Platform; label: string }[] = [
   { value: 'tiktok',    label: 'TikTok' },
   { value: 'threads',   label: 'Threads' },
 ]
+
+const PLATFORM_LABEL = Object.fromEntries(PLATFORMS.map((p) => [p.value, p.label])) as Record<Platform, string>
 
 const TONES: { value: Tone; label: string }[] = [
   { value: 'professional',  label: 'Professional' },
@@ -75,12 +78,12 @@ export default function WriterClient() {
   const [referenceContent, setReferenceContent] = useState('')
   const [referenceUrl,     setReferenceUrl]     = useState('')
   const [fileName,         setFileName]         = useState('')
-  const [copied,           setCopied]           = useState<number | 'all' | null>(null)
+  const [copied,           setCopied]           = useState<string | number | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const { data, loading, error, generate } = useGenerate<object, CaptionResponse>({
-    endpoint: '/api/v1/generate/caption',
-  })
+  const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState<string | null>(null)
+  const [results, setResults] = useState<PlatformResult[]>([])
 
   // Clear post details when switching between structured and freeform modes
   const prevMode = useRef(getGenerationMode(intent.tier2Id))
@@ -114,11 +117,14 @@ export default function WriterClient() {
     if (fileRef.current) fileRef.current.value = ''
   }
 
-  const handleGenerate = useCallback(() => {
+  const handleGenerate = useCallback(async () => {
     if (platforms.length === 0) return
-    generate({
-      platform:           platforms[0],
-      platforms,
+    setLoading(true)
+    setError(null)
+    setResults([])
+
+    const makePayload = (platform: Platform) => ({
+      platform,
       tone,
       topic:              topic.trim() || undefined,
       brandId,
@@ -133,16 +139,38 @@ export default function WriterClient() {
       intentCustomCta:    intent.customCta    ?? undefined,
       intentCtaPlacement: intent.ctaPlacement ?? undefined,
     })
-  }, [topic, platforms, tone, brandId, includeHashtags, contentType, seriesCount, referenceContent, referenceUrl, intent, generate])
 
-  function copy(text: string, key: number | 'all') {
+    try {
+      const responses = await Promise.all(
+        platforms.map(async (p) => {
+          const res = await fetch('/api/v1/generate/caption', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(makePayload(p)),
+          })
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}))
+            throw new Error(body.message ?? 'Generation failed.')
+          }
+          const data: CaptionResponse = await res.json()
+          return { platform: p, captions: data.captions ?? (data.caption ? [data.caption] : []) }
+        })
+      )
+      setResults(responses)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Generation failed.')
+    } finally {
+      setLoading(false)
+    }
+  }, [topic, platforms, tone, brandId, includeHashtags, contentType, seriesCount, referenceContent, referenceUrl, intent])
+
+  function copy(text: string, key: string | number) {
     navigator.clipboard.writeText(text).then(() => {
       setCopied(key)
       setTimeout(() => setCopied(null), 2000)
     })
   }
 
-  const captions   = data?.captions ?? (data?.caption ? [data.caption] : [])
   const canGenerate = platforms.length > 0 && (topic.trim().length > 0 || !!intent.tier1Id)
 
   return (
@@ -363,44 +391,73 @@ export default function WriterClient() {
           </div>
         )}
 
-        {!loading && captions.length > 0 && (
-          <div className="space-y-4 max-w-2xl">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
-                {captions.length > 1 ? `${captions.length}-Part Series` : 'Caption'}
-              </p>
-              {captions.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => copy(captions.join('\n\n---\n\n'), 'all')}
-                  className="flex items-center gap-1.5 text-xs text-brand-azure hover:underline"
-                >
-                  {copied === 'all' ? <><Check size={11} /> Copied all</> : <><Copy size={11} /> Copy all</>}
-                </button>
-              )}
-            </div>
-
-            {captions.map((caption, i) => (
-              <div key={i} className="bg-white rounded-card shadow-card p-4 relative group">
-                {captions.length > 1 && (
-                  <p className="text-[10px] font-semibold text-brand-azure uppercase tracking-widest mb-2">
-                    Post {i + 1}
-                  </p>
-                )}
-                <p className="text-sm text-brand-navy whitespace-pre-wrap leading-relaxed">{caption}</p>
-                <button
-                  type="button"
-                  onClick={() => copy(caption, i)}
-                  className="absolute top-3 right-3 flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-brand-azure bg-gray-50 border border-gray-200 px-2 py-1 rounded transition-colors"
-                >
-                  {copied === i ? <><Check size={10} />Copied</> : <><Copy size={10} />Copy</>}
-                </button>
-              </div>
-            ))}
+        {!loading && results.length > 0 && (
+          <div className="space-y-8 max-w-2xl">
+            {results.map(({ platform, captions }) => {
+              const platformKey = platform
+              const isSeries = captions.length > 1
+              return (
+                <div key={platform}>
+                  {/* Platform header — only shown when multiple platforms */}
+                  {results.length > 1 && (
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
+                        {PLATFORM_LABEL[platform]}
+                      </p>
+                      {isSeries && (
+                        <button
+                          type="button"
+                          onClick={() => copy(captions.join('\n\n---\n\n'), `${platformKey}-all`)}
+                          className="flex items-center gap-1.5 text-xs text-brand-azure hover:underline"
+                        >
+                          {copied === `${platformKey}-all` ? <><Check size={11} />Copied all</> : <><Copy size={11} />Copy all</>}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {/* Single-platform series header */}
+                  {results.length === 1 && (
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
+                        {isSeries ? `${captions.length}-Part Series` : 'Caption'}
+                      </p>
+                      {isSeries && (
+                        <button
+                          type="button"
+                          onClick={() => copy(captions.join('\n\n---\n\n'), 'all')}
+                          className="flex items-center gap-1.5 text-xs text-brand-azure hover:underline"
+                        >
+                          {copied === 'all' ? <><Check size={11} />Copied all</> : <><Copy size={11} />Copy all</>}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <div className="space-y-4">
+                    {captions.map((caption, i) => (
+                      <div key={i} className="bg-white rounded-card shadow-card p-4 relative group">
+                        {isSeries && (
+                          <p className="text-[10px] font-semibold text-brand-azure uppercase tracking-widest mb-2">
+                            Post {i + 1}
+                          </p>
+                        )}
+                        <p className="text-sm text-brand-navy whitespace-pre-wrap leading-relaxed">{caption}</p>
+                        <button
+                          type="button"
+                          onClick={() => copy(caption, `${platformKey}-${i}`)}
+                          className="absolute top-3 right-3 flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-brand-azure bg-gray-50 border border-gray-200 px-2 py-1 rounded transition-colors"
+                        >
+                          {copied === `${platformKey}-${i}` ? <><Check size={10} />Copied</> : <><Copy size={10} />Copy</>}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
 
-        {!loading && captions.length === 0 && (
+        {!loading && results.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="w-16 h-16 rounded-full bg-brand-orange/10 flex items-center justify-center mb-4">
               <PenSquare size={26} className="text-brand-orange" />

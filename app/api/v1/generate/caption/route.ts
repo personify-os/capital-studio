@@ -123,7 +123,47 @@ export async function POST(req: Request) {
 
   const text = message.content.find((b) => b.type === 'text')?.text?.trim() ?? ''
 
-  // Persist CAPTION asset for analytics tracking
+  if (isMultiple) {
+    const captions = text
+      .split(/\n\d+\.\s+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+    const result = captions[0]?.match(/^\d+\./) ? captions.slice(1) : captions
+    const final  = result.slice(0, count)
+
+    // Persist CAPTION asset
+    try {
+      await prisma.asset.create({
+        data: {
+          tenantId: session.user.tenantId,
+          userId:   session.user.id,
+          brandId:  brandId ?? null,
+          type:     'CAPTION',
+          status:   'READY',
+          metadata: {
+            model:       'claude-haiku-4-5-20251001',
+            platform,
+            seriesCount: count,
+            cost:        estimateCost('claude-haiku-4-5-20251001'),
+            texts:       final,
+            intent: {
+              tier1Id:      intentTier1Id      ?? null,
+              tier2Id:      intentTier2Id      ?? null,
+              purposeId:    intentPurposeId    ?? null,
+              ctaId:        intentCtaId        ?? null,
+              hasCustomCta: !!(intentCustomCta),
+            },
+          },
+        },
+      })
+    } catch (err) {
+      console.error('[caption] asset save failed:', err)
+    }
+
+    return NextResponse.json({ captions: final })
+  }
+
+  // Persist single CAPTION asset
   try {
     await prisma.asset.create({
       data: {
@@ -135,8 +175,9 @@ export async function POST(req: Request) {
         metadata: {
           model:       'claude-haiku-4-5-20251001',
           platform,
-          seriesCount: count,
+          seriesCount: 1,
           cost:        estimateCost('claude-haiku-4-5-20251001'),
+          text,
           intent: {
             tier1Id:      intentTier1Id      ?? null,
             tier2Id:      intentTier2Id      ?? null,
@@ -149,16 +190,6 @@ export async function POST(req: Request) {
     })
   } catch (err) {
     console.error('[caption] asset save failed:', err)
-    // Non-fatal — generation already succeeded
-  }
-
-  if (isMultiple) {
-    const captions = text
-      .split(/\n\d+\.\s+/)
-      .map((s) => s.trim())
-      .filter(Boolean)
-    const result = captions[0]?.match(/^\d+\./) ? captions.slice(1) : captions
-    return NextResponse.json({ captions: result.slice(0, count) })
   }
 
   return NextResponse.json({ caption: text })

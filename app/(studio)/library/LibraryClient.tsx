@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { FolderOpen, Download, Copy, Check, Film, Mic, Play } from 'lucide-react'
+import { FolderOpen, Download, Copy, Check, Film, Mic, Play, FileText } from 'lucide-react'
 import { cn, formatRelativeTime } from '@/lib/utils'
 
-type FilterValue = 'ALL' | 'IMAGE' | 'GRAPHIC' | 'VIDEO' | 'VOICEOVER'
+type FilterValue = 'ALL' | 'IMAGE' | 'GRAPHIC' | 'VIDEO' | 'VOICEOVER' | 'CAPTION'
 
 interface Asset {
   id:          string
@@ -21,13 +21,17 @@ const FILTERS: { value: FilterValue; label: string }[] = [
   { value: 'GRAPHIC',   label: 'Graphics' },
   { value: 'VIDEO',     label: 'Videos' },
   { value: 'VOICEOVER', label: 'Audio' },
+  { value: 'CAPTION',   label: 'Captions' },
 ]
 
 export default function LibraryClient({ assets }: { assets: Asset[] }) {
   const [filter, setFilter] = useState<FilterValue>('ALL')
   const [copied, setCopied] = useState<string | null>(null)
 
-  const filtered = filter === 'ALL' ? assets : assets.filter((a) => a.type === filter)
+  // Hide captions from "All" view since they don't fit the grid — they have their own tab
+  const filtered = filter === 'ALL'
+    ? assets.filter((a) => a.type !== 'CAPTION')
+    : assets.filter((a) => a.type === filter)
 
   function copyUrl(id: string, url: string) {
     navigator.clipboard.writeText(url).then(() => {
@@ -36,10 +40,18 @@ export default function LibraryClient({ assets }: { assets: Asset[] }) {
     })
   }
 
-  const isAudioFilter = filter === 'VOICEOVER'
-  const hasVideo      = filtered.some((a) => a.type === 'VIDEO')
-  const hasAudio      = filtered.some((a) => a.type === 'VOICEOVER')
-  const mixedMedia    = filter === 'ALL' && (hasVideo || hasAudio)
+  function copyText(id: string, text: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(id)
+      setTimeout(() => setCopied(null), 2000)
+    })
+  }
+
+  const isAudioFilter   = filter === 'VOICEOVER'
+  const isCaptionFilter = filter === 'CAPTION'
+  const hasVideo        = filtered.some((a) => a.type === 'VIDEO')
+  const hasAudio        = filtered.some((a) => a.type === 'VOICEOVER')
+  const mixedMedia      = filter === 'ALL' && (hasVideo || hasAudio)
 
   return (
     <div className="p-6">
@@ -71,6 +83,13 @@ export default function LibraryClient({ assets }: { assets: Asset[] }) {
           <p className="font-semibold text-brand-navy mb-1">No assets yet</p>
           <p className="text-sm text-gray-400">Generated content will appear here</p>
         </div>
+      ) : isCaptionFilter ? (
+        /* ── Captions list layout ── */
+        <div className="space-y-3 max-w-2xl">
+          {filtered.map((asset) => (
+            <CaptionRow key={asset.id} asset={asset} copied={copied} onCopy={copyText} />
+          ))}
+        </div>
       ) : isAudioFilter ? (
         /* ── Audio list layout ── */
         <div className="space-y-3 max-w-2xl">
@@ -84,7 +103,7 @@ export default function LibraryClient({ assets }: { assets: Asset[] }) {
           {(['IMAGE', 'GRAPHIC', 'VIDEO', 'VOICEOVER'] as const).map((type) => {
             const group = filtered.filter((a) => a.type === type)
             if (group.length === 0) return null
-            const labels: Record<string, string> = { IMAGE: 'Images', GRAPHIC: 'Graphics', VIDEO: 'Videos', VOICEOVER: 'Audio' }
+            const labels: Record<string, string> = { IMAGE: 'Images', GRAPHIC: 'Graphics', VIDEO: 'Videos', VOICEOVER: 'Audio', CAPTION: 'Captions' }
             return (
               <div key={type}>
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">{labels[type]}</p>
@@ -175,6 +194,52 @@ function AssetCard({ asset, copied, onCopy }: { asset: Asset; copied: string | n
           </button>
         )}
         <p className="text-white/50 text-[9px] text-center mt-0.5">{formatRelativeTime(asset.createdAt)}</p>
+      </div>
+    </div>
+  )
+}
+
+function CaptionRow({ asset, copied, onCopy }: { asset: Asset; copied: string | null; onCopy: (id: string, text: string) => void }) {
+  const meta     = asset.metadata as { text?: string; texts?: string[]; platform?: string; seriesCount?: number } | null
+  const platform = meta?.platform
+  const texts    = meta?.texts ?? (meta?.text ? [meta.text] : [])
+  const isSeries = (meta?.seriesCount ?? 1) > 1
+
+  return (
+    <div className="bg-white rounded-card shadow-card p-4">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-brand-navy/10 flex items-center justify-center flex-shrink-0">
+            <FileText size={13} className="text-brand-navy" />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-brand-navy capitalize">
+              {isSeries ? `${meta?.seriesCount}-Part Series` : 'Caption'}
+              {platform && <span className="ml-1 text-gray-400 font-normal">· {platform}</span>}
+            </p>
+            <p className="text-[10px] text-gray-400">{formatRelativeTime(asset.createdAt)}</p>
+          </div>
+        </div>
+        {texts.length > 0 && (
+          <button
+            type="button"
+            onClick={() => onCopy(asset.id, texts.join('\n\n---\n\n'))}
+            className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-brand-azure bg-gray-50 border border-gray-200 px-2 py-1 rounded transition-colors flex-shrink-0"
+          >
+            {copied === asset.id ? <><Check size={10} />Copied</> : <><Copy size={10} />{isSeries ? 'Copy all' : 'Copy'}</>}
+          </button>
+        )}
+      </div>
+      <div className="space-y-2">
+        {texts.map((t, i) => (
+          <div key={i} className="text-xs text-gray-700 bg-gray-50 rounded-lg px-3 py-2 leading-relaxed whitespace-pre-wrap">
+            {isSeries && <span className="text-[9px] font-semibold text-brand-azure uppercase tracking-widest block mb-1">Post {i + 1}</span>}
+            {t}
+          </div>
+        ))}
+        {texts.length === 0 && (
+          <p className="text-xs text-gray-400 italic">Caption text not available</p>
+        )}
       </div>
     </div>
   )

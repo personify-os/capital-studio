@@ -7,11 +7,14 @@ import { useGenerate } from '@/hooks/useGenerate'
 import BrandSelector from '@/components/shared/BrandSelector'
 import Button from '@/components/ui/Button'
 import Textarea from '@/components/ui/Textarea'
+import ContentIntentPanel from './ContentIntentPanel'
+import { EMPTY_INTENT } from '@/lib/content-intent'
+import type { ContentIntent } from '@/lib/content-intent'
 import type { BrandId } from '@/lib/brands'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ContentType = 'caption' | 'email' | 'series'
+type ContentType = 'caption' | 'series'
 type Platform    = 'instagram' | 'facebook' | 'linkedin' | 'x' | 'youtube' | 'tiktok' | 'threads'
 type Tone        = 'professional' | 'casual' | 'inspirational' | 'educational'
 type SeriesCount = 3 | 5 | 10
@@ -33,18 +36,6 @@ const TONES: { value: Tone; label: string }[] = [
   { value: 'educational',   label: 'Educational' },
   { value: 'inspirational', label: 'Inspirational' },
   { value: 'casual',        label: 'Casual' },
-]
-
-// Pre-seeded topic suggestions drawn from LHC/SIMRP content
-const TOPIC_SUGGESTIONS = [
-  '$550/employee/year in payroll tax savings',
-  'SIMRP — The Infinite Savings Plan explained',
-  'IRS §125 cafeteria plan benefits',
-  'Add employee benefits without changing take-home pay',
-  'Wellness program with 80%+ employee participation',
-  'How the SIMRP helped a company save $60,000',
-  'Tax codes 105, 106, 125, 213(d) — what they mean for your business',
-  'Employee retention through better benefits',
 ]
 
 // ─── Toggle ───────────────────────────────────────────────────────────────────
@@ -72,17 +63,18 @@ function Toggle({ checked, onChange, color = 'bg-brand-azure' }: { checked: bool
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function WriterClient() {
-  const [contentType,       setContentType]       = useState<ContentType>('caption')
-  const [brandId,           setBrandId]           = useState<BrandId>('lhcapital')
-  const [topic,             setTopic]             = useState('')
-  const [platforms,         setPlatforms]         = useState<Platform[]>([])
-  const [tone,              setTone]              = useState<Tone>('professional')
-  const [seriesCount,       setSeriesCount]       = useState<SeriesCount>(3)
-  const [includeHashtags,   setIncludeHashtags]   = useState(true)
-  const [referenceContent,  setReferenceContent]  = useState('')
-  const [referenceUrl,      setReferenceUrl]      = useState('')
-  const [fileName,          setFileName]          = useState('')
-  const [copied,            setCopied]            = useState<number | 'all' | null>(null)
+  const [contentType,      setContentType]      = useState<ContentType>('caption')
+  const [brandId,          setBrandId]          = useState<BrandId>('lhcapital')
+  const [intent,           setIntent]           = useState<ContentIntent>(EMPTY_INTENT)
+  const [topic,            setTopic]            = useState('')
+  const [platforms,        setPlatforms]        = useState<Platform[]>([])
+  const [tone,             setTone]             = useState<Tone>('professional')
+  const [seriesCount,      setSeriesCount]      = useState<SeriesCount>(3)
+  const [includeHashtags,  setIncludeHashtags]  = useState(true)
+  const [referenceContent, setReferenceContent] = useState('')
+  const [referenceUrl,     setReferenceUrl]     = useState('')
+  const [fileName,         setFileName]         = useState('')
+  const [copied,           setCopied]           = useState<number | 'all' | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const { data, loading, error, generate } = useGenerate<object, CaptionResponse>({
@@ -112,19 +104,25 @@ export default function WriterClient() {
   }
 
   const handleGenerate = useCallback(() => {
-    if (!topic.trim() || platforms.length === 0) return
+    if (platforms.length === 0) return
     generate({
-      platform:         platforms[0],
+      platform:           platforms[0],
       platforms,
       tone,
-      topic:            topic.trim(),
+      topic:              topic.trim() || undefined,
       brandId,
       includeHashtags,
-      seriesCount:      contentType === 'series' ? seriesCount : 1,
-      referenceContent: referenceContent.trim() || undefined,
-      referenceUrl:     referenceUrl.trim() || undefined,
+      seriesCount:        contentType === 'series' ? seriesCount : 1,
+      referenceContent:   referenceContent.trim() || undefined,
+      referenceUrl:       referenceUrl.trim() || undefined,
+      intentTier1Id:      intent.tier1Id      ?? undefined,
+      intentTier2Id:      intent.tier2Id      ?? undefined,
+      intentPurposeId:    intent.purposeId    ?? undefined,
+      intentCtaId:        intent.ctaId        ?? undefined,
+      intentCustomCta:    intent.customCta    ?? undefined,
+      intentCtaPlacement: intent.ctaPlacement ?? undefined,
     })
-  }, [topic, platforms, tone, brandId, includeHashtags, contentType, seriesCount, referenceContent, referenceUrl, generate])
+  }, [topic, platforms, tone, brandId, includeHashtags, contentType, seriesCount, referenceContent, referenceUrl, intent, generate])
 
   function copy(text: string, key: number | 'all') {
     navigator.clipboard.writeText(text).then(() => {
@@ -134,7 +132,7 @@ export default function WriterClient() {
   }
 
   const captions   = data?.captions ?? (data?.caption ? [data.caption] : [])
-  const canGenerate = topic.trim().length > 0 && platforms.length > 0
+  const canGenerate = platforms.length > 0 && (topic.trim().length > 0 || !!intent.tier1Id)
 
   return (
     <div className="flex bg-app-bg">
@@ -189,35 +187,23 @@ export default function WriterClient() {
             <BrandSelector value={brandId} onChange={setBrandId} />
           </div>
 
-          {/* Topic */}
+          {/* Content Intent */}
+          <ContentIntentPanel value={intent} onChange={setIntent} />
+
+          {/* Post Details — optional additional specifics */}
           <div className="bg-gray-50 rounded-card p-4">
             <Textarea
-              label="Topic"
-              placeholder="What is this content about?"
+              label="Post Details"
+              placeholder="Add any specific details, talking points, or context… (optional)"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               rows={3}
-              maxLength={200}
+              maxLength={500}
               currentLength={topic.length}
             />
-            <div className="mt-3">
-              <p className="text-[10px] text-gray-400 mb-1.5">Suggestions:</p>
-              <div className="flex flex-wrap gap-1.5">
-                {TOPIC_SUGGESTIONS.slice(0, 4).map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setTopic(s)}
-                    className="text-[10px] bg-white border border-gray-200 text-gray-600 hover:border-brand-azure hover:text-brand-azure px-2 py-1 rounded-full transition-colors"
-                  >
-                    {s.length > 36 ? s.slice(0, 36) + '…' : s}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
 
-          {/* Tone — right under Topic */}
+          {/* Tone */}
           <div className="bg-gray-50 rounded-card p-4">
             <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Tone</p>
             <div className="flex flex-wrap gap-2">
@@ -241,7 +227,9 @@ export default function WriterClient() {
 
           {/* Reference Content + URL / File */}
           <div className="bg-gray-50 rounded-card p-4 space-y-3">
-            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Content Reference <span className="normal-case font-normal text-gray-400">(optional)</span></p>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
+              Content Reference <span className="normal-case font-normal text-gray-400">(optional)</span>
+            </p>
 
             {/* URL */}
             <div>
@@ -310,7 +298,7 @@ export default function WriterClient() {
                     'py-2 px-3 rounded-lg text-xs font-medium border-2 text-left transition-all',
                     platforms.includes(p.value)
                       ? 'border-brand-azure bg-brand-azure/5 text-brand-azure'
-                      : 'border-gray-200 text-gray-600 hover:border-[#689EB8]',
+                      : 'border-gray-200 text-gray-600 hover:border-brand-light',
                   )}
                 >
                   {p.label}
@@ -338,7 +326,7 @@ export default function WriterClient() {
             Generate {contentType === 'series' ? `${seriesCount}-Part Series` : 'Caption'}
           </Button>
 
-          {!canGenerate && !loading && topic.trim() && platforms.length === 0 && (
+          {!canGenerate && !loading && platforms.length === 0 && (
             <p className="text-[11px] text-center text-gray-400">Select at least one platform to generate</p>
           )}
 
@@ -356,7 +344,7 @@ export default function WriterClient() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <div className="w-8 h-8 border-[3px] border-brand-azure border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-medium text-[#041740]">Writing your content…</p>
+            <p className="text-sm font-medium text-brand-navy">Writing your content…</p>
           </div>
         )}
 
@@ -384,7 +372,7 @@ export default function WriterClient() {
                     Post {i + 1}
                   </p>
                 )}
-                <p className="text-sm text-[#041740] whitespace-pre-wrap leading-relaxed">{caption}</p>
+                <p className="text-sm text-brand-navy whitespace-pre-wrap leading-relaxed">{caption}</p>
                 <button
                   type="button"
                   onClick={() => copy(caption, i)}
@@ -402,9 +390,9 @@ export default function WriterClient() {
             <div className="w-16 h-16 rounded-full bg-brand-orange/10 flex items-center justify-center mb-4">
               <PenSquare size={26} className="text-brand-orange" />
             </div>
-            <p className="font-semibold text-[#041740] mb-1">Your content appears here</p>
+            <p className="font-semibold text-brand-navy mb-1">Your content appears here</p>
             <p className="text-sm text-gray-400 max-w-xs">
-              Enter a topic, pick your platform and tone, and generate.
+              Pick a topic or enter details above, select a platform, and generate.
             </p>
           </div>
         )}

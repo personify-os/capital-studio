@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { captionGenerateSchema } from '@/lib/schemas/generate'
 import { buildBrandPromptContext, getBrandConfig } from '@/lib/brands'
+import { buildIntentContext } from '@/lib/content-intent'
+import type { ContentIntent } from '@/lib/content-intent'
 import Anthropic from '@anthropic-ai/sdk'
 import type { BrandId } from '@/lib/brands'
 
@@ -26,23 +28,73 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Invalid input' }, { status: 400 })
   }
 
-  const { platform, tone, topic, brandId, includeHashtags, seriesCount, referenceContent, referenceUrl } = parsed.data
-  const brand      = getBrandConfig((brandId ?? 'lhcapital') as BrandId)
-  const brandCtx   = buildBrandPromptContext(brand)
-  const platGuide  = PLATFORM_GUIDANCE[platform] ?? platform
-  const count      = seriesCount ?? 1
+  const {
+    platform,
+    tone,
+    topic,
+    brandId,
+    includeHashtags,
+    seriesCount,
+    referenceContent,
+    referenceUrl,
+    intentTier1Id,
+    intentTier2Id,
+    intentPurposeId,
+    intentCtaId,
+    intentCustomCta,
+    intentCtaPlacement,
+  } = parsed.data
+
+  // Require topic or at least a tier1 intent selection
+  if (!topic?.trim() && !intentTier1Id && !intentTier2Id) {
+    return NextResponse.json(
+      { message: 'Provide a topic or select a content category.' },
+      { status: 400 },
+    )
+  }
+
+  const brand     = getBrandConfig((brandId ?? 'lhcapital') as BrandId)
+  const brandCtx  = buildBrandPromptContext(brand)
+  const platGuide = PLATFORM_GUIDANCE[platform] ?? platform
+  const count     = seriesCount ?? 1
   const isMultiple = count > 1
 
-  const promptParts = [
+  // Build intent context
+  const intent: ContentIntent = {
+    tier1Id:      intentTier1Id      ?? null,
+    tier2Id:      intentTier2Id      ?? null,
+    purposeId:    intentPurposeId    ?? null,
+    ctaId:        intentCtaId        ?? null,
+    customCta:    intentCustomCta    ?? null,
+    ctaPlacement: intentCtaPlacement ?? null,
+  }
+  const intentCtx = buildIntentContext(intent, count)
+
+  const promptParts: string[] = []
+
+  // Prepend intent block when present
+  if (intentCtx) {
+    promptParts.push(intentCtx, '')
+  }
+
+  promptParts.push(
     `Write ${isMultiple ? `${count} social media captions` : 'one social media caption'} for the following:`,
     `Platform: ${platGuide}`,
-    `Tone: ${tone}`,
-    `Topic: ${topic}`,
-    includeHashtags ? 'Include relevant hashtags.' : 'No hashtags.',
-    '',
-    'Brand context:',
-    brandCtx,
-  ]
+  )
+
+  // Only include bare tone line when no purposeId (purpose already carries tone directive)
+  if (!intentPurposeId) {
+    promptParts.push(`Tone: ${tone}`)
+  }
+
+  // Include topic as additional details when provided
+  if (topic?.trim()) {
+    promptParts.push(`Additional details: ${topic.trim()}`)
+  }
+
+  promptParts.push(includeHashtags ? 'Include relevant hashtags.' : 'No hashtags.')
+
+  promptParts.push('', 'Brand context:', brandCtx)
 
   if (referenceContent?.trim()) {
     promptParts.push('', 'Reference material (use as context, do not copy verbatim):', referenceContent.trim())
@@ -70,12 +122,10 @@ export async function POST(req: Request) {
   const text = message.content.find((b) => b.type === 'text')?.text?.trim() ?? ''
 
   if (isMultiple) {
-    // Parse numbered list into array
     const captions = text
       .split(/\n\d+\.\s+/)
       .map((s) => s.trim())
       .filter(Boolean)
-    // Drop the first empty split if numbering started at line 0
     const result = captions[0]?.match(/^\d+\./) ? captions.slice(1) : captions
     return NextResponse.json({ captions: result.slice(0, count) })
   }

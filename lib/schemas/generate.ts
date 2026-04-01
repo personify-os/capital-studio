@@ -33,15 +33,21 @@ export const graphicGenerateSchema = z.object({
 })
 
 export const captionGenerateSchema = z.object({
-  platform:         z.enum(['instagram', 'facebook', 'linkedin', 'x', 'youtube', 'tiktok', 'threads']),
-  tone:             z.enum(['professional', 'casual', 'inspirational', 'educational']),
-  topic:            z.string().min(1).max(200),
-  brandId:          z.enum(['lhcapital', 'simrp', 'personal']).optional(),
-  keywords:         z.array(z.string()).optional(),
-  includeHashtags:  z.boolean().optional(),
-  seriesCount:      z.number().int().min(1).max(10).optional(),
-  referenceContent: z.string().max(4000).optional(),
-  referenceUrl:     z.string().url().optional().or(z.literal('')),
+  platform:           z.enum(['instagram', 'facebook', 'linkedin', 'x', 'youtube', 'tiktok', 'threads']),
+  tone:               z.enum(['professional', 'casual', 'inspirational', 'educational']),
+  topic:              z.string().max(500).optional(),
+  brandId:            z.enum(['lhcapital', 'simrp', 'personal']).optional(),
+  keywords:           z.array(z.string()).optional(),
+  includeHashtags:    z.boolean().optional(),
+  seriesCount:        z.number().int().min(1).max(10).optional(),
+  referenceContent:   z.string().max(4000).optional(),
+  referenceUrl:       z.string().url().optional().or(z.literal('')),
+  intentTier1Id:      z.string().optional(),
+  intentTier2Id:      z.string().optional(),
+  intentPurposeId:    z.string().optional(),
+  intentCtaId:        z.string().optional(),
+  intentCustomCta:    z.string().max(100).optional(),
+  intentCtaPlacement: z.enum(['graphic', 'caption', 'both']).optional(),
 })
 
 export const videoGenerateSchema = z.object({

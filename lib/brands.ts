@@ -22,6 +22,10 @@ export interface BrandConfig {
   tone:        string      // natural language tone description for AI prompts
   audience:    string      // target audience description
   products:    string[]    // key products/offerings for prompt context
+  voiceRestrictions?: {
+    neverSay:  string[]
+    alwaysDo:  string[]
+  }
 }
 
 export const BRAND_CONFIGS: Record<BrandId, BrandConfig> = {
@@ -48,6 +52,18 @@ export const BRAND_CONFIGS: Record<BrandId, BrandConfig> = {
       'Critical Illness Coverage',
       'Tax Savings Strategies',
     ],
+    voiceRestrictions: {
+      neverSay: [
+        '"insurance" to describe the SIMRP — it is a medical reimbursement plan, not insurance',
+        '"free benefits" — always clarify it redirects existing payroll dollars',
+        'specific dollar promises without noting these are estimates',
+      ],
+      alwaysDo: [
+        'frame SIMRP savings as redirecting existing payroll tax dollars',
+        'position LH Capital as a trusted consultant, not a vendor',
+        'speak to CFO/HR director decision-making authority',
+      ],
+    },
   },
 
   simrp: {
@@ -73,6 +89,18 @@ export const BRAND_CONFIGS: Record<BrandId, BrandConfig> = {
       '$150/employee/month supplemental benefits allotment',
       'Telehealth (zero copay)',
     ],
+    voiceRestrictions: {
+      neverSay: [
+        '"free" or "no cost" without explaining the payroll tax redirect mechanism',
+        '"insurance" when describing the SIMRP',
+        'specific savings dollar amounts as guarantees',
+      ],
+      alwaysDo: [
+        'call it "the SIMRP" or "the Self-Insured Medical Reimbursement Plan"',
+        'explain that savings come from redirecting FICA/payroll taxes, not adding new costs',
+        'emphasize zero impact on employee take-home pay',
+      ],
+    },
   },
 
   personal: {
@@ -110,6 +138,12 @@ export function buildBrandPromptContext(brand: BrandConfig): string {
       : null,
     `Primary color: ${brand.colors.primary}`,
     `Secondary color: ${brand.colors.secondary}`,
+    brand.voiceRestrictions?.neverSay && brand.voiceRestrictions.neverSay.length > 0
+      ? `Never say/imply: ${brand.voiceRestrictions.neverSay.join('; ')}`
+      : null,
+    brand.voiceRestrictions?.alwaysDo && brand.voiceRestrictions.alwaysDo.length > 0
+      ? `Always do: ${brand.voiceRestrictions.alwaysDo.join('; ')}`
+      : null,
   ]
   return lines.filter(Boolean).join('\n')
 }

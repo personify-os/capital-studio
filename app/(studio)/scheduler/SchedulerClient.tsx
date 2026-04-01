@@ -983,6 +983,22 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
     }
   }, [])
 
+  // Pre-fill composer from Writer "Schedule" button
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('schedulerDraft')
+      if (!raw) return
+      localStorage.removeItem('schedulerDraft')
+      const draft = JSON.parse(raw) as { caption?: string; platform?: string }
+      if (draft.caption) {
+        setCaption(draft.caption)
+        setOauthBanner(`Caption from Content Writer loaded — select an account and schedule it!`)
+      }
+    } catch {
+      // Ignore malformed draft
+    }
+  }, [])
+
   function toggleAccount(id: string) {
     setSelectedAccts((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])
   }

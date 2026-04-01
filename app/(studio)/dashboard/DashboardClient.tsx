@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, ImageIcon, Film, Mic, Layers, PenSquare, Calendar, BookOpen, FolderOpen, Sparkles, Clapperboard, Music, BarChart3 } from 'lucide-react'
+import { ArrowRight, ImageIcon, Film, Mic, Layers, PenSquare, Calendar, BookOpen, FolderOpen, Sparkles, Clapperboard, Music, BarChart3, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // ─── Module cards ─────────────────────────────────────────────────────────────
@@ -122,6 +122,7 @@ export default function DashboardClient({ userName, recentAssets, counts }: Prop
   const videos      = counts['VIDEO']     ?? 0
   const graphics    = counts['GRAPHIC']   ?? 0
   const audio       = counts['VOICEOVER'] ?? 0
+  const captions    = counts['CAPTION']   ?? 0
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -143,10 +144,10 @@ export default function DashboardClient({ userName, recentAssets, counts }: Prop
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
         {[
-          { label: 'Total Generated', value: totalAssets,  accent: '#041740' },
-          { label: 'Images',          value: images,        accent: '#0475ae' },
-          { label: 'Videos',          value: videos,        accent: '#689EB8' },
-          { label: 'Graphics & Audio',value: graphics + audio, accent: '#ed6835' },
+          { label: 'Total Generated', value: totalAssets,           accent: '#041740' },
+          { label: 'Images',          value: images,                 accent: '#0475ae' },
+          { label: 'Videos',          value: videos,                 accent: '#689EB8' },
+          { label: 'Captions & More', value: captions + graphics + audio, accent: '#ed6835' },
         ].map(({ label, value, accent }) => (
           <div key={label} className="bg-white rounded-card shadow-card p-4">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">{label}</p>
@@ -217,7 +218,20 @@ export default function DashboardClient({ userName, recentAssets, counts }: Prop
 }
 
 function AssetThumb({ asset }: { asset: Asset }) {
-  const meta = asset.metadata as { prompt?: string } | null
+  const meta = asset.metadata as { prompt?: string; text?: string; texts?: string[]; platform?: string } | null
+
+  if (asset.type === 'CAPTION') {
+    const snippet = meta?.text ?? meta?.texts?.[0] ?? ''
+    return (
+      <div className="rounded-xl bg-brand-navy/5 border border-brand-navy/10 aspect-square shadow-card flex flex-col p-2 overflow-hidden">
+        <div className="flex items-center gap-1 mb-1 flex-shrink-0">
+          <FileText size={10} className="text-brand-navy/40" />
+          <span className="text-[8px] font-semibold text-brand-navy/40 uppercase tracking-wide truncate">{meta?.platform ?? 'caption'}</span>
+        </div>
+        <p className="text-[9px] text-brand-navy/60 leading-relaxed line-clamp-5">{snippet}</p>
+      </div>
+    )
+  }
 
   if (asset.type === 'IMAGE' && asset.s3Url) {
     return (

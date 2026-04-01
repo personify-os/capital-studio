@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { PenSquare, AlertCircle, Copy, Check, Sparkles, Link, FileText, X } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { PenSquare, AlertCircle, Copy, Check, Sparkles, Link, FileText, X, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import BrandSelector from '@/components/shared/BrandSelector'
 import Button from '@/components/ui/Button'
@@ -67,6 +68,7 @@ function Toggle({ checked, onChange, color = 'bg-brand-azure' }: { checked: bool
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function WriterClient() {
+  const router = useRouter()
   const [contentType,      setContentType]      = useState<ContentType>('caption')
   const [brandId,          setBrandId]          = useState<BrandId>('lhcapital')
   const [intent,           setIntent]           = useState<ContentIntent>(EMPTY_INTENT)
@@ -169,6 +171,11 @@ export default function WriterClient() {
       setCopied(key)
       setTimeout(() => setCopied(null), 2000)
     })
+  }
+
+  function sendToScheduler(text: string, platform: Platform) {
+    localStorage.setItem('schedulerDraft', JSON.stringify({ caption: text, platform }))
+    router.push('/scheduler')
   }
 
   const canGenerate = platforms.length > 0 && (topic.trim().length > 0 || !!intent.tier1Id)
@@ -434,20 +441,29 @@ export default function WriterClient() {
                   )}
                   <div className="space-y-4">
                     {captions.map((caption, i) => (
-                      <div key={i} className="bg-white rounded-card shadow-card p-4 relative group">
+                      <div key={i} className="bg-white rounded-card shadow-card p-4">
                         {isSeries && (
                           <p className="text-[10px] font-semibold text-brand-azure uppercase tracking-widest mb-2">
                             Post {i + 1}
                           </p>
                         )}
-                        <p className="text-sm text-brand-navy whitespace-pre-wrap leading-relaxed">{caption}</p>
-                        <button
-                          type="button"
-                          onClick={() => copy(caption, `${platformKey}-${i}`)}
-                          className="absolute top-3 right-3 flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-brand-azure bg-gray-50 border border-gray-200 px-2 py-1 rounded transition-colors"
-                        >
-                          {copied === `${platformKey}-${i}` ? <><Check size={10} />Copied</> : <><Copy size={10} />Copy</>}
-                        </button>
+                        <p className="text-sm text-brand-navy whitespace-pre-wrap leading-relaxed mb-3">{caption}</p>
+                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                          <button
+                            type="button"
+                            onClick={() => copy(caption, `${platformKey}-${i}`)}
+                            className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-brand-azure bg-gray-50 border border-gray-200 px-2 py-1 rounded transition-colors"
+                          >
+                            {copied === `${platformKey}-${i}` ? <><Check size={10} />Copied</> : <><Copy size={10} />Copy</>}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => sendToScheduler(caption, platform)}
+                            className="flex items-center gap-1 text-[10px] font-medium text-brand-azure hover:text-brand-navy bg-brand-azure/5 border border-brand-azure/20 px-2 py-1 rounded transition-colors ml-auto"
+                          >
+                            <Calendar size={10} />Schedule
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>

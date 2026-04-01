@@ -13,9 +13,9 @@ export const metadata: Metadata = {
   title: 'Capital Studio',
   description: 'AI-powered content creation for LH Capital & The SIMRP',
   icons: {
-    icon:    '/logos/capital-studio-icon.png',
-    shortcut:'/logos/capital-studio-icon.png',
-    apple:   '/logos/capital-studio-icon.png',
+    icon:    '/logos/capital-studio-icon-sidebar.png',
+    shortcut:'/logos/capital-studio-icon-sidebar.png',
+    apple:   '/logos/capital-studio-icon-sidebar.png',
   },
 }
 

@@ -747,39 +747,9 @@ export function buildIntentContext(intent: ContentIntent, seriesCount = 1): stri
   return lines.join('\n')
 }
 
-// ─── Backward-Compatible Shims ─────────────────────────────────────────────────
-// Other studio modules (Images, Graphics, Audio, Videos) were built against the
-// original simple pill exports. These shims preserve that API while the new
-// Intent Engine is used exclusively in the Writer module.
-
-export const TOPIC_PILLS = [
-  'Employee Benefits',
-  'SIMRP Savings',
-  'Tax Strategy',
-  'Wellness Plans',
-  'Supplemental Benefits',
-  'Business Growth',
-  'HR Solutions',
-  'Client Success',
-]
-
-export const PURPOSE_PILLS = [
-  { label: 'Educate',        emoji: '📚' },
-  { label: 'Generate Leads', emoji: '🎯' },
-  { label: 'Engage',         emoji: '💬' },
-  { label: 'Announce',       emoji: '📣' },
-  { label: 'Inspire',        emoji: '✨' },
-  { label: 'Build Trust',    emoji: '🤝' },
-]
-
-export const CTA_PILLS = [
-  'Book Assessment',
-  'Learn More',
-  'Contact Us',
-  'Schedule Call',
-  'Get a Quote',
-  'Share This',
-]
+// ─── Intent String Builder ─────────────────────────────────────────────────────
+// Simple string concatenation used by Images, Graphics, Audio, and Videos modules
+// to inject intent context into their generation prompts.
 
 export function buildIntentString(topics: string[], purpose: string, cta: string): string {
   const parts = [

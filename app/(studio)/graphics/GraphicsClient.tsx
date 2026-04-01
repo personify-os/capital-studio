@@ -7,7 +7,7 @@ import { useGenerate } from '@/hooks/useGenerate'
 import BrandSelector from '@/components/shared/BrandSelector'
 import Button from '@/components/ui/Button'
 import { GRAPHIC_TEMPLATES, type GraphicTemplate } from './templates'
-import { TOPIC_PILLS, PURPOSE_PILLS, CTA_PILLS, buildIntentString } from '@/lib/content-intent'
+import { TOPIC_TIERS, PURPOSES, CTA_OPTIONS, buildIntentString } from '@/lib/content-intent'
 import type { BrandId } from '@/lib/brands'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -184,8 +184,11 @@ export default function GraphicsClient({ recentGraphics: initial }: { recentGrap
 
   const handleGenerate = useCallback(() => {
     if (!headline.trim()) return
-    const intent    = buildIntentString(selectedTopics, selectedPurpose, selectedCta)
-    const fullTopic = [topic.trim(), intent].filter(Boolean).join(' · ')
+    const topicLabels  = selectedTopics.map((id) => TOPIC_TIERS.find((t) => t.id === id)?.label ?? id)
+    const purposeLabel = PURPOSES.find((p) => p.id === selectedPurpose)?.label ?? selectedPurpose
+    const ctaLabel     = CTA_OPTIONS.find((c) => c.id === selectedCta)?.label ?? selectedCta
+    const intent       = buildIntentString(topicLabels, purposeLabel, ctaLabel)
+    const fullTopic    = [topic.trim(), intent].filter(Boolean).join(' · ')
     generate({
       templateId: template.id,
       brandId,
@@ -197,8 +200,8 @@ export default function GraphicsClient({ recentGraphics: initial }: { recentGrap
     })
   }, [template, brandId, headline, subtext, cta, topic, photoUrl, selectedTopics, selectedPurpose, selectedCta, generate])
 
-  function toggleTopic(t: string) {
-    setSelectedTopics((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t])
+  function toggleTopic(id: string) {
+    setSelectedTopics((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])
   }
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -242,33 +245,33 @@ export default function GraphicsClient({ recentGraphics: initial }: { recentGrap
                 <div>
                   <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Topic</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {TOPIC_PILLS.map((t) => (
-                      <button key={t} type="button" onClick={() => toggleTopic(t)}
+                    {TOPIC_TIERS.map((cat) => (
+                      <button key={cat.id} type="button" onClick={() => toggleTopic(cat.id)}
                         className={cn('px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all',
-                          selectedTopics.includes(t) ? 'bg-brand-azure text-white border-brand-azure' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-azure hover:text-brand-azure'
-                        )}>{t}</button>
+                          selectedTopics.includes(cat.id) ? 'bg-brand-azure text-white border-brand-azure' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-azure hover:text-brand-azure'
+                        )}>{cat.icon} {cat.label}</button>
                     ))}
                   </div>
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Purpose</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {PURPOSE_PILLS.map((p) => (
-                      <button key={p.label} type="button" onClick={() => setSelectedPurpose((v) => v === p.label ? '' : p.label)}
+                    {PURPOSES.map((p) => (
+                      <button key={p.id} type="button" onClick={() => setSelectedPurpose((v) => v === p.id ? '' : p.id)}
                         className={cn('px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all',
-                          selectedPurpose === p.label ? 'bg-brand-azure text-white border-brand-azure' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-azure hover:text-brand-azure'
-                        )}>{p.emoji} {p.label}</button>
+                          selectedPurpose === p.id ? 'bg-brand-azure text-white border-brand-azure' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-azure hover:text-brand-azure'
+                        )}>{p.label}</button>
                     ))}
                   </div>
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Call to Action <span className="normal-case font-normal text-gray-400">(optional)</span></p>
                   <div className="flex flex-wrap gap-1.5">
-                    {CTA_PILLS.map((c) => (
-                      <button key={c} type="button" onClick={() => setSelectedCta((v) => v === c ? '' : c)}
+                    {CTA_OPTIONS.map((c) => (
+                      <button key={c.id} type="button" onClick={() => setSelectedCta((v) => v === c.id ? '' : c.id)}
                         className={cn('px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all',
-                          selectedCta === c ? 'bg-brand-azure text-white border-brand-azure' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-azure hover:text-brand-azure'
-                        )}>{c}</button>
+                          selectedCta === c.id ? 'bg-brand-azure text-white border-brand-azure' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-azure hover:text-brand-azure'
+                        )}>{c.label}</button>
                     ))}
                   </div>
                 </div>

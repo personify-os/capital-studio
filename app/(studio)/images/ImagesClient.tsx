@@ -7,7 +7,7 @@ import { useGenerate } from '@/hooks/useGenerate'
 import BrandSelector from '@/components/shared/BrandSelector'
 import Button from '@/components/ui/Button'
 import Textarea from '@/components/ui/Textarea'
-import { TOPIC_PILLS, PURPOSE_PILLS, CTA_PILLS, buildIntentString } from '@/lib/content-intent'
+import { TOPIC_TIERS, PURPOSES, buildIntentString } from '@/lib/content-intent'
 import type { BrandId } from '@/lib/brands'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -60,7 +60,6 @@ export default function ImagesClient({ recentImages: initial }: { recentImages: 
   const [intentOpen,      setIntentOpen]      = useState(true)
   const [selectedTopics,  setSelectedTopics]  = useState<string[]>([])
   const [selectedPurpose, setSelectedPurpose] = useState('')
-  const [selectedCta,     setSelectedCta]     = useState('')
 
   const { data, loading, error, generate } = useGenerate<object, GenerateResponse>({
     endpoint:  '/api/v1/generate/image',
@@ -74,10 +73,12 @@ export default function ImagesClient({ recentImages: initial }: { recentImages: 
 
   const handleGenerate = useCallback(() => {
     if (!prompt.trim()) return
-    const intent     = buildIntentString(selectedTopics, selectedPurpose, selectedCta)
-    const fullPrompt = intent ? `${prompt.trim()}\n\nContent intent: ${intent}` : prompt.trim()
+    const topicLabels  = selectedTopics.map((id) => TOPIC_TIERS.find((t) => t.id === id)?.label ?? id)
+    const purposeLabel = PURPOSES.find((p) => p.id === selectedPurpose)?.label ?? selectedPurpose
+    const intent       = buildIntentString(topicLabels, purposeLabel, '')
+    const fullPrompt   = intent ? `${prompt.trim()}\n\nContent intent: ${intent}` : prompt.trim()
     generate({ prompt: fullPrompt, model, aspectRatio: aspect, variations, brandId, enhancePrompt })
-  }, [prompt, model, aspect, variations, brandId, enhancePrompt, selectedTopics, selectedPurpose, selectedCta, generate])
+  }, [prompt, model, aspect, variations, brandId, enhancePrompt, selectedTopics, selectedPurpose, generate])
 
   function copyUrl(id: string, url: string) {
     navigator.clipboard.writeText(url).then(() => {
@@ -86,8 +87,8 @@ export default function ImagesClient({ recentImages: initial }: { recentImages: 
     })
   }
 
-  function toggleTopic(t: string) {
-    setSelectedTopics((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t])
+  function toggleTopic(id: string) {
+    setSelectedTopics((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])
   }
 
   const generated = data?.assets ?? []
@@ -117,46 +118,30 @@ export default function ImagesClient({ recentImages: initial }: { recentImages: 
             {intentOpen && (
               <div className="mt-4 space-y-4">
                 <div>
-                  <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Topic — What is this content about?</p>
+                  <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Topic</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {TOPIC_PILLS.map((t) => (
-                      <button key={t} type="button" onClick={() => toggleTopic(t)}
+                    {TOPIC_TIERS.map((cat) => (
+                      <button key={cat.id} type="button" onClick={() => toggleTopic(cat.id)}
                         className={cn('px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all',
-                          selectedTopics.includes(t)
+                          selectedTopics.includes(cat.id)
                             ? 'bg-brand-azure text-white border-brand-azure'
                             : 'bg-white text-gray-600 border-gray-200 hover:border-brand-azure hover:text-brand-azure',
                         )}
-                      >{t}</button>
+                      >{cat.icon} {cat.label}</button>
                     ))}
                   </div>
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Purpose</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {PURPOSE_PILLS.map((p) => (
-                      <button key={p.label} type="button" onClick={() => setSelectedPurpose((v) => v === p.label ? '' : p.label)}
+                    {PURPOSES.map((p) => (
+                      <button key={p.id} type="button" onClick={() => setSelectedPurpose((v) => v === p.id ? '' : p.id)}
                         className={cn('px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all',
-                          selectedPurpose === p.label
+                          selectedPurpose === p.id
                             ? 'bg-brand-azure text-white border-brand-azure'
                             : 'bg-white text-gray-600 border-gray-200 hover:border-brand-azure hover:text-brand-azure',
                         )}
-                      >{p.emoji} {p.label}</button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    Call to Action <span className="normal-case font-normal text-gray-400">(optional)</span>
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {CTA_PILLS.map((c) => (
-                      <button key={c} type="button" onClick={() => setSelectedCta((v) => v === c ? '' : c)}
-                        className={cn('px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all',
-                          selectedCta === c
-                            ? 'bg-brand-azure text-white border-brand-azure'
-                            : 'bg-white text-gray-600 border-gray-200 hover:border-brand-azure hover:text-brand-azure',
-                        )}
-                      >{c}</button>
+                      >{p.label}</button>
                     ))}
                   </div>
                 </div>

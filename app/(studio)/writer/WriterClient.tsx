@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { PenSquare, AlertCircle, Copy, Check, Sparkles, Link, FileText, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useGenerate } from '@/hooks/useGenerate'
@@ -8,7 +8,8 @@ import BrandSelector from '@/components/shared/BrandSelector'
 import Button from '@/components/ui/Button'
 import Textarea from '@/components/ui/Textarea'
 import ContentIntentPanel from './ContentIntentPanel'
-import { EMPTY_INTENT } from '@/lib/content-intent'
+import StructuredDataEntry from './StructuredDataEntry'
+import { EMPTY_INTENT, getGenerationMode } from '@/lib/content-intent'
 import type { ContentIntent } from '@/lib/content-intent'
 import type { BrandId } from '@/lib/brands'
 
@@ -80,6 +81,16 @@ export default function WriterClient() {
   const { data, loading, error, generate } = useGenerate<object, CaptionResponse>({
     endpoint: '/api/v1/generate/caption',
   })
+
+  // Clear post details when switching between structured and freeform modes
+  const prevMode = useRef(getGenerationMode(intent.tier2Id))
+  useEffect(() => {
+    const mode = getGenerationMode(intent.tier2Id)
+    if (mode !== prevMode.current) {
+      setTopic('')
+      prevMode.current = mode
+    }
+  }, [intent.tier2Id])
 
   function togglePlatform(p: Platform) {
     setPlatforms((prev) => prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p])
@@ -190,18 +201,22 @@ export default function WriterClient() {
           {/* Content Intent */}
           <ContentIntentPanel value={intent} onChange={setIntent} />
 
-          {/* Post Details — optional additional specifics */}
-          <div className="bg-gray-50 rounded-card p-4">
-            <Textarea
-              label="Post Details"
-              placeholder="Add any specific details, talking points, or context… (optional)"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              rows={3}
-              maxLength={500}
-              currentLength={topic.length}
-            />
-          </div>
+          {/* Post Details — structured form or freeform textarea */}
+          {getGenerationMode(intent.tier2Id) === 'structured' && intent.tier2Id ? (
+            <StructuredDataEntry tier2Id={intent.tier2Id} onChange={setTopic} />
+          ) : (
+            <div className="bg-gray-50 rounded-card p-4">
+              <Textarea
+                label="Post Details"
+                placeholder="Add any specific details, talking points, or context… (optional)"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                rows={3}
+                maxLength={500}
+                currentLength={topic.length}
+              />
+            </div>
+          )}
 
           {/* Tone */}
           <div className="bg-gray-50 rounded-card p-4">

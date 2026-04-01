@@ -10,6 +10,13 @@ export interface Tier2SubTopic {
   copyAngles:        string[]   // 2–3 angles Claude can take
   suggestedHashtags: string[]   // 3–5 hashtags
   bestPlatforms:     string[]   // 2–3 platforms
+  generationMode?:   'freeform' | 'structured'  // structured = data-entry form instead of textarea
+}
+
+/** Returns 'structured' for subtopics with a dedicated data-entry form */
+export function getGenerationMode(tier2Id: string | null): 'freeform' | 'structured' {
+  const STRUCTURED = new Set(['payroll-tax-savings', 'event-webinar', 'client-success'])
+  return tier2Id && STRUCTURED.has(tier2Id) ? 'structured' : 'freeform'
 }
 
 export interface Tier1Category {
@@ -169,6 +176,7 @@ export const TOPIC_TIERS: Tier1Category[] = [
     subtopics: [
       {
         id:                'payroll-tax-savings',
+        generationMode:    'structured',
         label:             'Payroll Tax Savings',
         copyAngles:        [
           'Lead with the average: $550/employee/year in FICA savings — show what that means at 50 or 100 employees',
@@ -254,6 +262,7 @@ export const TOPIC_TIERS: Tier1Category[] = [
       },
       {
         id:                'client-success',
+        generationMode:    'structured',
         label:             'Client Success Story',
         copyAngles:        [
           'Lead with the before: what the business was paying, what benefits they had, what they were missing',
@@ -336,6 +345,7 @@ export const TOPIC_TIERS: Tier1Category[] = [
     subtopics: [
       {
         id:                'event-webinar',
+        generationMode:    'structured',
         label:             'Event / Webinar',
         copyAngles:        [
           'Lead with the outcome attendees will walk away with — not just the topic',

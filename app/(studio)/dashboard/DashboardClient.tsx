@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Sparkles, ImageIcon, PenSquare, BookOpen } from 'lucide-react'
+import { ArrowRight, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MODULES } from '@/lib/dashboard-modules'
 import AssetThumb, { type Asset } from '@/components/dashboard/AssetThumb'
@@ -85,32 +85,6 @@ export default function DashboardClient({ userName, recentAssets, counts }: Prop
         ))}
       </div>
 
-      {/* First-run guidance */}
-      {totalAssets === 0 && (
-        <div className="mt-8 rounded-2xl border-2 border-dashed border-brand-azure/30 bg-brand-azure/5 p-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-brand-azure/10 flex items-center justify-center mx-auto mb-4">
-            <Sparkles size={22} className="text-brand-azure" />
-          </div>
-          <h2 className="text-lg font-bold text-brand-navy mb-1">Welcome to Capital Studio</h2>
-          <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
-            Start by setting up your brand profile, then generate your first piece of content.
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <Link href="/brand-vault"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-navy text-white text-sm font-semibold hover:bg-brand-azure transition-colors">
-              <BookOpen size={14} /> Set up Brand Vault
-            </Link>
-            <Link href="/images"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-brand-azure text-brand-azure text-sm font-semibold hover:bg-brand-azure hover:text-white transition-colors">
-              <ImageIcon size={14} /> Generate an Image
-            </Link>
-            <Link href="/writer"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-gray-600 text-sm font-semibold hover:border-brand-azure hover:text-brand-azure transition-colors">
-              <PenSquare size={14} /> Write a Caption
-            </Link>
-          </div>
-        </div>
-      )}
 
       {/* Recent assets */}
       {recentAssets.length > 0 && (

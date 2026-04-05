@@ -11,10 +11,10 @@ export const flags = {
   musicGeneration:process.env.FLAG_MUSIC_GENERATION !== 'false',
   socialScheduler:process.env.FLAG_SOCIAL_SCHEDULER !== 'false',
 
-  // Phase 2 modules — OFF by default until fully wired
-  videoGeneration:process.env.FLAG_VIDEO_GENERATION === 'true',
-  voiceover:      process.env.FLAG_VOICEOVER        === 'true',
-  motionVideo:    process.env.FLAG_MOTION_VIDEO     === 'true',
+  // Phase 2 modules — ON by default for internal use; disable via FLAG_*=false
+  videoGeneration:process.env.FLAG_VIDEO_GENERATION !== 'false',
+  voiceover:      process.env.FLAG_VOICEOVER        !== 'false',
+  motionVideo:    process.env.FLAG_MOTION_VIDEO     !== 'false',
   likenessVideo:  process.env.FLAG_LIKENESS_VIDEO   === 'true',
 
   // Social platforms — ON by default, disable per-platform if credentials missing

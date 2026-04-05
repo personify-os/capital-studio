@@ -54,29 +54,24 @@ export default function Sidebar({ flags }: Props) {
     {
       id:    'create',
       label: 'Create',
+      // All items always shown — page-level flag guards handle access control
       items: [
         { href: '/images',   icon: ImageIcon,   label: 'Image Studio'     },
         { href: '/graphics', icon: Layers,      label: 'Graphics Studio'  },
-        ...(flags?.videoGeneration ?? true
-          ? [{ href: '/videos', icon: Film, label: 'Video Studio' }] : []),
-        ...(flags?.motionVideo ?? true
-          ? [{ href: '/motion', icon: Clapperboard, label: 'Motion Studio' }] : []),
-        ...(flags?.voiceover ?? true
-          ? [{ href: '/audio', icon: Mic, label: 'VoiceOver Studio' }] : []),
-        ...(flags?.musicGeneration ?? true
-          ? [{ href: '/music', icon: Music, label: 'Music Studio' }] : []),
+        { href: '/videos',   icon: Film,        label: 'Video Studio'     },
+        { href: '/motion',   icon: Clapperboard,label: 'Motion Studio'    },
+        { href: '/audio',    icon: Mic,         label: 'VoiceOver Studio' },
+        { href: '/music',    icon: Music,       label: 'Music Studio'     },
       ],
     },
     {
       id:    'manage',
       label: 'Manage',
       items: [
-        ...(flags?.socialScheduler ?? true
-          ? [{ href: '/scheduler', icon: Calendar, label: 'Social Scheduler' }] : []),
+        { href: '/scheduler',   icon: Calendar,   label: 'Social Scheduler' },
         { href: '/brand-vault', icon: BookOpen,   label: 'Brand Vault'      },
         { href: '/library',     icon: FolderOpen, label: 'Content Library'  },
-        ...(flags?.analytics ?? true
-          ? [{ href: '/analytics', icon: BarChart3, label: 'Analytics' }] : []),
+        { href: '/analytics',   icon: BarChart3,  label: 'Analytics'        },
       ],
     },
   ]

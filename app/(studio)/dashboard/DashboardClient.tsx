@@ -53,30 +53,31 @@ export default function DashboardClient({ userName, recentAssets, counts }: Prop
       </div>
 
       {/* Module grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
         {MODULES.map(({ href, icon: Icon, label, description, gradient, accent, badge }) => (
           <Link
             key={href}
             href={href}
-            className="group relative overflow-hidden rounded-xl shadow-card hover:shadow-card-hover transition-all hover:-translate-y-0.5"
-            style={{ minHeight: 110 }}
+            className="group relative overflow-hidden rounded-2xl shadow-card hover:shadow-card-hover transition-all hover:-translate-y-0.5"
+            style={{ minHeight: 135 }}
           >
             <div className={cn('absolute inset-0 bg-gradient-to-br', gradient)} />
-            <div className="absolute -top-4 -right-4 w-24 h-24 rounded-full opacity-10" style={{ background: accent }} />
+            <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full opacity-10" style={{ background: accent }} />
+            <div className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full opacity-5" style={{ background: accent }} />
             {badge && (
-              <span className="absolute top-2 right-2 bg-white/20 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-sm z-10">
+              <span className="absolute top-2.5 right-2.5 bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm z-10">
                 {badge}
               </span>
             )}
-            <div className="relative z-10 p-3 flex flex-col h-full" style={{ minHeight: 110 }}>
-              <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center mb-auto">
-                <Icon size={13} className="text-white" />
+            <div className="relative z-10 p-4 flex flex-col h-full" style={{ minHeight: 135 }}>
+              <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center mb-auto">
+                <Icon size={15} className="text-white" />
               </div>
-              <div className="mt-3">
-                <p className="font-bold text-white text-[12px] leading-tight">{label}</p>
-                <p className="text-white/65 text-[10px] mt-0.5 leading-relaxed line-clamp-2">{description}</p>
-                <div className="flex items-center gap-1 mt-1.5 text-[10px] font-semibold" style={{ color: accent }}>
-                  Get Started <ArrowRight size={10} className="group-hover:translate-x-0.5 transition-transform" />
+              <div className="mt-4">
+                <p className="font-bold text-white text-sm leading-tight">{label}</p>
+                <p className="text-white/70 text-[11px] mt-0.5 leading-relaxed line-clamp-2">{description}</p>
+                <div className="flex items-center gap-1 mt-1.5 text-[11px] font-semibold" style={{ color: accent }}>
+                  Get Started <ArrowRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </div>
             </div>

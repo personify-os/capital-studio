@@ -1,6 +1,9 @@
 import { fal } from '@fal-ai/client'
 import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
 import type { ImageGenerateInput } from '@/lib/schemas/generate'
+import type { BrandConfig } from '@/lib/brands'
+import { withRetry, isTransient } from '@/lib/retry'
 
 // Configure fal.ai credentials (server-side only)
 function getFalClient() {
@@ -37,6 +40,53 @@ const ASPECT_SIZES: Record<string, { width: number; height: number }> = {
   '4:5':  { width: 820,  height: 1024 },
 }
 
+// ─── Claude-powered prompt enhancer ──────────────────────────────────────────
+
+/**
+ * Uses Claude to rewrite a basic user prompt into a rich, cinematically detailed
+ * image generation prompt with specific lighting, composition, color treatment,
+ * and brand-appropriate visual style — before sending to the image model.
+ *
+ * Applies the "restraint bias" from professional photo direction:
+ * moody/slightly dark is better than bright/oversaturated.
+ */
+export async function enhanceImagePrompt(rawPrompt: string, brand: BrandConfig): Promise<string> {
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
+  const briefBrandCtx = [
+    `Brand: ${brand.label}`,
+    brand.visualStyle ? `Visual style: ${brand.visualStyle}` : null,
+    `Primary color: ${brand.colors.primary}`,
+    `Accent color: ${brand.colors.accent}`,
+  ].filter(Boolean).join('\n')
+
+  const message = await client.messages.create({
+    model:      'claude-haiku-4-5-20251001',
+    max_tokens: 350,
+    system: `You are an expert AI image prompt engineer for professional B2B marketing photography.
+Transform basic image prompts into rich, cinematically detailed prompts that produce stunning professional results.
+
+Rules:
+- Add specific lighting direction and quality (e.g. "soft directional window light from upper left, warm golden rim lighting")
+- Add composition details (e.g. "medium shot, shallow depth of field f/2.8, subject sharp, background softly blurred")
+- Add color treatment (e.g. "slightly desaturated, muted professional tones, subtle cinematic color grade")
+- Add texture/atmosphere appropriate for the subject
+- Match the brand's visual aesthetic described in the context
+- RESTRAINT BIAS: err toward moody and slightly dark over bright and saturated; understated > garish; realistic > stylized unless the prompt calls for it
+- Preserve the core subject exactly — enrich the visual description, never change what is being depicted
+- Do not add people, objects, or scenes not implied by the original prompt
+- Output ONLY the enhanced prompt text — no labels, no preamble, no explanation — maximum 200 words`,
+    messages: [{
+      role:    'user',
+      content: `Brand context:\n${briefBrandCtx}\n\nPrompt to enhance:\n${rawPrompt}`,
+    }],
+  })
+
+  return message.content.find((b) => b.type === 'text')?.text?.trim() ?? rawPrompt
+}
+
+// ─── Main generation functions ────────────────────────────────────────────────
+
 export async function generateImages(input: ImageGenerateInput, prompt: string): Promise<string[]> {
   const { model, aspectRatio, variations } = input
   const size = ASPECT_SIZES[aspectRatio]
@@ -51,14 +101,14 @@ export async function generateImages(input: ImageGenerateInput, prompt: string):
   const client = getFalClient()
   const results = await Promise.all(
     Array.from({ length: variations }, () =>
-      client.run(falModel, {
+      withRetry(() => client.run(falModel, {
         input: { prompt, image_size: size, num_inference_steps: 28, guidance_scale: 3.5 },
-      }),
+      }), { retryOn: isTransient }),
     ),
   )
 
   return results.flatMap((r: any) =>
-    (r.images ?? [r.image]).map((img: any) => (typeof img === 'string' ? img : img.url)),
+    (r.images ?? (r.image ? [r.image] : [])).map((img: any) => (typeof img === 'string' ? img : img?.url)).filter(Boolean),
   )
 }
 
@@ -71,11 +121,11 @@ async function generateWithDalle(prompt: string, count: number, aspectRatio: str
     '4:5':  '1024x1024',
   }
 
-  const responses = await Promise.all(
-    Array.from({ length: Math.min(count, 4) }, () =>
-      openai.images.generate({ model: 'dall-e-3', prompt, size: sizeMap[aspectRatio] ?? '1024x1024', quality: 'standard' }),
-    ),
-  )
-
-  return responses.flatMap((r) => (r.data ?? []).map((d) => d.url!))
+  // DALL-E-3 does not support batching — requests must be sequential
+  const urls: string[] = []
+  for (let i = 0; i < Math.min(count, 4); i++) {
+    const r = await openai.images.generate({ model: 'dall-e-3', prompt, size: sizeMap[aspectRatio] ?? '1024x1024', quality: 'standard' })
+    for (const d of r.data ?? []) { if (d.url) urls.push(d.url) }
+  }
+  return urls
 }

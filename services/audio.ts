@@ -1,4 +1,5 @@
 import type { AudioGenerateInput } from '@/lib/schemas/generate'
+import { withRetry, isTransient } from '@/lib/retry'
 
 export const VOICES = [
   { id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel',  description: 'Professional female, calm & clear' },
@@ -6,11 +7,11 @@ export const VOICES = [
   { id: 'AZnzlk1XvdvUeBnXmlld', name: 'Domi',    description: 'Confident female, strong delivery' },
   { id: 'ErXwobaYiN019PkySvjV', name: 'Antoni',  description: 'Conversational male, warm tone' },
   { id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Elli',    description: 'Friendly female, upbeat' },
-  { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Arnold',  description: 'Deep male, trustworthy' },
+  { id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold',  description: 'Deep male, trustworthy' },
 ]
 
 export async function generateVoiceover(input: AudioGenerateInput): Promise<Buffer> {
-  const response = await fetch(
+  const response = await withRetry(() => fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${input.voiceId}`,
     {
       method:  'POST',
@@ -25,7 +26,7 @@ export async function generateVoiceover(input: AudioGenerateInput): Promise<Buff
         voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.0, use_speaker_boost: true },
       }),
     },
-  )
+  ), { retryOn: isTransient })
 
   if (!response.ok) {
     const err = await response.text().catch(() => response.statusText)

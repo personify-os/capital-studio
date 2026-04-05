@@ -28,8 +28,11 @@ function tooManyRequests(resetAt: number) {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  // ── Rate-limit auth endpoint (brute-force guard) ──────────────────────────
-  if (pathname.startsWith('/api/auth')) {
+  // ── Rate-limit credential sign-in POST only (brute-force guard) ─────────
+  // Scoped to the actual login submission — NOT session/csrf/provider lookups,
+  // which NextAuth fires automatically on every page load and would exhaust
+  // the limit causing white-screen 429s for normal usage.
+  if (pathname === '/api/auth/callback/credentials' && req.method === 'POST') {
     const ip = clientIp(req)
     const { allowed, resetAt } = checkRateLimit(`auth:${ip}`, LIMITS.AUTH.limit, LIMITS.AUTH.windowMs)
     if (!allowed) return tooManyRequests(resetAt)

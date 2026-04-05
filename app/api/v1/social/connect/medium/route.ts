@@ -4,23 +4,32 @@ import { authOptions }      from '@/lib/auth'
 import { prisma }           from '@/lib/db'
 import { getMediumProfile } from '@/services/social'
 import { encryptToken }     from '@/lib/crypto'
+import { z }                from 'zod'
+
+const schema = z.object({
+  uid: z.string().min(1),
+  sid: z.string().min(1),
+})
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
 
-  const { uid, sid } = await req.json()
-  if (!uid?.trim() || !sid?.trim()) return NextResponse.json({ message: 'Both uid and sid cookies are required' }, { status: 400 })
+  const body   = await req.json()
+  const parsed = schema.safeParse(body)
+  if (!parsed.success) return NextResponse.json({ message: 'Both uid and sid cookies are required' }, { status: 400 })
+
+  const { uid, sid } = parsed.data
 
   let profile: { id: string; name: string }
   try {
-    profile = await getMediumProfile(uid.trim(), sid.trim())
+    profile = await getMediumProfile(uid, sid)
   } catch (err: any) {
     return NextResponse.json({ message: err.message ?? 'Invalid session cookies' }, { status: 400 })
   }
 
   // Store uid:sid combined so publishToMedium can split them
-  const combined = `${uid.trim()}:${sid.trim()}`
+  const combined = `${uid}:${sid}`
 
   await prisma.socialAccount.upsert({
     where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'MEDIUM', accountId: profile.id } },

@@ -52,12 +52,14 @@ export interface QuickStart {
 }
 
 export interface ContentIntent {
-  tier1Id:      string | null
-  tier2Id:      string | null
-  purposeId:    string | null
-  ctaId:        string | null
-  customCta:    string | null
-  ctaPlacement: 'graphic' | 'caption' | 'both' | null
+  tier1Id:       string | null
+  tier2Id:       string | null
+  purposeId:     string | null
+  ctaId:         string | null
+  customCta:     string | null
+  ctaPlacement:  'graphic' | 'caption' | 'both' | null
+  customTopic?:  string | null
+  customPurpose?: string | null
 }
 
 // ─── Series Funnel Arcs (internal) ─────────────────────────────────────────────
@@ -677,9 +679,9 @@ export const EMPTY_INTENT: ContentIntent = {
  * Returns null if no intent fields are set.
  */
 export function buildIntentContext(intent: ContentIntent, seriesCount = 1): string | null {
-  const { tier1Id, tier2Id, purposeId, ctaId, customCta, ctaPlacement } = intent
+  const { tier1Id, tier2Id, purposeId, ctaId, customCta, ctaPlacement, customTopic, customPurpose } = intent
 
-  if (!tier1Id && !tier2Id && !purposeId && !ctaId && !customCta) return null
+  if (!tier1Id && !tier2Id && !purposeId && !ctaId && !customCta && !customTopic && !customPurpose) return null
 
   const tier1   = TOPIC_TIERS.find((t) => t.id === tier1Id)
   const tier2   = tier1?.subtopics.find((s) => s.id === tier2Id)
@@ -688,16 +690,20 @@ export function buildIntentContext(intent: ContentIntent, seriesCount = 1): stri
 
   const lines: string[] = ['## Content Intent']
 
-  // Topic
+  // Topic (structured or freeform)
   if (tier1) {
     const topicLabel = tier2 ? `${tier1.label} → ${tier2.label}` : tier1.label
     lines.push(`Topic: ${topicLabel}`)
+  } else if (customTopic?.trim()) {
+    lines.push(`Topic: ${customTopic.trim()}`)
   }
 
-  // Purpose + caption length
+  // Purpose + caption length (structured or freeform)
   if (purpose) {
     lines.push(`Purpose: ${purpose.label}`)
     lines.push(`Caption length target: ${purpose.captionLength}`)
+  } else if (customPurpose?.trim()) {
+    lines.push(`Purpose: ${customPurpose.trim()}`)
   }
 
   // Tone directive

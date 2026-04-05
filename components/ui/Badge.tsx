@@ -7,10 +7,10 @@ interface Props {
 }
 
 const variants = {
-  blue:   'bg-[#0475ae]/10 text-[#0475ae]',
-  teal:   'bg-[#00c4cc]/10 text-[#00c4cc]',
-  orange: 'bg-[#ed6835]/10 text-[#ed6835]',
-  green:  'bg-[#37ca37]/10 text-[#37ca37]',
+  blue:   'bg-brand-azure/10 text-brand-azure',
+  teal:   'bg-brand-teal/10 text-brand-teal',
+  orange: 'bg-brand-orange/10 text-brand-orange',
+  green:  'bg-brand-green/10 text-brand-green',
   gray:   'bg-gray-100 text-gray-600',
 }
 

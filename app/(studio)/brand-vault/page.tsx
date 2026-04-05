@@ -17,11 +17,14 @@ export default async function BrandVaultPage() {
   const session = await getServerSession(authOptions)
   if (!session) return null
 
-  const brands = (await prisma.brandProfile.findMany({
-    where:   { tenantId: session.user.tenantId },
-    orderBy: { createdAt: 'asc' },
-    select:  { id: true, type: true, name: true, logoUrl: true, config: true, isDefault: true },
-  })) as RawBrand[]
+  let brands: RawBrand[] = []
+  try {
+    brands = (await prisma.brandProfile.findMany({
+      where:   { tenantId: session.user.tenantId },
+      orderBy: { createdAt: 'asc' },
+      select:  { id: true, type: true, name: true, logoUrl: true, config: true, isDefault: true },
+    })) as RawBrand[]
+  } catch (err) { console.error('[brand-vault/page]', err) }
 
   return (
     <>

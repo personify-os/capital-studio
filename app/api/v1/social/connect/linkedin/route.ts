@@ -24,11 +24,16 @@ export async function POST(req: Request) {
   const id = personId.replace('urn:li:person:', '').trim()
 
   const tokenExpiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) // 60 days
-  await prisma.socialAccount.upsert({
-    where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'LINKEDIN', accountId: id } },
-    create: { tenantId: session.user.tenantId, platform: 'LINKEDIN', accountName: 'LinkedIn Account', accountId: id, accessToken: encryptToken(accessToken), expiresAt: tokenExpiresAt },
-    update: { accountName: 'LinkedIn Account', accessToken: encryptToken(accessToken), expiresAt: tokenExpiresAt },
-  })
+  try {
+    await prisma.socialAccount.upsert({
+      where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'LINKEDIN', accountId: id } },
+      create: { tenantId: session.user.tenantId, platform: 'LINKEDIN', accountName: 'LinkedIn Account', accountId: id, accessToken: encryptToken(accessToken), expiresAt: tokenExpiresAt },
+      update: { accountName: 'LinkedIn Account', accessToken: encryptToken(accessToken), expiresAt: tokenExpiresAt },
+    })
+  } catch (err) {
+    console.error('[social/connect/linkedin]', err)
+    return NextResponse.json({ message: 'Failed to save LinkedIn account.' }, { status: 500 })
+  }
 
   return NextResponse.json({ connected: 'LinkedIn Account' })
 }

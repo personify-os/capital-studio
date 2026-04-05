@@ -15,7 +15,12 @@ const ALGORITHM = 'aes-256-gcm'
 
 function getKey(): Buffer | null {
   const hex = process.env.TOKEN_ENCRYPTION_KEY
-  if (!hex) return null
+  if (!hex) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('TOKEN_ENCRYPTION_KEY must be set in production')
+    }
+    return null // dev passthrough only
+  }
   if (hex.length !== 64) throw new Error('TOKEN_ENCRYPTION_KEY must be 64 hex chars (32 bytes)')
   return Buffer.from(hex, 'hex')
 }
@@ -53,7 +58,8 @@ export function decryptToken(value: string): string {
     decipher.setAuthTag(Buffer.from(tagHex, 'hex'))
     const dec = Buffer.concat([decipher.update(Buffer.from(dataHex, 'hex')), decipher.final()])
     return dec.toString('utf8')
-  } catch {
-    return value // auth tag mismatch — return raw; caller will fail loudly
+  } catch (err) {
+    console.error('[crypto] decryptToken failed — possible key rotation or data corruption:', err)
+    return value // auth tag mismatch — return raw; caller will fail loudly on platform API
   }
 }

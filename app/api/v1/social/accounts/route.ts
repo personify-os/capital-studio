@@ -7,11 +7,15 @@ export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
 
-  const accounts = await prisma.socialAccount.findMany({
-    where:   { tenantId: session.user.tenantId },
-    orderBy: { createdAt: 'asc' },
-    select:  { id: true, platform: true, accountName: true, accountId: true, createdAt: true, expiresAt: true },
-  })
-
-  return NextResponse.json({ accounts })
+  try {
+    const accounts = await prisma.socialAccount.findMany({
+      where:   { tenantId: session.user.tenantId },
+      orderBy: { createdAt: 'asc' },
+      select:  { id: true, platform: true, accountName: true, accountId: true, createdAt: true, expiresAt: true },
+    })
+    return NextResponse.json({ accounts })
+  } catch (err) {
+    console.error('[accounts/GET]', err)
+    return NextResponse.json({ message: 'Failed to load accounts.' }, { status: 500 })
+  }
 }

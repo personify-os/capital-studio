@@ -25,29 +25,35 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: err.message ?? 'Generation failed.' }, { status: 500 })
   }
 
-  const voice      = VOICES.find((v) => v.id === parsed.data.voiceId)
-  const key        = makeAssetKey(session.user.tenantId, 'audio', 'mp3')
-  const audioUrl   = await uploadBuffer(audioBuffer, key, 'audio/mpeg')
-
-  const asset = await prisma.asset.create({
-    data: {
-      tenantId: session.user.tenantId,
-      userId:   session.user.id,
-      type:     'VOICEOVER',
-      status:   'READY',
-      s3Key:    key,
-      s3Url:    audioUrl,
-      metadata: {
-        text:      parsed.data.text.slice(0, 200),
-        voiceId:   parsed.data.voiceId,
-        voiceName: voice?.name ?? parsed.data.voiceId,
-        brandId:   parsed.data.brandId,
-        model:     parsed.data.voiceId,
-        cost:      estimateCost(parsed.data.voiceId),
+  const voice    = VOICES.find((v) => v.id === parsed.data.voiceId)
+  const key      = makeAssetKey(session.user.tenantId, 'audio', 'mp3')
+  let audioUrl: string
+  let asset: { id: string; s3Url: string | null }
+  try {
+    audioUrl = await uploadBuffer(audioBuffer, key, 'audio/mpeg')
+    asset    = await prisma.asset.create({
+      data: {
+        tenantId: session.user.tenantId,
+        userId:   session.user.id,
+        type:     'VOICEOVER',
+        status:   'READY',
+        s3Key:    key,
+        s3Url:    audioUrl,
+        metadata: {
+          text:      parsed.data.text.slice(0, 200),
+          voiceId:   parsed.data.voiceId,
+          voiceName: voice?.name ?? parsed.data.voiceId,
+          brandId:   parsed.data.brandId,
+          model:     parsed.data.voiceId,
+          cost:      estimateCost(parsed.data.voiceId),
+        },
       },
-    },
-    select: { id: true, s3Url: true, createdAt: true, metadata: true },
-  })
+      select: { id: true, s3Url: true },
+    })
+  } catch (err) {
+    console.error('[generate/audio] post-generation error:', err)
+    return NextResponse.json({ message: 'Failed to save audio.' }, { status: 500 })
+  }
 
   return NextResponse.json({ asset: { id: asset.id, url: asset.s3Url } })
 }

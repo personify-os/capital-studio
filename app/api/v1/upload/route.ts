@@ -33,7 +33,13 @@ export async function POST(req: Request) {
   const ext    = file.type.split('/')[1].replace('jpeg', 'jpg')
   const key    = makeAssetKey(session.user.tenantId, 'images', ext)
   const buffer = Buffer.from(await file.arrayBuffer())
-  const url    = await uploadBuffer(buffer, key, file.type)
+  let url: string
+  try {
+    url = await uploadBuffer(buffer, key, file.type)
+  } catch (err) {
+    console.error('[upload] S3 upload failed:', err)
+    return NextResponse.json({ message: 'Upload failed.' }, { status: 500 })
+  }
 
   return NextResponse.json({ url })
 }

@@ -1,78 +1,137 @@
 'use client'
 
-import { useState } from 'react'
-import { FolderOpen, Download, Copy, Check, Film, Mic, Play, FileText } from 'lucide-react'
-import { cn, formatRelativeTime } from '@/lib/utils'
+import { useState, useMemo } from 'react'
+import { FolderOpen, Search, Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { type Asset, getAssetBrand } from '@/components/library/shared'
+import AssetCard from '@/components/library/AssetCard'
+import CaptionRow from '@/components/library/CaptionRow'
+import AudioRow from '@/components/library/AudioRow'
 
-type FilterValue = 'ALL' | 'IMAGE' | 'GRAPHIC' | 'VIDEO' | 'VOICEOVER' | 'CAPTION'
+type FilterValue = 'ALL' | 'IMAGE' | 'GRAPHIC' | 'VIDEO' | 'MOTION' | 'VOICEOVER' | 'CAPTION' | 'MUSIC'
+type BrandFilter = 'ALL' | 'lhcapital' | 'simrp' | 'personal'
 
-interface Asset {
-  id:          string
-  type:        string
-  s3Url:       string | null
-  htmlContent: string | null
-  metadata:    unknown
-  createdAt:   string
-}
-
-const FILTERS: { value: FilterValue; label: string }[] = [
+const TYPE_FILTERS: { value: FilterValue; label: string }[] = [
   { value: 'ALL',       label: 'All' },
   { value: 'IMAGE',     label: 'Images' },
   { value: 'GRAPHIC',   label: 'Graphics' },
   { value: 'VIDEO',     label: 'Videos' },
+  { value: 'MOTION',    label: 'Motion' },
   { value: 'VOICEOVER', label: 'Audio' },
+  { value: 'MUSIC',     label: 'Music' },
   { value: 'CAPTION',   label: 'Captions' },
 ]
 
-export default function LibraryClient({ assets }: { assets: Asset[] }) {
-  const [filter, setFilter] = useState<FilterValue>('ALL')
-  const [copied, setCopied] = useState<string | null>(null)
+const BRAND_FILTERS: { value: BrandFilter; label: string; dot: string }[] = [
+  { value: 'ALL',       label: 'All brands', dot: '' },
+  { value: 'lhcapital', label: 'LH Capital', dot: 'bg-brand-azure' },
+  { value: 'simrp',     label: 'The SIMRP',  dot: 'bg-brand-light' },
+  { value: 'personal',  label: 'Personal',   dot: 'bg-brand-green' },
+]
 
-  // Hide captions from "All" view since they don't fit the grid — they have their own tab
-  const filtered = filter === 'ALL'
-    ? assets.filter((a) => a.type !== 'CAPTION')
-    : assets.filter((a) => a.type === filter)
+const MEDIA_LABELS: Record<string, string> = {
+  IMAGE: 'Images', GRAPHIC: 'Graphics', VIDEO: 'Videos',
+  MOTION: 'Motion', VOICEOVER: 'Audio', MUSIC: 'Music', CAPTION: 'Captions',
+}
+
+interface Props {
+  assets:    Asset[]
+  total:     number
+  pageSize:  number
+}
+
+export default function LibraryClient({ assets: initialAssets, total, pageSize }: Props) {
+  const [allAssets,   setAllAssets]   = useState<Asset[]>(initialAssets)
+  const [filter,      setFilter]      = useState<FilterValue>('ALL')
+  const [brandFilter, setBrandFilter] = useState<BrandFilter>('ALL')
+  const [search,      setSearch]      = useState('')
+  const [copied,      setCopied]      = useState<string | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [page,        setPage]        = useState(1)
+  const hasMore = allAssets.length < total
+
+  async function loadMore() {
+    setLoadingMore(true)
+    try {
+      const nextPage = page + 1
+      const res  = await fetch(`/api/v1/assets?page=${nextPage}&limit=${pageSize}`)
+      const json = await res.json()
+      if (res.ok && json.assets) {
+        setAllAssets((prev) => [...prev, ...json.assets])
+        setPage(nextPage)
+      }
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  const filtered = useMemo(() => {
+    let items = filter === 'ALL' ? allAssets : allAssets.filter((a) => a.type === filter)
+    if (brandFilter !== 'ALL') items = items.filter((a) => getAssetBrand(a) === brandFilter)
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      items = items.filter((a) => {
+        const m = a.metadata as Record<string, any> | null ?? {}
+        return [
+          m.prompt, m.headline, m.subtext, m.topic, m.description,
+          m.result?.body, ...(m.results ?? []).map((r: any) => r.body),
+          m.text, m.title,
+        ].some((v) => typeof v === 'string' && v.toLowerCase().includes(q))
+      })
+    }
+    return items
+  }, [allAssets, filter, brandFilter, search])
 
   function copyUrl(id: string, url: string) {
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(id)
-      setTimeout(() => setCopied(null), 2000)
-    })
+    navigator.clipboard.writeText(url).then(() => { setCopied(id); setTimeout(() => setCopied(null), 2000) })
   }
-
   function copyText(id: string, text: string) {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(id)
-      setTimeout(() => setCopied(null), 2000)
-    })
+    navigator.clipboard.writeText(text).then(() => { setCopied(id); setTimeout(() => setCopied(null), 2000) })
   }
 
-  const isAudioFilter   = filter === 'VOICEOVER'
   const isCaptionFilter = filter === 'CAPTION'
-  const hasVideo        = filtered.some((a) => a.type === 'VIDEO')
-  const hasAudio        = filtered.some((a) => a.type === 'VOICEOVER')
-  const mixedMedia      = filter === 'ALL' && (hasVideo || hasAudio)
+  const isAudioFilter   = filter === 'VOICEOVER' || filter === 'MUSIC'
+  const isMotionFilter  = filter === 'MOTION'
+  const mixedMedia      = filter === 'ALL'
 
   return (
     <div className="p-6">
-      {/* Filter bar */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {FILTERS.map((f) => (
-          <button
-            key={f.value}
-            type="button"
-            onClick={() => setFilter(f.value)}
-            className={cn(
-              'px-4 py-1.5 rounded-full text-xs font-semibold border transition-colors',
-              filter === f.value
-                ? 'bg-brand-navy text-white border-brand-navy'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-brand-azure hover:text-brand-azure',
-            )}
-          >
+      {/* Type filter bar */}
+      <div className="flex gap-2 mb-3 flex-wrap">
+        {TYPE_FILTERS.map((f) => (
+          <button key={f.value} type="button" onClick={() => setFilter(f.value)}
+            className={cn('px-4 py-1.5 rounded-full text-xs font-semibold border transition-colors',
+              filter === f.value ? 'bg-brand-navy text-white border-brand-navy' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-azure hover:text-brand-azure'
+            )}>
             {f.label}
           </button>
         ))}
-        <span className="ml-auto text-xs text-gray-400 self-center">{filtered.length} assets</span>
+        <div className="ml-auto flex items-center gap-2">
+          <div className="relative">
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search…"
+              className="pl-7 pr-3 py-1 text-xs border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-azure focus:border-transparent w-36"
+            />
+          </div>
+          <span className="text-xs text-gray-400 whitespace-nowrap">{filtered.length} {filtered.length === 1 ? 'asset' : 'assets'}</span>
+        </div>
+      </div>
+
+      {/* Brand filter bar */}
+      <div className="flex gap-2 mb-6 flex-wrap">
+        {BRAND_FILTERS.map((b) => (
+          <button key={b.value} type="button" onClick={() => setBrandFilter(b.value)}
+            className={cn('flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium border transition-colors',
+              brandFilter === b.value ? 'bg-brand-navy/5 border-brand-navy/30 text-brand-navy' : 'bg-white text-gray-500 border-gray-100 hover:border-gray-300'
+            )}>
+            {b.dot && <span className={cn('w-2 h-2 rounded-full flex-shrink-0', b.dot)} />}
+            {b.label}
+          </button>
+        ))}
       </div>
 
       {filtered.length === 0 ? (
@@ -84,32 +143,36 @@ export default function LibraryClient({ assets }: { assets: Asset[] }) {
           <p className="text-sm text-gray-400">Generated content will appear here</p>
         </div>
       ) : isCaptionFilter ? (
-        /* ── Captions list layout ── */
         <div className="space-y-3 max-w-2xl">
-          {filtered.map((asset) => (
-            <CaptionRow key={asset.id} asset={asset} copied={copied} onCopy={copyText} />
-          ))}
+          {filtered.map((a) => <CaptionRow key={a.id} asset={a} copied={copied} onCopy={copyText} />)}
         </div>
       ) : isAudioFilter ? (
-        /* ── Audio list layout ── */
         <div className="space-y-3 max-w-2xl">
-          {filtered.map((asset) => (
-            <AudioRow key={asset.id} asset={asset} copied={copied} onCopy={copyUrl} />
-          ))}
+          {filtered.map((a) => <AudioRow key={a.id} asset={a} copied={copied} onCopy={copyUrl} />)}
+        </div>
+      ) : isMotionFilter ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {filtered.map((a) => <AssetCard key={a.id} asset={a} copied={copied} onCopy={copyUrl} />)}
         </div>
       ) : mixedMedia ? (
-        /* ── Mixed: group by type ── */
         <div className="space-y-8">
-          {(['IMAGE', 'GRAPHIC', 'VIDEO', 'VOICEOVER'] as const).map((type) => {
+          {(['IMAGE', 'GRAPHIC', 'VIDEO', 'MOTION', 'VOICEOVER', 'MUSIC', 'CAPTION'] as const).map((type) => {
             const group = filtered.filter((a) => a.type === type)
             if (group.length === 0) return null
-            const labels: Record<string, string> = { IMAGE: 'Images', GRAPHIC: 'Graphics', VIDEO: 'Videos', VOICEOVER: 'Audio', CAPTION: 'Captions' }
             return (
               <div key={type}>
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">{labels[type]}</p>
-                {type === 'VOICEOVER' ? (
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">{MEDIA_LABELS[type]}</p>
+                {type === 'VOICEOVER' || type === 'MUSIC' ? (
                   <div className="space-y-3 max-w-2xl">
                     {group.map((a) => <AudioRow key={a.id} asset={a} copied={copied} onCopy={copyUrl} />)}
+                  </div>
+                ) : type === 'CAPTION' ? (
+                  <div className="space-y-3 max-w-2xl">
+                    {group.map((a) => <CaptionRow key={a.id} asset={a} copied={copied} onCopy={copyText} />)}
+                  </div>
+                ) : type === 'MOTION' ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {group.map((a) => <AssetCard key={a.id} asset={a} copied={copied} onCopy={copyUrl} />)}
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -121,163 +184,23 @@ export default function LibraryClient({ assets }: { assets: Asset[] }) {
           })}
         </div>
       ) : (
-        /* ── Standard grid ── */
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {filtered.map((asset) => (
-            <AssetCard key={asset.id} asset={asset} copied={copied} onCopy={copyUrl} />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function AssetCard({ asset, copied, onCopy }: { asset: Asset; copied: string | null; onCopy: (id: string, url: string) => void }) {
-  const meta = asset.metadata as { prompt?: string; model?: string } | null
-
-  return (
-    <div className="group relative rounded-card overflow-hidden bg-gray-100 aspect-square shadow-card">
-      {asset.type === 'IMAGE' && asset.s3Url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={asset.s3Url} alt={meta?.prompt ?? ''} className="w-full h-full object-cover" loading="lazy" />
-      ) : asset.type === 'GRAPHIC' && asset.htmlContent ? (
-        <iframe
-          srcDoc={asset.htmlContent}
-          className="w-full h-full border-0 pointer-events-none"
-          style={{ transform: 'scale(0.25)', transformOrigin: 'top left', width: '400%', height: '400%' }}
-          title="Graphic"
-        />
-      ) : asset.type === 'VIDEO' && asset.s3Url ? (
-        <>
-          <video src={asset.s3Url} className="w-full h-full object-cover" preload="metadata" muted />
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center shadow">
-              <Play size={14} className="text-brand-navy ml-0.5" />
-            </div>
-          </div>
-        </>
-      ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-          <Film size={20} className="text-gray-300" />
-          <span className="text-[10px] font-semibold text-gray-400 uppercase">{asset.type}</span>
+          {filtered.map((a) => <AssetCard key={a.id} asset={a} copied={copied} onCopy={copyUrl} />)}
         </div>
       )}
 
-      {/* Hover overlay */}
-      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 p-2">
-        {asset.s3Url && asset.type !== 'VIDEO' && (
+      {hasMore && !search.trim() && filter === 'ALL' && brandFilter === 'ALL' && (
+        <div className="flex justify-center mt-8">
           <button
             type="button"
-            onClick={() => window.open(asset.s3Url!, '_blank', 'noopener')}
-            className="flex items-center gap-1 bg-white text-brand-navy text-[10px] font-semibold px-3 py-1.5 rounded-full hover:bg-gray-50 w-full justify-center"
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:border-brand-azure hover:text-brand-azure transition-colors disabled:opacity-60"
           >
-            <Download size={10} /> Download
+            {loadingMore ? <Loader2 size={14} className="animate-spin" /> : null}
+            {loadingMore ? 'Loading…' : `Load more (${total - allAssets.length} remaining)`}
           </button>
-        )}
-        {asset.s3Url && asset.type === 'VIDEO' && (
-          <a
-            href={asset.s3Url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 bg-white text-brand-navy text-[10px] font-semibold px-3 py-1.5 rounded-full hover:bg-gray-50 w-full justify-center"
-          >
-            <Play size={10} /> Open
-          </a>
-        )}
-        {asset.s3Url && (
-          <button
-            type="button"
-            onClick={() => onCopy(asset.id, asset.s3Url!)}
-            className="flex items-center gap-1 bg-white/20 text-white text-[10px] font-semibold px-3 py-1.5 rounded-full hover:bg-white/30 w-full justify-center"
-          >
-            {copied === asset.id ? <><Check size={10} />Copied</> : <><Copy size={10} />Copy URL</>}
-          </button>
-        )}
-        <p className="text-white/50 text-[9px] text-center mt-0.5">{formatRelativeTime(asset.createdAt)}</p>
-      </div>
-    </div>
-  )
-}
-
-function CaptionRow({ asset, copied, onCopy }: { asset: Asset; copied: string | null; onCopy: (id: string, text: string) => void }) {
-  const meta     = asset.metadata as { text?: string; texts?: string[]; platform?: string; seriesCount?: number } | null
-  const platform = meta?.platform
-  const texts    = meta?.texts ?? (meta?.text ? [meta.text] : [])
-  const isSeries = (meta?.seriesCount ?? 1) > 1
-
-  return (
-    <div className="bg-white rounded-card shadow-card p-4">
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-brand-navy/10 flex items-center justify-center flex-shrink-0">
-            <FileText size={13} className="text-brand-navy" />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-brand-navy capitalize">
-              {isSeries ? `${meta?.seriesCount}-Part Series` : 'Caption'}
-              {platform && <span className="ml-1 text-gray-400 font-normal">· {platform}</span>}
-            </p>
-            <p className="text-[10px] text-gray-400">{formatRelativeTime(asset.createdAt)}</p>
-          </div>
         </div>
-        {texts.length > 0 && (
-          <button
-            type="button"
-            onClick={() => onCopy(asset.id, texts.join('\n\n---\n\n'))}
-            className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-brand-azure bg-gray-50 border border-gray-200 px-2 py-1 rounded transition-colors flex-shrink-0"
-          >
-            {copied === asset.id ? <><Check size={10} />Copied</> : <><Copy size={10} />{isSeries ? 'Copy all' : 'Copy'}</>}
-          </button>
-        )}
-      </div>
-      <div className="space-y-2">
-        {texts.map((t, i) => (
-          <div key={i} className="text-xs text-gray-700 bg-gray-50 rounded-lg px-3 py-2 leading-relaxed whitespace-pre-wrap">
-            {isSeries && <span className="text-[9px] font-semibold text-brand-azure uppercase tracking-widest block mb-1">Post {i + 1}</span>}
-            {t}
-          </div>
-        ))}
-        {texts.length === 0 && (
-          <p className="text-xs text-gray-400 italic">Caption text not available</p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function AudioRow({ asset, copied, onCopy }: { asset: Asset; copied: string | null; onCopy: (id: string, url: string) => void }) {
-  const meta = asset.metadata as { text?: string; voiceName?: string } | null
-  return (
-    <div className="bg-white rounded-card shadow-card p-4">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2.5 flex-1 min-w-0">
-          <div className="w-7 h-7 rounded-full bg-brand-azure/10 flex items-center justify-center flex-shrink-0">
-            <Mic size={13} className="text-brand-azure" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-brand-navy truncate">{meta?.text ?? 'Voiceover'}</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">{meta?.voiceName} · {formatRelativeTime(asset.createdAt)}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {asset.s3Url && (
-            <button
-              type="button"
-              onClick={() => onCopy(asset.id, asset.s3Url!)}
-              className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-brand-azure transition-colors"
-            >
-              {copied === asset.id ? <Check size={11} /> : <Copy size={11} />}
-            </button>
-          )}
-          {asset.s3Url && (
-            <a href={asset.s3Url} download className="text-brand-azure hover:text-brand-navy">
-              <Download size={14} />
-            </a>
-          )}
-        </div>
-      </div>
-      {asset.s3Url && (
-        <audio src={asset.s3Url} controls className="w-full h-8" style={{ height: '32px' }} />
       )}
     </div>
   )

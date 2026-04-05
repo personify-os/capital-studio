@@ -36,6 +36,9 @@ export default function LoginForm() {
 
     if (res?.ok) {
       router.push('/dashboard')
+    } else if (res?.status === 429) {
+      setError('Too many attempts. Please wait a minute and try again.')
+      setLoading(false)
     } else {
       setError('Invalid email or password.')
       setLoading(false)

@@ -3,8 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { imageGenerateSchema } from '@/lib/schemas/generate'
-import { generateImages } from '@/services/image'
-import { buildBrandPromptContext, getBrandConfig } from '@/lib/brands'
+import { generateImages, enhanceImagePrompt } from '@/services/image'
+import { resolveBrandConfig } from '@/lib/brand-context'
 import { uploadFromUrl, makeAssetKey } from '@/lib/storage'
 import { estimateCost } from '@/lib/cost'
 import type { BrandId } from '@/lib/brands'
@@ -21,13 +21,21 @@ export async function POST(req: Request) {
 
   const input = parsed.data
   const brandId = (input.brandId ?? 'lhcapital') as BrandId
-  const brand   = getBrandConfig(brandId)
+  const brand   = await resolveBrandConfig(brandId, session.user.tenantId)
 
-  // Build enriched prompt with brand context
+  // Build enriched prompt
   let finalPrompt = input.prompt
-  if (input.enhancePrompt || input.brandId) {
-    const brandCtx = buildBrandPromptContext(brand)
-    finalPrompt = `${input.prompt}\n\nBrand context for visual style: ${brandCtx}`
+  if (input.enhancePrompt) {
+    // Claude rewrites the prompt with cinematic detail + brand-appropriate visual style
+    try {
+      finalPrompt = await enhanceImagePrompt(input.prompt, brand)
+    } catch (err) {
+      console.error('[generate/image] prompt enhancement failed, using raw prompt:', err)
+      finalPrompt = input.prompt
+    }
+  } else if (input.brandId && brand.visualStyle) {
+    // Append brand visual style keywords — more useful to diffusion models than hex values
+    finalPrompt = `${input.prompt}, ${brand.visualStyle}`
   }
 
   let urls: string[]
@@ -53,11 +61,12 @@ export async function POST(req: Request) {
           s3Key:    key,
           s3Url:    permanentUrl,
           metadata: {
-            prompt:      input.prompt,
-            model:       input.model,
-            aspectRatio: input.aspectRatio,
+            prompt:         input.prompt,
+            enhancedPrompt: input.enhancePrompt && finalPrompt !== input.prompt ? finalPrompt : undefined,
+            model:          input.model,
+            aspectRatio:    input.aspectRatio,
             brandId,
-            cost:        estimateCost(input.model),
+            cost:           estimateCost(input.model),
           },
         },
         select: { id: true, s3Url: true, createdAt: true },

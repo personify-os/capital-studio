@@ -19,15 +19,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Invalid input', errors: parsed.error.flatten() }, { status: 400 })
   }
 
-  const brand = await prisma.brandProfile.create({
-    data: {
-      tenantId:  session.user.tenantId,
-      type:      parsed.data.type,
-      name:      parsed.data.name,
-      isDefault: false,
-      config:    {},
-    },
-  })
+  let brand: Awaited<ReturnType<typeof prisma.brandProfile.create>>
+  try {
+    brand = await prisma.brandProfile.create({
+      data: {
+        tenantId:  session.user.tenantId,
+        type:      parsed.data.type,
+        name:      parsed.data.name,
+        isDefault: false,
+        config:    {},
+      },
+    })
+  } catch (err) {
+    console.error('[brands/POST]', err)
+    return NextResponse.json({ message: 'Failed to create brand.' }, { status: 500 })
+  }
 
   return NextResponse.json({ brand }, { status: 201 })
 }

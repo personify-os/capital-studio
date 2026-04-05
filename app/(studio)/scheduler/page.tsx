@@ -8,24 +8,30 @@ export default async function SchedulerPage() {
   const session = await getServerSession(authOptions)
   if (!session) return null
 
-  const [accounts, posts, assets] = await Promise.all([
-    prisma.socialAccount.findMany({
-      where:   { tenantId: session.user.tenantId },
-      orderBy: { createdAt: 'asc' },
-    }),
-    prisma.scheduledPost.findMany({
-      where:   { tenantId: session.user.tenantId },
-      orderBy: { scheduledFor: 'asc' },
-      take:    100,
-      include: { socialAccount: { select: { id: true, platform: true, accountName: true } } },
-    }),
-    prisma.asset.findMany({
-      where:   { tenantId: session.user.tenantId, status: 'READY', type: { in: ['IMAGE', 'VIDEO'] } },
-      orderBy: { createdAt: 'desc' },
-      take:    30,
-      select:  { id: true, type: true, s3Url: true, metadata: true },
-    }),
-  ])
+  let accounts: Awaited<ReturnType<typeof prisma.socialAccount.findMany>> = []
+  let posts:    Awaited<ReturnType<typeof prisma.scheduledPost.findMany<{ include: { socialAccount: { select: { id: true; platform: true; accountName: true } } } }>>> = []
+  let assets:   { id: string; type: string; s3Url: string | null; metadata: unknown }[] = []
+
+  try {
+    ;[accounts, posts, assets] = await Promise.all([
+      prisma.socialAccount.findMany({
+        where:   { tenantId: session.user.tenantId },
+        orderBy: { createdAt: 'asc' },
+      }),
+      prisma.scheduledPost.findMany({
+        where:   { tenantId: session.user.tenantId },
+        orderBy: { scheduledFor: 'asc' },
+        take:    100,
+        include: { socialAccount: { select: { id: true, platform: true, accountName: true } } },
+      }),
+      prisma.asset.findMany({
+        where:   { tenantId: session.user.tenantId, status: 'READY', type: { in: ['IMAGE', 'VIDEO'] } },
+        orderBy: { createdAt: 'desc' },
+        take:    30,
+        select:  { id: true, type: true, s3Url: true, metadata: true },
+      }),
+    ])
+  } catch (err) { console.error('[scheduler/page]', err) }
 
   return (
     <>

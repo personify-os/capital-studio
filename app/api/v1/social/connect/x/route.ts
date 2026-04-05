@@ -17,11 +17,16 @@ export async function POST(_req: Request) {
   const userId  = accessToken.split('-')[0]
   const handle  = process.env.TWITTER_HANDLE ?? '@lhc_capital'
 
-  await prisma.socialAccount.upsert({
-    where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'X', accountId: userId } },
-    create: { tenantId: session.user.tenantId, platform: 'X', accountName: handle, accountId: userId, accessToken: 'oauth1' },
-    update: { accountName: handle, accessToken: 'oauth1' },
-  })
+  try {
+    await prisma.socialAccount.upsert({
+      where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'X', accountId: userId } },
+      create: { tenantId: session.user.tenantId, platform: 'X', accountName: handle, accountId: userId, accessToken: 'oauth1' },
+      update: { accountName: handle, accessToken: 'oauth1' },
+    })
+  } catch (err) {
+    console.error('[social/connect/x]', err)
+    return NextResponse.json({ message: 'Failed to save X account.' }, { status: 500 })
+  }
 
   return NextResponse.json({ connected: `X: ${handle}` })
 }

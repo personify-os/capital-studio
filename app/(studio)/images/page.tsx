@@ -15,12 +15,15 @@ export default async function ImagesPage() {
   const session = await getServerSession(authOptions)
   if (!session) return null
 
-  const recent = (await prisma.asset.findMany({
-    where:   { tenantId: session.user.tenantId, type: 'IMAGE', status: 'READY' },
-    orderBy: { createdAt: 'desc' },
-    take:    20,
-    select:  { id: true, s3Url: true, metadata: true, createdAt: true },
-  })) as RawImage[]
+  let recent: RawImage[] = []
+  try {
+    recent = (await prisma.asset.findMany({
+      where:   { tenantId: session.user.tenantId, type: 'IMAGE', status: 'READY' },
+      orderBy: { createdAt: 'desc' },
+      take:    20,
+      select:  { id: true, s3Url: true, metadata: true, createdAt: true },
+    })) as RawImage[]
+  } catch (err) { console.error('[images/page]', err) }
 
   return (
     <>

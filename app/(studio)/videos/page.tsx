@@ -1,5 +1,7 @@
 import { getServerSession } from 'next-auth'
+import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
+import { flags } from '@/lib/flags'
 import { prisma } from '@/lib/db'
 import Topbar from '@/components/layout/Topbar'
 import VideosClient from './VideosClient'
@@ -9,15 +11,19 @@ interface RawVideo {
 }
 
 export default async function VideosPage() {
+  if (!flags.videoGeneration) redirect('/dashboard')
   const session = await getServerSession(authOptions)
   if (!session) return null
 
-  const recent = (await prisma.asset.findMany({
-    where:   { tenantId: session.user.tenantId, type: 'VIDEO', status: 'READY' },
-    orderBy: { createdAt: 'desc' },
-    take:    12,
-    select:  { id: true, s3Url: true, metadata: true, createdAt: true },
-  })) as RawVideo[]
+  let recent: RawVideo[] = []
+  try {
+    recent = (await prisma.asset.findMany({
+      where:   { tenantId: session.user.tenantId, type: 'VIDEO', status: 'READY' },
+      orderBy: { createdAt: 'desc' },
+      take:    12,
+      select:  { id: true, s3Url: true, metadata: true, createdAt: true },
+    })) as RawVideo[]
+  } catch (err) { console.error('[videos/page]', err) }
 
   return (
     <>

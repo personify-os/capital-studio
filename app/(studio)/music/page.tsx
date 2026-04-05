@@ -6,19 +6,22 @@ import Topbar from '@/components/layout/Topbar'
 import MusicClient from './MusicClient'
 
 interface RawTrack {
-  id: string; s3Url: string | null; metadata: unknown; createdAt: Date
+  id: string; s3Url: string | null; metadata: { title?: string; model?: string; description?: string; style?: string; instrumental?: boolean; source?: string } | null; createdAt: Date
 }
 
 export default async function MusicPage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect('/login')
 
-  const tracks = (await prisma.asset.findMany({
-    where:   { tenantId: session.user.tenantId, type: 'VOICEOVER' },
-    orderBy: { createdAt: 'desc' },
-    take:    20,
-    select:  { id: true, s3Url: true, metadata: true, createdAt: true },
-  })) as RawTrack[]
+  let tracks: RawTrack[] = []
+  try {
+    tracks = (await prisma.asset.findMany({
+      where:   { tenantId: session.user.tenantId, type: 'MUSIC', status: 'READY' },
+      orderBy: { createdAt: 'desc' },
+      take:    20,
+      select:  { id: true, s3Url: true, metadata: true, createdAt: true },
+    })) as RawTrack[]
+  } catch (err) { console.error('[music/page]', err) }
 
   return (
     <>

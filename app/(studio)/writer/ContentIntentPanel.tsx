@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { ChevronDown, ChevronUp, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import {
   TOPIC_TIERS,
   PURPOSES,
@@ -10,23 +9,19 @@ import {
   QUICK_STARTS,
   type ContentIntent,
 } from '@/lib/content-intent'
+import CtaSelector from './CtaSelector'
+import TopicPicker from './TopicPicker'
+import PurposePicker from './PurposePicker'
 
 interface Props {
   value:    ContentIntent
   onChange: (v: ContentIntent) => void
 }
 
-const CTA_GROUP_LABELS: Record<'contact' | 'learn-more' | 'engage', string> = {
-  contact:    'Contact',
-  'learn-more': 'Learn More',
-  engage:     'Engage',
-}
-
 export default function ContentIntentPanel({ value, onChange }: Props) {
-  const [open,    setOpen]    = useState(true)
-  const [ctaOpen, setCtaOpen] = useState(false)
+  const [open, setOpen] = useState(true)
 
-  const hasAny = !!(value.tier1Id || value.tier2Id || value.purposeId || value.ctaId || value.customCta)
+  const hasAny = !!(value.tier1Id || value.tier2Id || value.purposeId || value.ctaId || value.customCta || value.customTopic || value.customPurpose)
 
   const activeTier1   = TOPIC_TIERS.find((t) => t.id === value.tier1Id)
   const activeTier2   = activeTier1?.subtopics.find((s) => s.id === value.tier2Id)
@@ -38,13 +33,12 @@ export default function ContentIntentPanel({ value, onChange }: Props) {
   }
 
   function clear() {
-    onChange({ tier1Id: null, tier2Id: null, purposeId: null, ctaId: null, customCta: null, ctaPlacement: null })
-    setCtaOpen(false)
+    onChange({ tier1Id: null, tier2Id: null, purposeId: null, ctaId: null, customCta: null, ctaPlacement: null, customTopic: null, customPurpose: null })
   }
 
   function selectTier1(id: string) {
     const next = value.tier1Id === id ? null : id
-    set({ tier1Id: next, tier2Id: null })
+    set({ tier1Id: next, tier2Id: null, customTopic: null })
   }
 
   function selectTier2(id: string) {
@@ -52,7 +46,7 @@ export default function ContentIntentPanel({ value, onChange }: Props) {
   }
 
   function selectPurpose(id: string) {
-    set({ purposeId: value.purposeId === id ? null : id })
+    set({ purposeId: value.purposeId === id ? null : id, customPurpose: null })
   }
 
   function selectCta(id: string) {
@@ -63,20 +57,16 @@ export default function ContentIntentPanel({ value, onChange }: Props) {
     const qs = QUICK_STARTS[idx]
     if (!qs) return
     onChange({
-      tier1Id:      qs.tier1Id,
-      tier2Id:      qs.tier2Id,
-      purposeId:    qs.purposeId,
-      ctaId:        qs.ctaId ?? null,
-      customCta:    null,
-      ctaPlacement: null,
+      tier1Id:       qs.tier1Id,
+      tier2Id:       qs.tier2Id,
+      purposeId:     qs.purposeId,
+      ctaId:         qs.ctaId ?? null,
+      customCta:     null,
+      ctaPlacement:  null,
+      customTopic:   null,
+      customPurpose: null,
     })
-    if (qs.ctaId) setCtaOpen(true)
   }
-
-  const ctaGroups = (['contact', 'learn-more', 'engage'] as const).map((g) => ({
-    group:   g,
-    options: CTA_OPTIONS.filter((c) => c.group === g),
-  }))
 
   return (
     <div className="bg-gray-50 rounded-card p-4">
@@ -138,7 +128,7 @@ export default function ContentIntentPanel({ value, onChange }: Props) {
                   key={i}
                   type="button"
                   onClick={() => applyQuickStart(i)}
-                  className="text-[10px] px-2 py-1 rounded-full border border-gray-200 bg-white text-gray-600 hover:border-brand-azure hover:text-brand-azure transition-colors"
+                  className="text-xs px-3 py-1.5 rounded-full border border-gray-200 bg-white text-gray-600 hover:border-brand-azure hover:text-brand-azure transition-colors"
                 >
                   {qs.icon} {qs.label}
                 </button>
@@ -146,153 +136,27 @@ export default function ContentIntentPanel({ value, onChange }: Props) {
             </div>
           </div>
 
-          {/* Tier 1 — Topic categories */}
-          <div>
-            <p className="text-[10px] font-medium text-gray-500 mb-2">Topic</p>
-            <div className="flex flex-wrap gap-1.5">
-              {TOPIC_TIERS.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => selectTier1(cat.id)}
-                  className={cn(
-                    'text-[10px] px-2.5 py-1 rounded-full border font-medium transition-colors',
-                    value.tier1Id === cat.id
-                      ? 'bg-brand-azure text-white border-brand-azure'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-brand-azure hover:text-brand-azure',
-                  )}
-                >
-                  {cat.icon} {cat.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <TopicPicker
+            tier1Id={value.tier1Id}       tier2Id={value.tier2Id}
+            customTopic={value.customTopic ?? null}
+            onSelectTier1={selectTier1}   onSelectTier2={selectTier2}
+            onCustomTopic={(v) => set({ customTopic: v })}
+          />
 
-          {/* Tier 2 — Subtopics */}
-          {activeTier1 && (
-            <div className="pl-2 border-l border-brand-azure/20">
-              <p className="text-[10px] font-medium text-gray-500 mb-2">More specifically</p>
-              <div className="flex flex-wrap gap-1.5">
-                {activeTier1.subtopics.map((sub) => (
-                  <button
-                    key={sub.id}
-                    type="button"
-                    onClick={() => selectTier2(sub.id)}
-                    className={cn(
-                      'text-[10px] px-2 py-0.5 rounded-full border font-medium transition-colors',
-                      value.tier2Id === sub.id
-                        ? 'bg-brand-navy text-white border-brand-navy'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-brand-navy hover:text-brand-navy',
-                    )}
-                  >
-                    {sub.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Purpose */}
-          <div>
-            <p className="text-[10px] font-medium text-gray-500 mb-2">Purpose</p>
-            <div className="flex flex-wrap gap-1.5">
-              {PURPOSES.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => selectPurpose(p.id)}
-                  className={cn(
-                    'text-[10px] px-2.5 py-1 rounded-full border font-medium transition-colors',
-                    value.purposeId === p.id
-                      ? 'bg-brand-navy text-white border-brand-navy'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-brand-navy hover:text-brand-navy',
-                  )}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <PurposePicker
+            purposeId={value.purposeId}   customPurpose={value.customPurpose ?? null}
+            onSelect={selectPurpose}
+            onCustomChange={(v) => set({ customPurpose: v })}
+          />
 
           {/* CTA */}
-          <div>
-            {!ctaOpen && !value.ctaId && !value.customCta ? (
-              <button
-                type="button"
-                onClick={() => setCtaOpen(true)}
-                className="w-full text-[10px] py-1.5 border border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-brand-orange hover:text-brand-orange transition-colors text-center"
-              >
-                + Add a Call to Action (optional)
-              </button>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-medium text-gray-500">Call to Action</p>
-                  <button
-                    type="button"
-                    onClick={() => { set({ ctaId: null, customCta: null, ctaPlacement: null }); setCtaOpen(false) }}
-                    className="text-[10px] text-gray-400 hover:text-gray-600 flex items-center gap-0.5 transition-colors"
-                  >
-                    <X size={9} /> Remove
-                  </button>
-                </div>
-
-                {ctaGroups.map(({ group, options }) => (
-                  <div key={group}>
-                    <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-1">
-                      {CTA_GROUP_LABELS[group]}
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {options.map((opt) => (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => selectCta(opt.id)}
-                          className={cn(
-                            'text-[10px] px-2 py-0.5 rounded-full border font-medium transition-colors',
-                            value.ctaId === opt.id
-                              ? 'bg-brand-orange text-white border-brand-orange'
-                              : 'bg-white text-gray-600 border-gray-200 hover:border-brand-orange hover:text-brand-orange',
-                          )}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-
-                {/* Custom CTA text input */}
-                <input
-                  type="text"
-                  maxLength={100}
-                  value={value.customCta ?? ''}
-                  onChange={(e) => set({ ctaId: null, customCta: e.target.value || null })}
-                  placeholder="Or type a custom CTA…"
-                  className="w-full px-2.5 py-1.5 text-[10px] rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange placeholder-gray-300 transition"
-                />
-
-                {/* CTA placement selector */}
-                <div className="flex gap-1.5">
-                  {(['caption', 'graphic', 'both'] as const).map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => set({ ctaPlacement: value.ctaPlacement === p ? null : p })}
-                      className={cn(
-                        'flex-1 text-[9px] py-1 rounded-lg border font-semibold capitalize transition-colors',
-                        value.ctaPlacement === p
-                          ? 'bg-brand-orange/10 text-brand-orange border-brand-orange'
-                          : 'bg-white text-gray-500 border-gray-200 hover:border-brand-orange hover:text-brand-orange',
-                      )}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <CtaSelector
+            ctaId={value.ctaId}
+            customCta={value.customCta}
+            ctaPlacement={value.ctaPlacement}
+            onSelectCta={selectCta}
+            onChange={set}
+          />
         </div>
       )}
     </div>

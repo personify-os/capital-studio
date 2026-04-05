@@ -27,8 +27,8 @@ export async function publishPost(postId: string, tenantId?: string): Promise<{ 
     include: { socialAccount: true },
   })
 
-  if (!post)              throw new Error('Post not found')
-  if (post.status === 'PUBLISHED') throw new Error('Already published')
+  if (!post) throw new Error('Post not found')
+  if (post.status === 'PUBLISHED' || post.status === 'FAILED') throw new Error(`Post already in terminal state: ${post.status}`)
 
   const { socialAccount } = post
 
@@ -74,6 +74,7 @@ export async function publishPost(postId: string, tenantId?: string): Promise<{ 
         break
       case 'YOUTUBE': {
         const [, ytRefresh] = token.split('|||')
+        if (!ytRefresh) throw new Error('YouTube account needs to be reconnected — missing refresh token')
         const freshAccessToken = await refreshYouTubeToken(ytRefresh)
         // Persist refreshed access token (Google refresh tokens don't expire, same token reused)
         await prisma.socialAccount.update({
@@ -85,6 +86,7 @@ export async function publishPost(postId: string, tenantId?: string): Promise<{ 
       }
       case 'TIKTOK': {
         const [, storedRefresh] = token.split('|||')
+        if (!storedRefresh) throw new Error('TikTok account needs to be reconnected — missing refresh token')
         const refreshed = await refreshTikTokToken(storedRefresh)
         // Persist the new tokens so the refresh token lifetime is tracked
         await prisma.socialAccount.update({
@@ -117,13 +119,20 @@ export async function publishPost(postId: string, tenantId?: string): Promise<{ 
 }
 
 // Finds and publishes all posts due right now. Called by the cron route.
+// Uses an atomic status transition to PROCESSING to prevent double-publish
+// if two cron instances fire concurrently.
 export async function publishDuePosts(): Promise<{ published: number; failed: number; errors: string[] }> {
+  // Claim up to 50 due posts atomically — set PROCESSING before reading content
+  const now = new Date()
+  await prisma.scheduledPost.updateMany({
+    where: { status: 'SCHEDULED', scheduledFor: { lte: now } },
+    data:  { status: 'PROCESSING' },
+  })
+
   const due = await prisma.scheduledPost.findMany({
-    where: {
-      status:       'SCHEDULED',
-      scheduledFor: { lte: new Date() },
-    },
+    where: { status: 'PROCESSING' },
     include: { socialAccount: true },
+    take: 50,
   })
 
   let published = 0

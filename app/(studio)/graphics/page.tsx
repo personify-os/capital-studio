@@ -15,12 +15,15 @@ export default async function GraphicsPage() {
   const session = await getServerSession(authOptions)
   if (!session) return null
 
-  const recent = (await prisma.asset.findMany({
-    where:   { tenantId: session.user.tenantId, type: 'GRAPHIC', status: 'READY' },
-    orderBy: { createdAt: 'desc' },
-    take:    12,
-    select:  { id: true, htmlContent: true, metadata: true, createdAt: true },
-  })) as RawGraphic[]
+  let recent: RawGraphic[] = []
+  try {
+    recent = (await prisma.asset.findMany({
+      where:   { tenantId: session.user.tenantId, type: 'GRAPHIC', status: 'READY' },
+      orderBy: { createdAt: 'desc' },
+      take:    12,
+      select:  { id: true, htmlContent: true, metadata: true, createdAt: true },
+    })) as RawGraphic[]
+  } catch (err) { console.error('[graphics/page]', err) }
 
   return (
     <>

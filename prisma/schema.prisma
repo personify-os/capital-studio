@@ -30,8 +30,10 @@ enum AssetType {
   IMAGE
   GRAPHIC
   VIDEO
+  MOTION
   AUDIO
   VOICEOVER
+  MUSIC
   DOCUMENT
   CAPTION
 }
@@ -59,6 +61,7 @@ enum Platform {
 enum PostStatus {
   DRAFT
   SCHEDULED
+  PROCESSING
   PUBLISHED
   FAILED
 }
@@ -135,6 +138,7 @@ model Asset {
   scheduledPosts ScheduledPost[]
 
   @@index([tenantId, type])
+  @@index([tenantId, status])
   @@index([tenantId, createdAt(sort: Desc)])
 }
 

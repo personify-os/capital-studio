@@ -23,37 +23,43 @@ export const imageGenerateSchema = z.object({
 })
 
 export const graphicGenerateSchema = z.object({
-  templateId: z.string(),
-  brandId:    z.enum(['lhcapital', 'simrp', 'personal']),
-  headline:   z.string().min(1).max(100),
-  subtext:    z.string().max(200).optional(),
-  cta:        z.string().max(60).optional(),
-  topic:      z.string().max(100).optional(),
-  photoUrl:   z.string().url().optional().or(z.literal('')),
+  templateId:     z.string(),
+  templateFormat: z.string().max(800).optional(),
+  brandId:        z.enum(['lhcapital', 'simrp', 'personal']),
+  headline:       z.string().min(1).max(100),
+  subtext:        z.string().max(200).optional(),
+  cta:            z.string().max(60).optional(),
+  topic:          z.string().max(100).optional(),
+  photoUrl:       z.string().url().optional().or(z.literal('')),
+  contentPillar:  z.enum(['awareness', 'education', 'case-study', 'compliance', 'promotional']).optional(),
 })
 
 export const captionGenerateSchema = z.object({
-  platform:           z.enum(['instagram', 'facebook', 'linkedin', 'x', 'youtube', 'tiktok', 'threads']),
+  platform:           z.enum(['instagram', 'facebook', 'linkedin', 'x', 'youtube', 'tiktok', 'threads', 'substack', 'medium', 'bluesky']),
   tone:               z.enum(['professional', 'casual', 'inspirational', 'educational']),
   topic:              z.string().max(500).optional(),
   brandId:            z.enum(['lhcapital', 'simrp', 'personal']).optional(),
   keywords:           z.array(z.string()).optional(),
   includeHashtags:    z.boolean().optional(),
   seriesCount:        z.number().int().min(1).max(10).optional(),
-  referenceContent:   z.string().max(4000).optional(),
-  referenceUrl:       z.string().url().optional().or(z.literal('')),
+  referenceContent:      z.string().max(4000).optional(),
+  referenceUrl:          z.string().url().optional().or(z.literal('')),
+  referenceImageUrl:     z.string().url().optional().or(z.literal('')),
   intentTier1Id:      z.string().optional(),
   intentTier2Id:      z.string().optional(),
   intentPurposeId:    z.string().optional(),
   intentCtaId:        z.string().optional(),
   intentCustomCta:    z.string().max(100).optional(),
   intentCtaPlacement: z.enum(['graphic', 'caption', 'both']).optional(),
+  intentCustomTopic:   z.string().max(200).optional(),
+  intentCustomPurpose: z.string().max(200).optional(),
+  contentPillar:       z.enum(['awareness', 'education', 'case-study', 'compliance', 'promotional']).optional(),
 })
 
 export const videoGenerateSchema = z.object({
   prompt:      z.string().min(1).max(1000),
   model:       z.enum(['kling-3.0', 'kling-2.1', 'veo-3', 'minimax', 'hunyuan', 'wan']),
-  duration:    z.enum(['5', '10', '30', '60', '120']).default('5'),
+  duration:    z.enum(['5', '10']).default('5'),
   aspectRatio: z.enum(['16:9', '9:16', '1:1']).default('16:9'),
   brandId:     z.enum(['lhcapital', 'simrp', 'personal']).optional(),
 })
@@ -61,7 +67,7 @@ export const videoGenerateSchema = z.object({
 export const motionGenerateSchema = z.object({
   imageUrl:    z.string().url(),
   prompt:      z.string().min(1).max(500),
-  duration:    z.enum(['5', '10']).default('5'),
+  duration:    z.enum(['5', '10', '30', '60']).default('5'),
   aspectRatio: z.enum(['16:9', '9:16', '1:1']).default('16:9'),
   brandId:     z.enum(['lhcapital', 'simrp', 'personal']).optional(),
 })

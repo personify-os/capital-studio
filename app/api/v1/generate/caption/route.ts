@@ -2,23 +2,15 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { captionGenerateSchema } from '@/lib/schemas/generate'
-import { buildBrandPromptContext, getBrandConfig } from '@/lib/brands'
+import { buildBrandPromptContext } from '@/lib/brands'
+import { resolveBrandConfig } from '@/lib/brand-context'
 import { buildIntentContext } from '@/lib/content-intent'
+import { buildPlatformSystemPrompt } from '@/lib/platform-context'
 import type { ContentIntent } from '@/lib/content-intent'
 import Anthropic from '@anthropic-ai/sdk'
 import type { BrandId } from '@/lib/brands'
 import { prisma } from '@/lib/db'
 import { estimateCost } from '@/lib/cost'
-
-const PLATFORM_GUIDANCE: Record<string, string> = {
-  instagram:  'Instagram: engaging, visual-first, 150–220 chars + 5–10 hashtags',
-  facebook:   'Facebook: conversational, slightly longer, 1–3 short paragraphs, optional hashtags',
-  linkedin:   'LinkedIn: professional, insight-driven, 3–5 short paragraphs, no excessive hashtags',
-  x:          'X (Twitter): punchy, under 280 chars, 1–2 hashtags max',
-  youtube:    'YouTube: descriptive, 200–300 chars, include keywords naturally',
-  tiktok:     'TikTok: casual, trend-aware, energetic, 3–5 hashtags',
-  threads:    'Threads: conversational, concise, 1–2 sentences',
-}
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
@@ -37,38 +29,45 @@ export async function POST(req: Request) {
     brandId,
     includeHashtags,
     seriesCount,
+    keywords,
     referenceContent,
     referenceUrl,
+    referenceImageUrl,
     intentTier1Id,
     intentTier2Id,
     intentPurposeId,
     intentCtaId,
     intentCustomCta,
     intentCtaPlacement,
+    intentCustomTopic,
+    intentCustomPurpose,
+    contentPillar,
   } = parsed.data
 
-  // Require topic or at least a tier1 intent selection
-  if (!topic?.trim() && !intentTier1Id && !intentTier2Id) {
+  // Require topic, intent selection, or reference image
+  if (!topic?.trim() && !intentTier1Id && !intentTier2Id && !intentCustomTopic?.trim() && !referenceImageUrl?.trim()) {
     return NextResponse.json(
-      { message: 'Provide a topic or select a content category.' },
+      { message: 'Provide a topic, select a content category, or supply a reference image.' },
       { status: 400 },
     )
   }
 
-  const brand     = getBrandConfig((brandId ?? 'lhcapital') as BrandId)
-  const brandCtx  = buildBrandPromptContext(brand)
-  const platGuide = PLATFORM_GUIDANCE[platform] ?? platform
-  const count     = seriesCount ?? 1
+  const brand      = await resolveBrandConfig((brandId ?? 'lhcapital') as BrandId, session.user.tenantId)
+  const brandCtx   = buildBrandPromptContext(brand, 'copy')
+  const count      = seriesCount ?? 1
   const isMultiple = count > 1
+  const systemPrompt = buildPlatformSystemPrompt(platform, brandCtx, isMultiple ? 'series' : 'caption')
 
   // Build intent context
   const intent: ContentIntent = {
-    tier1Id:      intentTier1Id      ?? null,
-    tier2Id:      intentTier2Id      ?? null,
-    purposeId:    intentPurposeId    ?? null,
-    ctaId:        intentCtaId        ?? null,
-    customCta:    intentCustomCta    ?? null,
-    ctaPlacement: intentCtaPlacement ?? null,
+    tier1Id:       intentTier1Id       ?? null,
+    tier2Id:       intentTier2Id       ?? null,
+    purposeId:     intentPurposeId     ?? null,
+    ctaId:         intentCtaId         ?? null,
+    customCta:     intentCustomCta     ?? null,
+    ctaPlacement:  intentCtaPlacement  ?? null,
+    customTopic:   intentCustomTopic   ?? null,
+    customPurpose: intentCustomPurpose ?? null,
   }
   const intentCtx = buildIntentContext(intent, count)
 
@@ -81,7 +80,7 @@ export async function POST(req: Request) {
 
   promptParts.push(
     `Write ${isMultiple ? `${count} social media captions` : 'one social media caption'} for the following:`,
-    `Platform: ${platGuide}`,
+    `Platform: ${platform}`,
   )
 
   // Only include bare tone line when no purposeId (purpose already carries tone directive)
@@ -89,14 +88,28 @@ export async function POST(req: Request) {
     promptParts.push(`Tone: ${tone}`)
   }
 
+  // Content pillar shapes structure and intent
+  if (contentPillar) {
+    const pillarGuidance: Record<string, string> = {
+      awareness:   'CONTENT PILLAR — Awareness: Surface the problem (employers overpaying payroll taxes, missing benefit opportunities) without pitching the solution yet. Create curiosity and recognition. Do not mention the SIMRP by name. End with a question or observation that makes the reader want to learn more.',
+      education:   'CONTENT PILLAR — Education: Explain the mechanism clearly — how IRS §125/§105/§106 works, what redirecting FICA taxes means, why employers qualify. Use plain language. Reference the specific IRS code number. Break down the math ($550/employee, 7.65% FICA). Credentialed and detailed, not salesy.',
+      'case-study':'CONTENT PILLAR — Case Study: Tell a before/after story. Include a specific company type/size, the specific savings amount, and what changed for employees. Concrete numbers over vague claims. Story-driven credibility. End with a result, not a pitch.',
+      compliance:  'CONTENT PILLAR — Compliance & Trust: Address skepticism head-on. Cite IRS authorization (§125, §105, §106). Acknowledge that it sounds too good to be true and then explain why it is legal and established. Reference how long it has been in use. Authoritative and evidence-backed.',
+      promotional: 'CONTENT PILLAR — Promotional: Bottom-of-funnel. Make a specific offer (free payroll tax analysis, 30-minute consultation). State the primary benefit in the first line. Include a clear, single CTA. Create appropriate urgency without false scarcity.',
+    }
+    promptParts.push('', pillarGuidance[contentPillar])
+  }
+
   // Include topic as additional details when provided
   if (topic?.trim()) {
-    promptParts.push(`Additional details: ${topic.trim()}`)
+    promptParts.push(`Topic/details: ${topic.trim()}`)
   }
 
   promptParts.push(includeHashtags ? 'Include relevant hashtags.' : 'No hashtags.')
 
-  promptParts.push('', 'Brand context:', brandCtx)
+  if (keywords && keywords.length > 0) {
+    promptParts.push(`Keywords to weave in naturally: ${keywords.join(', ')}`)
+  }
 
   if (referenceContent?.trim()) {
     promptParts.push('', 'Reference material (use as context, do not copy verbatim):', referenceContent.trim())
@@ -104,34 +117,86 @@ export async function POST(req: Request) {
   if (referenceUrl?.trim()) {
     promptParts.push('', `Reference URL: ${referenceUrl.trim()}`)
   }
+  if (referenceImageUrl?.trim()) {
+    promptParts.push('', 'A reference image is attached — use it as the visual subject for the caption.')
+  }
 
-  promptParts.push(
-    '',
-    isMultiple
-      ? `Format your response as a numbered list: 1. [caption] 2. [caption] etc. Each caption should be distinct.`
-      : 'Output only the caption text — no labels, no explanation.',
-  )
+  if (isMultiple) {
+    promptParts.push(
+      '',
+      `Return a JSON array of exactly ${count} objects. Each object must have this schema:`,
+      `{ "body": "caption text without hashtags", "hashtags": ["#tag1", "#tag2"], "altText": "short accessible image description" }`,
+      `hashtags should be an empty array [] when not requested. Output ONLY the JSON array — no markdown, no explanation.`,
+    )
+  } else {
+    promptParts.push(
+      '',
+      'Return a single JSON object with this schema:',
+      '{ "body": "caption text without hashtags", "hashtags": ["#tag1", "#tag2"], "altText": "short accessible image description" }',
+      'hashtags should be an empty array [] when not requested. Output ONLY the JSON object — no markdown, no explanation.',
+    )
+  }
 
   const prompt = promptParts.join('\n')
 
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-  const message = await client.messages.create({
-    model:      'claude-haiku-4-5-20251001',
-    max_tokens: 1024,
-    messages:   [{ role: 'user', content: prompt }],
-  })
+  const messageContent = referenceImageUrl?.trim()
+    ? [
+        { type: 'image' as const, source: { type: 'url' as const, url: referenceImageUrl.trim() } },
+        { type: 'text'  as const, text: prompt },
+      ]
+    : prompt
 
-  const text = message.content.find((b) => b.type === 'text')?.text?.trim() ?? ''
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  let message: Awaited<ReturnType<typeof client.messages.create>>
+  try {
+    message = await client.messages.create({
+      model:      'claude-haiku-4-5-20251001',
+      max_tokens: isMultiple ? 4096 : 2048,
+      system:     systemPrompt,
+      messages:   [{ role: 'user', content: messageContent }],
+    })
+  } catch (err: any) {
+    console.error('[caption] Anthropic API error:', err)
+    return NextResponse.json({ message: err.message ?? 'Generation failed.' }, { status: 500 })
+  }
+
+  const raw  = message.content.find((b) => b.type === 'text')?.text?.trim() ?? ''
+  const json = raw.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/, '').trim()
+
+  const assetMeta = {
+    model:       'claude-haiku-4-5-20251001',
+    platform,
+    cost:        estimateCost('claude-haiku-4-5-20251001'),
+    contentPillar:     contentPillar || undefined,
+    keywords:          keywords && keywords.length > 0 ? keywords : undefined,
+    referenceContent:  referenceContent?.trim() || undefined,
+    referenceUrl:      referenceUrl?.trim()     || undefined,
+    referenceImageUrl: referenceImageUrl?.trim() || undefined,
+    intent: {
+      tier1Id:      intentTier1Id      ?? null,
+      tier2Id:      intentTier2Id      ?? null,
+      purposeId:    intentPurposeId    ?? null,
+      ctaId:        intentCtaId        ?? null,
+      hasCustomCta: !!(intentCustomCta),
+    },
+  }
 
   if (isMultiple) {
-    const captions = text
-      .split(/\n\d+\.\s+/)
-      .map((s) => s.trim())
-      .filter(Boolean)
-    const result = captions[0]?.match(/^\d+\./) ? captions.slice(1) : captions
-    const final  = result.slice(0, count)
+    let results: { body: string; hashtags: string[]; altText?: string }[] = []
+    try {
+      const parsed = JSON.parse(json)
+      results = (Array.isArray(parsed) ? parsed : [parsed])
+        .slice(0, count)
+        .map((r: any) => ({
+          body:     typeof r.body     === 'string' ? r.body.trim()    : String(r.body ?? ''),
+          hashtags: Array.isArray(r.hashtags)       ? r.hashtags      : [],
+          altText:  typeof r.altText  === 'string'  ? r.altText.trim(): undefined,
+        }))
+    } catch {
+      // fallback: treat raw text as body, no hashtags
+      results = [{ body: raw, hashtags: [] }]
+    }
 
-    // Persist CAPTION asset
     try {
       await prisma.asset.create({
         data: {
@@ -140,30 +205,28 @@ export async function POST(req: Request) {
           brandId:  brandId ?? null,
           type:     'CAPTION',
           status:   'READY',
-          metadata: {
-            model:       'claude-haiku-4-5-20251001',
-            platform,
-            seriesCount: count,
-            cost:        estimateCost('claude-haiku-4-5-20251001'),
-            texts:       final,
-            intent: {
-              tier1Id:      intentTier1Id      ?? null,
-              tier2Id:      intentTier2Id      ?? null,
-              purposeId:    intentPurposeId    ?? null,
-              ctaId:        intentCtaId        ?? null,
-              hasCustomCta: !!(intentCustomCta),
-            },
-          },
+          metadata: { ...assetMeta, seriesCount: count, results },
         },
       })
     } catch (err) {
       console.error('[caption] asset save failed:', err)
     }
 
-    return NextResponse.json({ captions: final })
+    return NextResponse.json({ results })
   }
 
-  // Persist single CAPTION asset
+  let result: { body: string; hashtags: string[]; altText?: string }
+  try {
+    const parsed = JSON.parse(json)
+    result = {
+      body:     typeof parsed.body     === 'string' ? parsed.body.trim()    : String(parsed.body ?? ''),
+      hashtags: Array.isArray(parsed.hashtags)       ? parsed.hashtags      : [],
+      altText:  typeof parsed.altText  === 'string'  ? parsed.altText.trim(): undefined,
+    }
+  } catch {
+    result = { body: raw, hashtags: [] }
+  }
+
   try {
     await prisma.asset.create({
       data: {
@@ -172,25 +235,12 @@ export async function POST(req: Request) {
         brandId:  brandId ?? null,
         type:     'CAPTION',
         status:   'READY',
-        metadata: {
-          model:       'claude-haiku-4-5-20251001',
-          platform,
-          seriesCount: 1,
-          cost:        estimateCost('claude-haiku-4-5-20251001'),
-          text,
-          intent: {
-            tier1Id:      intentTier1Id      ?? null,
-            tier2Id:      intentTier2Id      ?? null,
-            purposeId:    intentPurposeId    ?? null,
-            ctaId:        intentCtaId        ?? null,
-            hasCustomCta: !!(intentCustomCta),
-          },
-        },
+        metadata: { ...assetMeta, seriesCount: 1, result },
       },
     })
   } catch (err) {
     console.error('[caption] asset save failed:', err)
   }
 
-  return NextResponse.json({ caption: text })
+  return NextResponse.json({ result })
 }

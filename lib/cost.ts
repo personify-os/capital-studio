@@ -10,12 +10,22 @@ const MODEL_COSTS: Record<string, ModelCost> = {
   // Image models (per generation)
   'flux-pro':             { perCall: 0.055 },
   'flux-schnell':         { perCall: 0.003 },
+  'fal-flux':             { perCall: 0.003 },  // Flux Schnell via fal.ai
   'flux-dev':             { perCall: 0.025 },
   'flux-realism':         { perCall: 0.035 },
   'ideogram-v3':          { perCall: 0.08  },
   'recraft-v3':           { perCall: 0.04  },
   'imagen-4':             { perCall: 0.04  },
   'dall-e-3':             { perCall: 0.04  },
+  'seedream-v3':          { perCall: 0.03  },
+  'realistic-vision':     { perCall: 0.015 },
+  'nano-banana-2':        { perCall: 0.035 },
+  'nano-banana-pro':      { perCall: 0.055 },
+  'gemini-flash':         { perCall: 0.03  },
+  'gemini-flash-pro':     { perCall: 0.05  },
+
+  // Motion (image-to-video via Kling)
+  'kling-motion':         { perCall: 0.22  },
 
   // Video models (per generation)
   'kling-3.0':            { perCall: 0.28  },

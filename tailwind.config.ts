@@ -4,16 +4,18 @@ import type { Config } from 'tailwindcss'
 // Update hex values here only — all components use Tailwind tokens.
 // Source: Canva brand kit (confirmed 2026-03-27) + lhccapital.org
 const brand = {
-  azure:   '#0475ae', // Vivid Azure — logo primary, buttons, CTAs
-  navy:    '#041740', // Dark Blue — logo dark shade, sidebar
-  navyWeb: '#0b2147', // Deep Navy — website dark sections
-  darkest: '#070e1a', // Near-black — darkest backgrounds
-  orange:  '#ed6835', // Orange Accent — website CTA, highlights
-  teal:    '#00c4cc', // Teal — icon accent (from brand doc)
-  light:   '#689EB8', // Light Blue — secondary, borders (from brand doc)
-  white:   '#FFFFFF',
-  offwhite:'#f9f9f9', // App background (from website)
-  charcoal:'#1a1a2e', // Dark text
+  azure:     '#0475ae', // Vivid Azure — logo primary, buttons, CTAs
+  azureDark: '#035d8a', // Azure hover/pressed state
+  navy:      '#041740', // Dark Blue — logo dark shade, sidebar
+  navyWeb:   '#0b2147', // Deep Navy — website dark sections
+  darkest:   '#070e1a', // Near-black — darkest backgrounds
+  orange:    '#ed6835', // Orange Accent — website CTA, highlights
+  teal:      '#00c4cc', // Teal — icon accent (from brand doc)
+  light:     '#689EB8', // Light Blue — secondary, borders (from brand doc)
+  muted:     '#89a8c4', // Muted Blue — inactive nav text
+  white:     '#FFFFFF',
+  offwhite:  '#f9f9f9', // App background (from website)
+  charcoal:  '#1a1a2e', // Dark text
 }
 
 const config: Config = {
@@ -21,6 +23,7 @@ const config: Config = {
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     './hooks/**/*.{js,ts,jsx,tsx}',
+    './lib/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
@@ -29,16 +32,18 @@ const config: Config = {
       },
       colors: {
         brand: {
-          azure:   brand.azure,
-          navy:    brand.navy,
-          'navy-web': brand.navyWeb,
-          darkest: brand.darkest,
-          orange:  brand.orange,
-          teal:    brand.teal,
-          light:   brand.light,
+          azure:       brand.azure,
+          'azure-dark': brand.azureDark,
+          navy:        brand.navy,
+          'navy-web':  brand.navyWeb,
+          darkest:     brand.darkest,
+          orange:      brand.orange,
+          teal:        brand.teal,
+          light:       brand.light,
+          muted:       brand.muted,
           // aliases used in components
-          blue:    brand.azure,
-          green:   '#37ca37', // Personal brand accent green
+          blue:        brand.azure,
+          green:       '#37ca37', // Personal brand accent green
         },
         'app-bg': brand.offwhite,
         charcoal: brand.charcoal,

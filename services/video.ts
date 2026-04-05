@@ -1,5 +1,6 @@
 import { fal } from '@fal-ai/client'
 import type { VideoGenerateInput } from '@/lib/schemas/generate'
+import { withRetry, isTransient } from '@/lib/retry'
 
 // Verify model IDs at https://fal.ai/models
 const VIDEO_MODEL_MAP: Record<string, string> = {
@@ -21,14 +22,14 @@ export async function generateMotionVideo(
 ): Promise<string> {
   fal.config({ credentials: process.env.FAL_KEY! })
 
-  const result = await fal.run(MOTION_MODEL, {
+  const result = await withRetry(() => fal.run(MOTION_MODEL, {
     input: {
       image_url:    imageUrl,
       prompt,
-      duration:     duration as '5' | '10',
+      duration:     duration as '5' | '10' | '30' | '60',
       aspect_ratio: aspectRatio,
     } as any,
-  })
+  }), { retryOn: isTransient })
 
   const r = result as any
   const url = r.video?.url ?? r.video_url ?? r.url
@@ -48,13 +49,13 @@ export async function generateVideo(input: VideoGenerateInput): Promise<string> 
   const modelId = VIDEO_MODEL_MAP[input.model]
   if (!modelId) throw new Error(`Unknown video model: ${input.model}`)
 
-  const result = await fal.run(modelId, {
+  const result = await withRetry(() => fal.run(modelId, {
     input: {
       prompt:       input.prompt,
-      duration:     input.duration as '5' | '10',
+      duration:     input.duration,
       aspect_ratio: ASPECT_MAP[input.aspectRatio] ?? '16:9',
     },
-  })
+  }), { retryOn: isTransient })
 
   const r = result as any
   const url = r.video?.url ?? r.video_url ?? r.url

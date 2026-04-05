@@ -17,14 +17,18 @@ export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
 
-  const posts = await prisma.scheduledPost.findMany({
-    where:   { tenantId: session.user.tenantId },
-    orderBy: { scheduledFor: 'asc' },
-    include: { socialAccount: { select: { id: true, platform: true, accountName: true } } },
-    take:    100,
-  })
-
-  return NextResponse.json({ posts })
+  try {
+    const posts = await prisma.scheduledPost.findMany({
+      where:   { tenantId: session.user.tenantId },
+      orderBy: { scheduledFor: 'asc' },
+      include: { socialAccount: { select: { id: true, platform: true, accountName: true } } },
+      take:    100,
+    })
+    return NextResponse.json({ posts })
+  } catch (err) {
+    console.error('[posts/GET]', err)
+    return NextResponse.json({ message: 'Failed to load posts.' }, { status: 500 })
+  }
 }
 
 export async function POST(req: Request) {
@@ -89,14 +93,20 @@ export async function POST(req: Request) {
     })),
   ]
 
-  const posts = await prisma.$transaction(
-    allPostData.map((data) =>
-      prisma.scheduledPost.create({
-        data,
-        include: { socialAccount: { select: { id: true, platform: true, accountName: true } } },
-      }),
-    ),
-  )
+  let posts: Awaited<ReturnType<typeof prisma.scheduledPost.findMany>>
+  try {
+    posts = await prisma.$transaction(
+      allPostData.map((data) =>
+        prisma.scheduledPost.create({
+          data,
+          include: { socialAccount: { select: { id: true, platform: true, accountName: true } } },
+        }),
+      ),
+    )
+  } catch (err) {
+    console.error('[posts/POST]', err)
+    return NextResponse.json({ message: 'Failed to create posts.' }, { status: 500 })
+  }
 
   return NextResponse.json({ posts }, { status: 201 })
 }

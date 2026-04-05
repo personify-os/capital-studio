@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 
 interface GenerateOptions<TInput, TOutput> {
   endpoint: string
@@ -25,6 +25,11 @@ export function useGenerate<TInput, TOutput>({ endpoint, onSuccess }: GenerateOp
     error:   null,
   })
 
+  // Keep onSuccess in a ref so generate() never needs it as a dependency,
+  // preventing stale closure bugs when callers pass inline arrow functions.
+  const onSuccessRef = useRef(onSuccess)
+  useEffect(() => { onSuccessRef.current = onSuccess }, [onSuccess])
+
   const generate = useCallback(async (input: TInput) => {
     setState({ data: null, loading: true, error: null })
     try {
@@ -42,11 +47,11 @@ export function useGenerate<TInput, TOutput>({ endpoint, onSuccess }: GenerateOp
 
       const data: TOutput = await res.json()
       setState({ data, loading: false, error: null })
-      onSuccess?.(data)
+      onSuccessRef.current?.(data)
     } catch {
       setState((s) => ({ ...s, loading: false, error: 'Network error. Please try again.' }))
     }
-  }, [endpoint, onSuccess])
+  }, [endpoint])
 
   const reset = useCallback(() => setState({ data: null, loading: false, error: null }), [])
 

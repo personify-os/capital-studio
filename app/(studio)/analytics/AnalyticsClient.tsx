@@ -1,15 +1,26 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { ImageIcon, Film, Mic, Layers, BarChart3, FileText } from 'lucide-react'
-import { TOPIC_TIERS, PURPOSES } from '@/lib/content-intent'
+import useAnalytics, { type AssetRecord, MODULE_CONFIG } from '@/hooks/useAnalytics'
+import ActivityChart from '@/components/analytics/ActivityChart'
+import IntentInsights from '@/components/analytics/IntentInsights'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+const RANGE_OPTIONS = [
+  { label: '7d', days: 7 }, { label: '30d', days: 30 }, { label: '90d', days: 90 },
+  { label: '1y', days: 365 }, { label: 'All Time', days: Infinity },
+]
 
-interface AssetRecord { id: string; type: string; metadata: any; createdAt: string }
-interface Props { assets: AssetRecord[] }
+const BRAND_DISPLAY = [
+  { id: 'lhcapital', label: 'LH Capital', bgClass: 'bg-brand-azure' },
+  { id: 'simrp',     label: 'The SIMRP',  bgClass: 'bg-brand-light' },
+  { id: 'personal',  label: 'Personal',   bgClass: 'bg-brand-green' },
+]
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+const MODULE_ICONS: Record<string, React.ElementType> = {
+  IMAGE: ImageIcon, VIDEO: Film, MOTION: Film, VOICEOVER: Mic,
+  MUSIC: BarChart3, GRAPHIC: Layers, CAPTION: FileText,
+}
 
 function StatCard({ label, value, accent }: { label: string; value: number | string; accent: string }) {
   return (
@@ -20,138 +31,10 @@ function StatCard({ label, value, accent }: { label: string; value: number | str
   )
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const RANGE_OPTIONS = [
-  { label: '7d',       days: 7 },
-  { label: '30d',      days: 30 },
-  { label: '90d',      days: 90 },
-  { label: '1y',       days: 365 },
-  { label: 'All Time', days: Infinity },
-]
-
-const MODULE_CONFIG: { type: string; label: string; Icon: React.ElementType }[] = [
-  { type: 'IMAGE',     label: 'Images',     Icon: ImageIcon },
-  { type: 'VIDEO',     label: 'Videos',     Icon: Film },
-  { type: 'VOICEOVER', label: 'Voiceover',  Icon: Mic },
-  { type: 'GRAPHIC',   label: 'Graphics',   Icon: Layers },
-  { type: 'CAPTION',   label: 'Captions',   Icon: FileText },
-]
-
-function cutoffDate(days: number): Date {
-  if (!isFinite(days)) return new Date(0)
-  const d = new Date()
-  d.setDate(d.getDate() - days)
-  return d
-}
-
-function fmtDay(d: Date) {
-  return d.toISOString().slice(0, 10)
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-
-export default function AnalyticsClient({ assets }: Props) {
+export default function AnalyticsClient({ assets }: { assets: AssetRecord[] }) {
   const [rangeDays, setRangeDays] = useState(30)
-
-  // Filter assets by selected range
-  const filtered = useMemo(() => {
-    const cutoff = cutoffDate(rangeDays)
-    return assets.filter((a) => new Date(a.createdAt) >= cutoff)
-  }, [assets, rangeDays])
-
-  // Stat counts
-  const total    = filtered.length
-  const images   = filtered.filter((a) => a.type === 'IMAGE').length
-  const videos   = filtered.filter((a) => a.type === 'VIDEO').length
-  const audioGfx = filtered.filter((a) => a.type === 'VOICEOVER' || a.type === 'GRAPHIC').length
-
-  // By module counts
-  const moduleCounts = useMemo(() =>
-    Object.fromEntries(MODULE_CONFIG.map(({ type }) => [
-      type,
-      filtered.filter((a) => a.type === type).length,
-    ])),
-  [filtered])
-
-  // By model counts
-  const modelCounts = useMemo(() => {
-    const map: Record<string, number> = {}
-    for (const a of filtered) {
-      const model = (a.metadata as any)?.model as string | undefined
-      if (!model) continue
-      map[model] = (map[model] ?? 0) + 1
-    }
-    return Object.entries(map).sort((a, b) => b[1] - a[1])
-  }, [filtered])
-
-  // Daily activity — last 30 days always (independent of range)
-  const dailyData = useMemo(() => {
-    const days: { date: string; count: number }[] = []
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
-      days.push({ date: fmtDay(d), count: 0 })
-    }
-    const cutoff = cutoffDate(30)
-    for (const a of assets) {
-      if (new Date(a.createdAt) < cutoff) continue
-      const key = fmtDay(new Date(a.createdAt))
-      const slot = days.find((d) => d.date === key)
-      if (slot) slot.count++
-    }
-    return days
-  }, [assets])
-
-  const maxDay = Math.max(...dailyData.map((d) => d.count), 1)
-
-  // Estimated cost
-  const totalCost = useMemo(() => {
-    let sum = 0
-    let hasCost = false
-    for (const a of filtered) {
-      const cost = (a.metadata as any)?.cost as number | undefined
-      if (typeof cost === 'number') { sum += cost; hasCost = true }
-    }
-    return hasCost ? sum : null
-  }, [filtered])
-
-  // Intent insights — sourced from CAPTION assets only
-  const intentInsights = useMemo(() => {
-    const captions = filtered.filter((a) => a.type === 'CAPTION')
-    if (captions.length === 0) return null
-
-    const tier1Map: Record<string, number> = {}
-    const purposeMap: Record<string, number> = {}
-    let ctaCount = 0
-
-    for (const a of captions) {
-      const intent = (a.metadata as any)?.intent
-      if (!intent) continue
-      if (intent.tier1Id) tier1Map[intent.tier1Id] = (tier1Map[intent.tier1Id] ?? 0) + 1
-      if (intent.purposeId) purposeMap[intent.purposeId] = (purposeMap[intent.purposeId] ?? 0) + 1
-      if (intent.ctaId || intent.hasCustomCta) ctaCount++
-    }
-
-    const topTopics = Object.entries(tier1Map)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([id, count]) => {
-        const cat = TOPIC_TIERS.find((t) => t.id === id)
-        return { id, label: cat ? `${cat.icon} ${cat.label}` : id, count }
-      })
-
-    const topPurposes = Object.entries(purposeMap)
-      .sort((a, b) => b[1] - a[1])
-      .map(([id, count]) => {
-        const p = PURPOSES.find((p) => p.id === id)
-        return { id, label: p?.label ?? id, count }
-      })
-
-    const ctaPct = captions.length > 0 ? Math.round((ctaCount / captions.length) * 100) : 0
-
-    return { total: captions.length, topTopics, topPurposes, ctaCount, ctaPct }
-  }, [filtered])
+  const { total, images, videos, captions, brandCounts, moduleCounts, modelCounts, dailyData, maxDay, totalCost, pillarCounts, intentInsights } =
+    useAnalytics(assets, rangeDays)
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -168,9 +51,7 @@ export default function AnalyticsClient({ assets }: Props) {
               key={label}
               onClick={() => setRangeDays(days)}
               className={`px-3 py-1.5 rounded-[6px] text-xs font-semibold transition-colors ${
-                rangeDays === days
-                  ? 'bg-brand-azure text-white'
-                  : 'text-gray-500 hover:text-brand-navy'
+                rangeDays === days ? 'bg-brand-azure text-white' : 'text-gray-500 hover:text-brand-navy'
               }`}
             >
               {label}
@@ -184,17 +65,16 @@ export default function AnalyticsClient({ assets }: Props) {
         <StatCard label="Total Generated" value={total}    accent="text-brand-navy" />
         <StatCard label="Images"          value={images}   accent="text-brand-azure" />
         <StatCard label="Videos"          value={videos}   accent="text-brand-light" />
-        <StatCard label="Audio & Graphics" value={audioGfx} accent="text-brand-orange" />
+        <StatCard label="Captions"        value={captions} accent="text-brand-orange" />
       </div>
 
-      {/* By Module + By Model side-by-side */}
+      {/* By Module + By Model */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-
-        {/* By Module */}
         <div className="bg-white rounded-card shadow-card p-5">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Content by Module</p>
           <div className="space-y-4">
-            {MODULE_CONFIG.map(({ type, label, Icon }) => {
+            {MODULE_CONFIG.map(({ type, label }) => {
+              const Icon  = MODULE_ICONS[type] ?? BarChart3
               const count = moduleCounts[type] ?? 0
               const pct   = total > 0 ? Math.round((count / total) * 100) : 0
               return (
@@ -208,10 +88,7 @@ export default function AnalyticsClient({ assets }: Props) {
                     <span className="text-xs text-gray-400 w-8 text-right">{pct}%</span>
                   </div>
                   <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-brand-azure rounded-full transition-all duration-500"
-                      style={{ width: `${pct}%` }}
-                    />
+                    <div className="h-full bg-brand-azure rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               )
@@ -219,7 +96,6 @@ export default function AnalyticsClient({ assets }: Props) {
           </div>
         </div>
 
-        {/* By Model */}
         <div className="bg-white rounded-card shadow-card p-5">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Content by Model</p>
           {modelCounts.length === 0 ? (
@@ -232,15 +108,10 @@ export default function AnalyticsClient({ assets }: Props) {
                   <div key={model}>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm text-gray-700 flex-1 truncate font-medium">{model}</span>
-                      <span className="text-xs bg-brand-azure/10 text-brand-azure font-semibold px-2 py-0.5 rounded-badge shrink-0">
-                        {count}
-                      </span>
+                      <span className="text-xs bg-brand-azure/10 text-brand-azure font-semibold px-2 py-0.5 rounded-badge shrink-0">{count}</span>
                     </div>
                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-brand-azure rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%` }}
-                      />
+                      <div className="h-full bg-brand-azure rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 )
@@ -250,138 +121,71 @@ export default function AnalyticsClient({ assets }: Props) {
         </div>
       </div>
 
-      {/* Daily Activity Chart */}
-      <div className="bg-white rounded-card shadow-card p-5 mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <BarChart3 size={14} className="text-brand-azure" />
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Daily Activity (last 30 days)</p>
-        </div>
-        <div className="flex items-end gap-0.5 h-24">
-          {dailyData.map(({ date, count }) => {
-            const heightPct = Math.round((count / maxDay) * 100)
-            const shortDate = date.slice(5) // MM-DD
-            return (
-              <div key={date} className="group relative flex-1 flex flex-col items-center justify-end h-full">
-                <div
-                  className="w-full bg-brand-azure/80 hover:bg-brand-azure rounded-t transition-colors cursor-default"
-                  style={{ height: `${Math.max(heightPct, count > 0 ? 4 : 0)}%` }}
-                />
-                {/* Tooltip */}
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-brand-navy text-white text-[9px] font-semibold px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                  {shortDate}: {count}
+      {/* Brand Breakdown */}
+      {Object.keys(brandCounts).length > 0 && (
+        <div className="bg-white rounded-card shadow-card p-5 mb-8">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Content by Brand</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {BRAND_DISPLAY.map(({ id, label, bgClass }) => {
+              const count = brandCounts[id] ?? 0
+              const pct   = total > 0 ? Math.round((count / total) * 100) : 0
+              return (
+                <div key={id} className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${bgClass}`} />
+                      <span className="text-sm font-medium text-gray-700">{label}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-bold text-brand-navy">{count}</span>
+                      <span className="text-xs text-gray-400">{pct}%</span>
+                    </div>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-500 ${bgClass}`} style={{ width: `${pct}%` }} />
+                  </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
-        {/* x-axis labels — every 7th day */}
-        <div className="flex items-end gap-0.5 mt-1">
-          {dailyData.map(({ date }, i) => (
-            <div key={date} className="flex-1 text-center">
-              {i % 7 === 0 && (
-                <span className="text-[8px] text-gray-400">{date.slice(5)}</span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
 
-      {/* Estimated Cost */}
+      <ActivityChart dailyData={dailyData} maxDay={maxDay} />
+
       {totalCost !== null && (
         <div className="bg-white rounded-card shadow-card p-5 mb-8">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Estimated Cost</p>
-          <p className="text-3xl font-bold text-brand-navy">
-            ${totalCost.toFixed(4)}
-          </p>
+          <p className="text-3xl font-bold text-brand-navy">${totalCost.toFixed(4)}</p>
           <p className="text-xs text-gray-400 mt-1">Based on cost data stored in asset metadata for this period.</p>
         </div>
       )}
 
-      {/* Intent Insights */}
-      {intentInsights && (
-        <div className="bg-white rounded-card shadow-card p-5">
-          <div className="flex items-center gap-2 mb-5">
-            <FileText size={14} className="text-brand-azure" />
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
-              Caption Intent Insights
-            </p>
-            <span className="text-[10px] bg-brand-azure/10 text-brand-azure font-semibold px-2 py-0.5 rounded-badge">
-              {intentInsights.total} captions
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Top Topics */}
-            <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Top Topics</p>
-              {intentInsights.topTopics.length === 0 ? (
-                <p className="text-sm text-gray-400">No topic data yet.</p>
-              ) : (
-                <div className="space-y-3">
-                  {intentInsights.topTopics.map(({ id, label, count }) => {
-                    const pct = intentInsights.total > 0 ? Math.round((count / intentInsights.total) * 100) : 0
-                    return (
-                      <div key={id}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-gray-700 font-medium truncate flex-1">{label}</span>
-                          <span className="text-xs font-semibold text-brand-navy ml-2">{count}</span>
-                          <span className="text-[10px] text-gray-400 w-8 text-right">{pct}%</span>
-                        </div>
-                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-brand-azure rounded-full transition-all duration-500"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </div>
-                    )
-                  })}
+      {pillarCounts.length > 0 && (
+        <div className="bg-white rounded-card shadow-card p-5 mb-8">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Content by Pillar</p>
+          <div className="space-y-3">
+            {pillarCounts.map(([pillar, count]) => {
+              const pct = total > 0 ? Math.round((count / total) * 100) : 0
+              const label = pillar === 'case-study' ? 'Case Study' : pillar.charAt(0).toUpperCase() + pillar.slice(1)
+              return (
+                <div key={pillar}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-medium text-gray-700 flex-1 capitalize">{label}</span>
+                    <span className="text-xs bg-brand-teal/10 text-brand-teal font-semibold px-2 py-0.5 rounded-badge">{count}</span>
+                    <span className="text-xs text-gray-400 w-8 text-right">{pct}%</span>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-brand-teal rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                  </div>
                 </div>
-              )}
-            </div>
-
-            {/* Top Purposes */}
-            <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Top Purposes</p>
-              {intentInsights.topPurposes.length === 0 ? (
-                <p className="text-sm text-gray-400">No purpose data yet.</p>
-              ) : (
-                <div className="flex flex-wrap gap-1.5">
-                  {intentInsights.topPurposes.map(({ id, label, count }) => (
-                    <div
-                      key={id}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-navy/5 border border-brand-navy/10"
-                    >
-                      <span className="text-xs font-medium text-brand-navy">{label}</span>
-                      <span className="text-[10px] text-brand-navy/60 font-semibold">{count}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* CTA Usage */}
-            <div>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">CTA Usage</p>
-              <div className="flex flex-col items-start gap-2">
-                <p className="text-3xl font-bold text-brand-orange">{intentInsights.ctaPct}%</p>
-                <p className="text-xs text-gray-500">
-                  of captions included a call to action
-                </p>
-                <p className="text-[10px] text-gray-400">
-                  {intentInsights.ctaCount} of {intentInsights.total} generated
-                </p>
-                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mt-1">
-                  <div
-                    className="h-full bg-brand-orange rounded-full transition-all duration-500"
-                    style={{ width: `${intentInsights.ctaPct}%` }}
-                  />
-                </div>
-              </div>
-            </div>
+              )
+            })}
           </div>
         </div>
       )}
+
+      {intentInsights && <IntentInsights data={intentInsights} />}
 
     </div>
   )

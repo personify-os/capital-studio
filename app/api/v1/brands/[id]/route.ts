@@ -4,13 +4,28 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
 
+const hexColor = z.string().regex(/^#[0-9a-fA-F]{3,8}$/)
+
 const patchSchema = z.object({
-  tagline:   z.string().max(200).optional(),
-  tone:      z.string().max(500).optional(),
-  audience:  z.string().max(500).optional(),
-  products:  z.array(z.string()).optional(),
-  guidelines:z.string().max(5000).optional(),
-  logoUrl:   z.string().url().optional().or(z.literal('')),
+  tagline:      z.string().max(200).optional(),
+  tone:         z.string().max(500).optional(),
+  audience:     z.string().max(500).optional(),
+  products:     z.array(z.string()).optional(),
+  guidelines:   z.string().max(5000).optional(),
+  visualStyle:  z.string().max(1000).optional(),
+  keyMessages:  z.array(z.string()).optional(),
+  logoUrl:      z.string().url().optional().or(z.literal('')),
+  colors:       z.object({
+    primary:   hexColor.optional(),
+    secondary: hexColor.optional(),
+    accent:    hexColor.optional(),
+    dark:      hexColor.optional(),
+    light:     hexColor.optional(),
+  }).optional(),
+  fonts:        z.object({
+    heading: z.string().max(100).optional(),
+    body:    z.string().max(100).optional(),
+  }).optional(),
 })
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -24,9 +39,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 
   // Verify ownership
-  const existing = await prisma.brandProfile.findFirst({
-    where: { id: params.id, tenantId: session.user.tenantId },
-  })
+  let existing: { config: unknown } | null
+  try {
+    existing = await prisma.brandProfile.findFirst({
+      where: { id: params.id, tenantId: session.user.tenantId },
+    })
+  } catch (err) {
+    console.error('[brands/PATCH] findFirst error:', err)
+    return NextResponse.json({ message: 'Database error.' }, { status: 500 })
+  }
   if (!existing) return NextResponse.json({ message: 'Not found' }, { status: 404 })
 
   const currentConfig = (existing.config as Record<string, unknown>) ?? {}
@@ -43,10 +64,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   updates.config = newConfig
   if (logoUrl !== undefined) updates.logoUrl = logoUrl || null
 
-  const brand = await prisma.brandProfile.update({
-    where: { id: params.id },
-    data:  updates,
-  })
+  let brand: Awaited<ReturnType<typeof prisma.brandProfile.update>>
+  try {
+    brand = await prisma.brandProfile.update({
+      where: { id: params.id, tenantId: session.user.tenantId },
+      data:  updates,
+    })
+  } catch (err) {
+    console.error('[brands/PATCH] update error:', err)
+    return NextResponse.json({ message: 'Failed to save changes.' }, { status: 500 })
+  }
 
   return NextResponse.json({ brand })
 }

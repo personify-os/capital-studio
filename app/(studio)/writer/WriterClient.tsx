@@ -67,6 +67,11 @@ export default function WriterClient() {
     router.push('/scheduler')
   }
 
+  function sendToVoiceover(text: string) {
+    localStorage.setItem('audioDraft', JSON.stringify({ script: text }))
+    router.push('/audio')
+  }
+
   const makePayload = useCallback((platform: Platform) => ({
     platform, tone, brandId, includeHashtags,
     topic:              topic.trim() || undefined,
@@ -181,6 +186,7 @@ export default function WriterClient() {
           onCopy={copy}
           onRegen={regenerateSingle}
           onSchedule={sendToScheduler}
+          onVoiceOver={sendToVoiceover}
         />
       </div>
     </div>

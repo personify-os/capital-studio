@@ -1,23 +1,24 @@
 'use client'
 
-import { Copy, Check, RefreshCw, Calendar, ImageIcon } from 'lucide-react'
+import { Copy, Check, RefreshCw, Calendar, ImageIcon, Mic } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { type Platform, type CaptionResult, PLATFORM_CHAR_LIMIT } from './types'
 
 interface CaptionCardProps {
-  result:     CaptionResult
-  platform:   Platform
-  captionIdx: number
-  isSeries:   boolean
-  copied:     string | number | null
-  isRegen:    boolean
-  onCopy:     (text: string, key: string) => void
-  onRegen:    () => void
-  onSchedule: () => void
+  result:        CaptionResult
+  platform:      Platform
+  captionIdx:    number
+  isSeries:      boolean
+  copied:        string | number | null
+  isRegen:       boolean
+  onCopy:        (text: string, key: string) => void
+  onRegen:       () => void
+  onSchedule:    () => void
+  onVoiceOver?:  () => void
 }
 
 export default function CaptionCard({
-  result, platform, captionIdx, isSeries, copied, isRegen, onCopy, onRegen, onSchedule,
+  result, platform, captionIdx, isSeries, copied, isRegen, onCopy, onRegen, onSchedule, onVoiceOver,
 }: CaptionCardProps) {
   const fullText  = result.hashtags.length > 0
     ? `${result.body}\n\n${result.hashtags.join(' ')}`
@@ -98,6 +99,16 @@ export default function CaptionCard({
         >
           <Calendar size={10} />Schedule
         </button>
+        {onVoiceOver && (
+          <button
+            type="button"
+            onClick={onVoiceOver}
+            className="flex items-center gap-1 text-[10px] font-medium text-brand-teal hover:text-brand-navy bg-brand-teal/5 border border-brand-teal/20 px-2 py-1 rounded transition-colors"
+            title="Send this text to VoiceOver Studio as a script"
+          >
+            <Mic size={10} />VoiceOver
+          </button>
+        )}
       </div>
     </div>
   )

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Mic, Download, PenSquare } from 'lucide-react'
+import { Mic, Download, PenSquare, Calendar } from 'lucide-react'
 import { useGenerate } from '@/hooks/useGenerate'
 import AudioControls, { VOICES } from '@/components/audio/AudioControls'
 import AudioRow, { type RecentAudio } from '@/components/audio/AudioRow'
@@ -31,6 +31,17 @@ export default function AudioClient({ recentAudio: initial }: { recentAudio: Rec
   const [scriptError,     setScriptError]     = useState<string | null>(null)
   const [scriptOpen,      setScriptOpen]      = useState(false)
   const [scriptPillar,    setScriptPillar]    = useState<ContentPillar | ''>('')
+
+  // Pre-fill script when arriving from Writer ("Send to VoiceOver")
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('audioDraft')
+      if (!raw) return
+      localStorage.removeItem('audioDraft')
+      const draft = JSON.parse(raw) as { script?: string }
+      if (draft.script) setScript(draft.script.slice(0, 5000))
+    } catch { /* ignore */ }
+  }, [])
 
   const { data, loading, error, generate } = useGenerate<object, GenerateResponse>({
     endpoint:  '/api/v1/generate/audio',
@@ -107,6 +118,10 @@ export default function AudioClient({ recentAudio: initial }: { recentAudio: Rec
                     <PenSquare size={12} /> Write Caption
                   </button>
                 )}
+                <button type="button" onClick={() => { localStorage.setItem('schedulerDraft', JSON.stringify({ caption: script.trim() })); router.push('/scheduler') }}
+                  className="flex items-center gap-1.5 text-xs text-brand-azure hover:underline">
+                  <Calendar size={12} /> Schedule
+                </button>
                 <a href={data.asset.url} download className="flex items-center gap-1.5 text-xs text-brand-azure hover:underline">
                   <Download size={12} /> Download MP3
                 </a>

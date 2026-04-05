@@ -5,20 +5,21 @@ import CaptionCard from '@/components/writer/CaptionCard'
 import { type Platform, type CaptionResult, type PlatformResult, PLATFORM_LABEL } from '@/components/writer/types'
 
 interface Props {
-  loading:      boolean
-  results:      PlatformResult[]
-  copied:       string | number | null
-  regenerating: string | null
-  onCopy:       (text: string, key: string | number) => void
-  onRegen:      (platform: Platform, idx: number) => void
-  onSchedule:   (text: string, platform: Platform) => void
+  loading:       boolean
+  results:       PlatformResult[]
+  copied:        string | number | null
+  regenerating:  string | null
+  onCopy:        (text: string, key: string | number) => void
+  onRegen:       (platform: Platform, idx: number) => void
+  onSchedule:    (text: string, platform: Platform) => void
+  onVoiceOver?:  (text: string) => void
 }
 
 function resultToFullText(r: CaptionResult): string {
   return r.hashtags.length > 0 ? `${r.body}\n\n${r.hashtags.join(' ')}` : r.body
 }
 
-export default function WriterResults({ loading, results, copied, regenerating, onCopy, onRegen, onSchedule }: Props) {
+export default function WriterResults({ loading, results, copied, regenerating, onCopy, onRegen, onSchedule, onVoiceOver }: Props) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -83,6 +84,7 @@ export default function WriterResults({ loading, results, copied, regenerating, 
                   onCopy={onCopy}
                   onRegen={() => onRegen(platform, i)}
                   onSchedule={() => onSchedule(resultToFullText(result), platform)}
+                  onVoiceOver={onVoiceOver ? () => onVoiceOver(resultToFullText(result)) : undefined}
                 />
               ))}
             </div>

@@ -42,7 +42,7 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <Topbar title="Dashboard" description="Welcome to Capital Studio" />
+      <Topbar title="Dashboard" />
       <DashboardClient
         userName={session.user.name ?? 'there'}
         recentAssets={recentRaw.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() }))}

@@ -72,6 +72,11 @@ export default function WriterClient() {
     router.push('/audio')
   }
 
+  function sendToLikeness(text: string) {
+    localStorage.setItem('livenessDraft', JSON.stringify({ script: text }))
+    router.push('/likeness')
+  }
+
   const makePayload = useCallback((platform: Platform) => ({
     platform, tone, brandId, includeHashtags,
     topic:              topic.trim() || undefined,
@@ -187,6 +192,7 @@ export default function WriterClient() {
           onRegen={regenerateSingle}
           onSchedule={sendToScheduler}
           onVoiceOver={sendToVoiceover}
+          onLikeness={sendToLikeness}
         />
       </div>
     </div>

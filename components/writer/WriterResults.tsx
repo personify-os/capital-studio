@@ -13,13 +13,14 @@ interface Props {
   onRegen:       (platform: Platform, idx: number) => void
   onSchedule:    (text: string, platform: Platform) => void
   onVoiceOver?:  (text: string) => void
+  onLikeness?:   (text: string) => void
 }
 
 function resultToFullText(r: CaptionResult): string {
   return r.hashtags.length > 0 ? `${r.body}\n\n${r.hashtags.join(' ')}` : r.body
 }
 
-export default function WriterResults({ loading, results, copied, regenerating, onCopy, onRegen, onSchedule, onVoiceOver }: Props) {
+export default function WriterResults({ loading, results, copied, regenerating, onCopy, onRegen, onSchedule, onVoiceOver, onLikeness }: Props) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -85,6 +86,7 @@ export default function WriterResults({ loading, results, copied, regenerating, 
                   onRegen={() => onRegen(platform, i)}
                   onSchedule={() => onSchedule(resultToFullText(result), platform)}
                   onVoiceOver={onVoiceOver ? () => onVoiceOver(resultToFullText(result)) : undefined}
+                  onLikeness={onLikeness ? () => onLikeness(resultToFullText(result)) : undefined}
                 />
               ))}
             </div>

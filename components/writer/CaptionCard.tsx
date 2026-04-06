@@ -1,6 +1,6 @@
 'use client'
 
-import { Copy, Check, RefreshCw, Calendar, ImageIcon, Mic } from 'lucide-react'
+import { Copy, Check, RefreshCw, Calendar, ImageIcon, Mic, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { type Platform, type CaptionResult, PLATFORM_CHAR_LIMIT } from './types'
 
@@ -15,10 +15,11 @@ interface CaptionCardProps {
   onRegen:       () => void
   onSchedule:    () => void
   onVoiceOver?:  () => void
+  onLikeness?:   () => void
 }
 
 export default function CaptionCard({
-  result, platform, captionIdx, isSeries, copied, isRegen, onCopy, onRegen, onSchedule, onVoiceOver,
+  result, platform, captionIdx, isSeries, copied, isRegen, onCopy, onRegen, onSchedule, onVoiceOver, onLikeness,
 }: CaptionCardProps) {
   const fullText  = result.hashtags.length > 0
     ? `${result.body}\n\n${result.hashtags.join(' ')}`
@@ -107,6 +108,16 @@ export default function CaptionCard({
             title="Send this text to VoiceOver Studio as a script"
           >
             <Mic size={10} />VoiceOver
+          </button>
+        )}
+        {onLikeness && (
+          <button
+            type="button"
+            onClick={onLikeness}
+            className="flex items-center gap-1 text-[10px] font-medium text-purple-500 hover:text-brand-navy bg-purple-50 border border-purple-200 px-2 py-1 rounded transition-colors"
+            title="Send this script to Likeness Video Studio"
+          >
+            <User size={10} />Likeness
           </button>
         )}
       </div>

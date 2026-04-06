@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Mic, Download, PenSquare, Calendar } from 'lucide-react'
+import { Mic, Download, PenSquare, Calendar, User } from 'lucide-react'
 import { useGenerate } from '@/hooks/useGenerate'
 import AudioControls, { VOICES } from '@/components/audio/AudioControls'
 import AudioRow, { type RecentAudio } from '@/components/audio/AudioRow'
@@ -118,6 +118,10 @@ export default function AudioClient({ recentAudio: initial }: { recentAudio: Rec
                     <PenSquare size={12} /> Write Caption
                   </button>
                 )}
+                <button type="button" onClick={() => { localStorage.setItem('livenessDraft', JSON.stringify({ script: script.trim() })); router.push('/likeness') }}
+                  className="flex items-center gap-1.5 text-xs text-purple-500 hover:underline">
+                  <User size={12} /> Likeness Video
+                </button>
                 <button type="button" onClick={() => { localStorage.setItem('schedulerDraft', JSON.stringify({ caption: script.trim() })); router.push('/scheduler') }}
                   className="flex items-center gap-1.5 text-xs text-brand-azure hover:underline">
                   <Calendar size={12} /> Schedule

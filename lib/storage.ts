@@ -22,6 +22,8 @@ const ALLOWED_SOURCE_HOSTS = new Set([
   'oaidalleapiprodscus.blob.core.windows.net', // OpenAI DALL-E
   'cdn.openai.com',
   'v3.fal.media',
+  'heygen.com',   // HeyGen Likeness Video CDN
+  'heygen.ai',    // HeyGen Likeness Video CDN (alternate)
 ])
 
 function assertTrustedUrl(raw: string): void {

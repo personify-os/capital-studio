@@ -62,6 +62,7 @@ export async function middleware(req: NextRequest) {
       pathname.startsWith('/images')    ||
       pathname.startsWith('/videos')    ||
       pathname.startsWith('/motion')    ||
+      pathname.startsWith('/likeness')  ||
       pathname.startsWith('/audio')     ||
       pathname.startsWith('/music')     ||
       pathname.startsWith('/graphics')  ||
@@ -85,6 +86,7 @@ export const config = {
     '/images/:path*',
     '/videos/:path*',
     '/motion/:path*',
+    '/likeness/:path*',
     '/audio/:path*',
     '/music/:path*',
     '/graphics/:path*',

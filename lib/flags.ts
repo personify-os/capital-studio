@@ -15,7 +15,7 @@ export const flags = {
   videoGeneration:process.env.FLAG_VIDEO_GENERATION !== 'false',
   voiceover:      process.env.FLAG_VOICEOVER        !== 'false',
   motionVideo:    process.env.FLAG_MOTION_VIDEO     !== 'false',
-  likenessVideo:  process.env.FLAG_LIKENESS_VIDEO   === 'true',
+  likenessVideo:  process.env.FLAG_LIKENESS_VIDEO   !== 'false',
 
   // Social platforms — ON by default, disable per-platform if credentials missing
   socialFacebook: process.env.FLAG_SOCIAL_FACEBOOK  !== 'false',

@@ -1,6 +1,6 @@
 import {
   ImageIcon, Film, Mic, Layers, PenSquare, Calendar,
-  BookOpen, FolderOpen, Clapperboard, Music, BarChart3,
+  BookOpen, FolderOpen, Clapperboard, Music, BarChart3, User,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -54,6 +54,15 @@ export const MODULES: ModuleConfig[] = [
     description: 'Animate any image with Kling AI — add cinematic motion to stills',
     gradient:    'from-[#2d1b69] via-[#1a0a3e] to-[#0d0020]',
     accent:      '#a78bfa',
+    badge:       'New',
+  },
+  {
+    href:        '/likeness',
+    icon:        User,
+    label:       'Likeness Video',
+    description: 'AI talking-head videos with your avatar and HeyGen',
+    gradient:    'from-[#1a1a2e] via-[#2d1b4e] to-[#0d0020]',
+    accent:      '#c084fc',
     badge:       'New',
   },
   {

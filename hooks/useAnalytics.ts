@@ -9,6 +9,7 @@ export const MODULE_CONFIG: { type: string; label: string }[] = [
   { type: 'IMAGE',     label: 'Images'    },
   { type: 'VIDEO',     label: 'Videos'    },
   { type: 'MOTION',    label: 'Motion'    },
+  { type: 'LIKENESS',  label: 'Likeness'  },
   { type: 'VOICEOVER', label: 'Voiceover' },
   { type: 'MUSIC',     label: 'Music'     },
   { type: 'GRAPHIC',   label: 'Graphics'  },

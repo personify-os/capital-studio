@@ -36,6 +36,7 @@ enum AssetType {
   MUSIC
   DOCUMENT
   CAPTION
+  LIKENESS
 }
 
 enum AssetStatus {

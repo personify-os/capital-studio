@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import {
   LayoutDashboard, ImageIcon, PenSquare, Layers, Calendar, BookOpen,
-  FolderOpen, Film, Mic, Clapperboard, Music, BarChart3, ChevronDown,
+  FolderOpen, Film, Mic, Clapperboard, Music, BarChart3, ChevronDown, User,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -60,6 +60,7 @@ export default function Sidebar({ flags }: Props) {
         { href: '/graphics', icon: Layers,      label: 'Graphics Studio'  },
         { href: '/videos',   icon: Film,        label: 'Video Studio'     },
         { href: '/motion',   icon: Clapperboard,label: 'Motion Studio'    },
+        { href: '/likeness', icon: User,        label: 'Likeness Video'   },
         { href: '/audio',    icon: Mic,         label: 'VoiceOver Studio' },
         { href: '/music',    icon: Music,       label: 'Music Studio'     },
       ],

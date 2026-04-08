@@ -2,7 +2,7 @@
 const nextConfig = {
   experimental: {
     // Keep Neon's ws dependency in Node.js runtime (server-side only)
-    serverComponentsExternalPackages: ['ws', '@neondatabase/serverless'],
+    serverComponentsExternalPackages: ['ws', '@neondatabase/serverless', 'pdf-parse'],
   },
   images: {
     remotePatterns: [

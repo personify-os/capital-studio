@@ -4,6 +4,9 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { uploadBuffer, makeAssetKey } from '@/lib/storage'
 import type { Prisma } from '@prisma/client'
+import * as pdfParseModule from 'pdf-parse'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const pdfParse: (buf: Buffer) => Promise<{ text: string }> = (pdfParseModule as any).default ?? pdfParseModule
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
 const ALLOWED_DOC_TYPES   = ['application/pdf', 'text/plain']
@@ -130,6 +133,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       if (detectedMime === 'text/plain') {
         const textContent = buffer.toString('utf8').slice(0, 10000).trim()
         if (textContent) newConfig.guidelines = textContent
+      } else if (detectedMime === 'application/pdf') {
+        try {
+          const pdfData = await pdfParse(buffer)
+          const textContent = pdfData.text.replace(/\s+/g, ' ').slice(0, 10000).trim()
+          if (textContent) newConfig.guidelines = textContent
+        } catch (err) {
+          console.error('[brands/upload] PDF text extraction failed:', err)
+          // Non-fatal: document is still saved, guidelines just won't be populated
+        }
       }
       await prisma.brandProfile.update({
         where: { id: params.id, tenantId: session.user.tenantId },

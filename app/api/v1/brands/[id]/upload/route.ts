@@ -81,7 +81,14 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const ext    = file.name.split('.').pop()?.toLowerCase() ?? (isLogo ? 'png' : 'pdf')
   const folder = isLogo ? 'images' : 'documents'
   const key    = makeAssetKey(session.user.tenantId, folder as 'images' | 'documents', ext)
-  const buffer = Buffer.from(await file.arrayBuffer())
+
+  let buffer: Buffer
+  try {
+    buffer = Buffer.from(await file.arrayBuffer())
+  } catch (err) {
+    console.error('[brands/upload] Failed to read file buffer:', err)
+    return NextResponse.json({ message: 'Failed to read file. Please try again.' }, { status: 400 })
+  }
 
   // Validate file contents against magic bytes
   const detectedMime = detectMimeFromBytes(buffer)

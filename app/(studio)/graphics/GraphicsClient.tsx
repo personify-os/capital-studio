@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Layers, Download, Calendar, PenSquare } from 'lucide-react'
+import { Layers, Download, Calendar, PenSquare, Image } from 'lucide-react'
 import { formatRelativeTime } from '@/lib/utils'
 import { useGenerate } from '@/hooks/useGenerate'
 import GraphicsControls from '@/components/graphics/GraphicsControls'
@@ -40,6 +40,8 @@ export default function GraphicsClient({ recentGraphics: initial }: { recentGrap
   const [selectedCta,     setSelectedCta]     = useState('')
   const [contentPillar,   setContentPillar]   = useState<ContentPillar | ''>('')
   const [includeLogo,     setIncludeLogo]     = useState(true)
+  const [exportingPng,    setExportingPng]    = useState(false)
+  const previewIframeRef = useRef<HTMLIFrameElement>(null)
 
   useEffect(() => {
     try {
@@ -113,6 +115,24 @@ export default function GraphicsClient({ recentGraphics: initial }: { recentGrap
     }
   }
 
+  async function handleDownloadPng() {
+    const iframe = previewIframeRef.current
+    if (!iframe?.contentDocument?.documentElement) return
+    setExportingPng(true)
+    try {
+      const { toPng } = await import('html-to-image')
+      const dataUrl = await toPng(iframe.contentDocument.documentElement, { pixelRatio: 2 })
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = `graphic-${Date.now()}.png`
+      a.click()
+    } catch (err) {
+      console.error('PNG export failed:', err)
+    } finally {
+      setExportingPng(false)
+    }
+  }
+
   function sendToScheduler() {
     localStorage.setItem('schedulerDraft', JSON.stringify({ caption: [headline.trim(), subtext.trim()].filter(Boolean).join('\n\n') }))
     router.push('/scheduler')
@@ -181,6 +201,14 @@ export default function GraphicsClient({ recentGraphics: initial }: { recentGrap
                   </button>
                   <button
                     type="button"
+                    onClick={handleDownloadPng}
+                    disabled={exportingPng}
+                    className="flex items-center gap-1.5 text-xs text-brand-teal hover:underline disabled:opacity-50"
+                  >
+                    <Image size={12} /> {exportingPng ? 'Exporting…' : 'Download PNG'}
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => { const blob = new Blob([data.asset.html], { type: 'text/html' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `graphic-${Date.now()}.html`; a.click() }}
                     className="flex items-center gap-1.5 text-xs text-brand-azure hover:underline"
                   >
@@ -189,7 +217,7 @@ export default function GraphicsClient({ recentGraphics: initial }: { recentGrap
                 </div>
               </div>
               <div className="rounded-card overflow-hidden shadow-card-hover border border-gray-100">
-                <iframe srcDoc={data.asset.html} className="w-full border-0" style={{ height: '600px' }} title="Generated graphic" />
+                <iframe ref={previewIframeRef} srcDoc={data.asset.html} className="w-full border-0" style={{ height: '600px' }} title="Generated graphic" />
               </div>
             </div>
           )}

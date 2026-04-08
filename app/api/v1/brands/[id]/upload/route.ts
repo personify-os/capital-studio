@@ -4,8 +4,6 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { uploadBuffer, makeAssetKey } from '@/lib/storage'
 import type { Prisma } from '@prisma/client'
-import * as pdfParseModule from 'pdf-parse'
-const pdfParse = ((pdfParseModule as unknown as { default: unknown }).default ?? pdfParseModule) as (buf: Buffer) => Promise<{ text: string }>
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
 const ALLOWED_DOC_TYPES   = ['application/pdf', 'text/plain']
@@ -134,6 +132,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         if (textContent) newConfig.guidelines = textContent
       } else if (detectedMime === 'application/pdf') {
         try {
+          const mod = await import('pdf-parse')
+          const pdfParse = (mod.default ?? mod) as unknown as (buf: Buffer) => Promise<{ text: string }>
           const pdfData = await pdfParse(buffer)
           const textContent = pdfData.text.replace(/\s+/g, ' ').slice(0, 10000).trim()
           if (textContent) newConfig.guidelines = textContent

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { uploadBuffer, makeAssetKey } from '@/lib/storage'
+import type { Prisma } from '@prisma/client'
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
 const ALLOWED_DOC_TYPES   = ['application/pdf', 'text/plain']
@@ -95,7 +96,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ message: 'File upload failed. Please try again.' }, { status: 500 })
   }
 
-  const currentConfig = (existing.config as Record<string, unknown>) ?? {}
+  const currentConfig = (existing.config ?? {}) as Prisma.JsonObject
 
   try {
     if (isLogo) {
@@ -112,19 +113,19 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         const updatedVariants  = [...existingVariants.filter((v) => v.label !== slot), { label: slot, url }]
         await prisma.brandProfile.update({
           where: { id: params.id, tenantId: session.user.tenantId },
-          data:  { config: { ...currentConfig, logoVariants: updatedVariants } },
+          data:  { config: { ...currentConfig, logoVariants: updatedVariants } as Prisma.InputJsonValue },
         })
       }
     } else {
       // Document: store URL + extract text content into guidelines
-      const newConfig: Record<string, unknown> = { ...currentConfig, documentUrl: url, documentName: file.name }
+      const newConfig: Prisma.JsonObject = { ...currentConfig, documentUrl: url, documentName: file.name }
       if (detectedMime === 'text/plain') {
         const textContent = buffer.toString('utf8').slice(0, 10000).trim()
         if (textContent) newConfig.guidelines = textContent
       }
       await prisma.brandProfile.update({
         where: { id: params.id, tenantId: session.user.tenantId },
-        data:  { config: newConfig },
+        data:  { config: newConfig as Prisma.InputJsonValue },
       })
     }
   } catch (err) {

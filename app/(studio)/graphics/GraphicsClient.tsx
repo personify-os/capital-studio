@@ -92,7 +92,7 @@ export default function GraphicsClient({ recentGraphics: initial }: { recentGrap
       contentPillar:  contentPillar     || undefined,
       includeLogo,
     })
-  }, [template, brandId, headline, subtext, cta, topic, photoUrl, includeLogo, selectedTopics, selectedPurpose, selectedCta, generate])
+  }, [template, brandId, headline, subtext, cta, topic, photoUrl, contentPillar, includeLogo, selectedTopics, selectedPurpose, selectedCta, generate])
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]

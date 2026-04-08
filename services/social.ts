@@ -471,10 +471,11 @@ export async function publishToYouTube(
   const ext         = videoUrl.split('?')[0].split('.').pop()?.toLowerCase()
   const contentType = ext === 'mov' ? 'video/quicktime' : ext === 'webm' ? 'video/webm' : 'video/mp4'
 
-  // Download video from storage URL
-  const videoRes = await fetch(videoUrl)
-  if (!videoRes.ok) throw new Error('Could not download video from URL')
-  const videoBuffer = Buffer.from(await videoRes.arrayBuffer())
+  // HEAD request to obtain Content-Length without downloading the file
+  const headRes = await fetch(videoUrl, { method: 'HEAD' })
+  if (!headRes.ok) throw new Error('Could not reach video URL')
+  const contentLength = headRes.headers.get('content-length')
+  if (!contentLength) throw new Error('Video URL did not return Content-Length; cannot stream to YouTube')
 
   // Step 1: initialize resumable upload
   const initRes = await fetch(
@@ -485,7 +486,7 @@ export async function publishToYouTube(
         Authorization:             `Bearer ${accessToken}`,
         'Content-Type':            'application/json',
         'X-Upload-Content-Type':   contentType,
-        'X-Upload-Content-Length': String(videoBuffer.byteLength),
+        'X-Upload-Content-Length': contentLength,
       },
       body: JSON.stringify({
         snippet: { title, description, categoryId: '22' },
@@ -500,11 +501,16 @@ export async function publishToYouTube(
   const uploadUrl = initRes.headers.get('Location')
   if (!uploadUrl) throw new Error('YouTube did not return upload URL')
 
-  // Step 2: upload video data
-  const uploadRes  = await fetch(uploadUrl, {
+  // Step 2: stream video body directly to YouTube — no in-memory buffer
+  const videoRes = await fetch(videoUrl)
+  if (!videoRes.ok || !videoRes.body) throw new Error('Could not download video from URL')
+  const uploadRes = await fetch(uploadUrl, {
     method:  'PUT',
-    headers: { 'Content-Type': contentType, 'Content-Length': String(videoBuffer.byteLength) },
-    body:    videoBuffer,
+    headers: { 'Content-Type': contentType, 'Content-Length': contentLength },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    body:    videoRes.body as any,
+    // @ts-expect-error — Node 18 fetch requires duplex:'half' for streaming request bodies
+    duplex: 'half',
   })
   const uploadJson = await uploadRes.json()
   if (!uploadRes.ok) throw new Error(uploadJson.error?.message ?? 'YouTube video upload failed')

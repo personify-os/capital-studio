@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { FolderOpen, Search, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { type Asset, getAssetBrand } from '@/components/library/shared'
@@ -42,14 +42,35 @@ interface Props {
 }
 
 export default function LibraryClient({ assets: initialAssets, total, pageSize }: Props) {
-  const [allAssets,   setAllAssets]   = useState<Asset[]>(initialAssets)
-  const [filter,      setFilter]      = useState<FilterValue>('ALL')
-  const [brandFilter, setBrandFilter] = useState<BrandFilter>('ALL')
-  const [search,      setSearch]      = useState('')
-  const [copied,      setCopied]      = useState<string | null>(null)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [page,        setPage]        = useState(1)
+  const [allAssets,     setAllAssets]     = useState<Asset[]>(initialAssets)
+  const [filter,        setFilter]        = useState<FilterValue>('ALL')
+  const [brandFilter,   setBrandFilter]   = useState<BrandFilter>('ALL')
+  const [search,        setSearch]        = useState('')
+  const [searchResults, setSearchResults] = useState<Asset[] | null>(null)
+  const [searching,     setSearching]     = useState(false)
+  const [copied,        setCopied]        = useState<string | null>(null)
+  const [loadingMore,   setLoadingMore]   = useState(false)
+  const [page,          setPage]          = useState(1)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasMore = allAssets.length < total
+
+  // Server-side search — debounced 350 ms
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    const q = search.trim()
+    if (!q) { setSearchResults(null); return }
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const typeParam = filter !== 'ALL' ? `&type=${filter}` : ''
+        const res  = await fetch(`/api/v1/assets?search=${encodeURIComponent(q)}${typeParam}`)
+        const json = await res.json().catch(() => ({}))
+        if (res.ok && json.assets) setSearchResults(json.assets as Asset[])
+      } finally {
+        setSearching(false)
+      }
+    }, 350)
+  }, [search, filter])
 
   async function loadMore() {
     setLoadingMore(true)
@@ -66,22 +87,14 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize }
     }
   }
 
+  // Active pool: server search results when searching, otherwise locally-loaded page
+  const activePool = searchResults ?? allAssets
+
   const filtered = useMemo(() => {
-    let items = filter === 'ALL' ? allAssets : allAssets.filter((a) => a.type === filter)
+    let items = filter === 'ALL' ? activePool : activePool.filter((a) => a.type === filter)
     if (brandFilter !== 'ALL') items = items.filter((a) => getAssetBrand(a) === brandFilter)
-    if (search.trim()) {
-      const q = search.trim().toLowerCase()
-      items = items.filter((a) => {
-        const m = a.metadata as Record<string, any> | null ?? {}
-        return [
-          m.prompt, m.headline, m.subtext, m.topic, m.description,
-          m.result?.body, ...(m.results ?? []).map((r: any) => r.body),
-          m.text, m.title,
-        ].some((v) => typeof v === 'string' && v.toLowerCase().includes(q))
-      })
-    }
     return items
-  }, [allAssets, filter, brandFilter, search])
+  }, [activePool, filter, brandFilter])
 
   function copyUrl(id: string, url: string) {
     navigator.clipboard.writeText(url).then(() => { setCopied(id); setTimeout(() => setCopied(null), 2000) })
@@ -110,12 +123,13 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize }
         <div className="ml-auto flex items-center gap-2">
           <div className="relative">
             <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            {searching && <Loader2 size={10} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-azure animate-spin" />}
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search…"
-              className="pl-7 pr-3 py-1 text-xs border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-azure focus:border-transparent w-36"
+              placeholder="Search all assets…"
+              className="pl-7 pr-3 py-1 text-xs border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-azure focus:border-transparent w-40"
             />
           </div>
           <span className="text-xs text-gray-400 whitespace-nowrap">{filtered.length} {filtered.length === 1 ? 'asset' : 'assets'}</span>
@@ -140,8 +154,8 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize }
           <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
             <FolderOpen size={26} className="text-gray-400" />
           </div>
-          <p className="font-semibold text-brand-navy mb-1">No assets yet</p>
-          <p className="text-sm text-gray-400">Generated content will appear here</p>
+          <p className="font-semibold text-brand-navy mb-1">{search.trim() ? 'No results found' : 'No assets yet'}</p>
+          <p className="text-sm text-gray-400">{search.trim() ? 'Try a different search term' : 'Generated content will appear here'}</p>
         </div>
       ) : isCaptionFilter ? (
         <div className="space-y-3 max-w-2xl">

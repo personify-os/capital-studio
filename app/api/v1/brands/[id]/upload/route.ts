@@ -5,8 +5,7 @@ import { prisma } from '@/lib/db'
 import { uploadBuffer, makeAssetKey } from '@/lib/storage'
 import type { Prisma } from '@prisma/client'
 import * as pdfParseModule from 'pdf-parse'
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const pdfParse: (buf: Buffer) => Promise<{ text: string }> = (pdfParseModule as any).default ?? pdfParseModule
+const pdfParse = ((pdfParseModule as unknown as { default: unknown }).default ?? pdfParseModule) as (buf: Buffer) => Promise<{ text: string }>
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
 const ALLOWED_DOC_TYPES   = ['application/pdf', 'text/plain']

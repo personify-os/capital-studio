@@ -34,6 +34,7 @@ function detectMimeFromBytes(buf: Buffer): string | null {
 }
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
+  try {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
 
@@ -134,4 +135,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   return NextResponse.json({ url, name: file.name })
+  } catch (err) {
+    console.error('[brands/upload] Unhandled error:', err)
+    return NextResponse.json({ message: 'Upload failed — please try again.' }, { status: 500 })
+  }
 }

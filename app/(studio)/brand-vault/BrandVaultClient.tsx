@@ -32,8 +32,8 @@ export default function BrandVaultClient({ brands: initial }: Props) {
       form.append('type', type)
       if (logoSlot) form.append('logoSlot', logoSlot)
       const res  = await fetch(`/api/v1/brands/${selected.id}/upload`, { method: 'POST', body: form })
-      const json = await res.json()
-      if (!res.ok) { setUploadStatus({ type: 'error', message: json.message ?? 'Upload failed' }); return }
+      const json = await res.json().catch(() => ({} as Record<string, unknown>))
+      if (!res.ok) { setUploadStatus({ type: 'error', message: (json.message as string) ?? 'Upload failed — please try again' }); return }
       if (json.url) {
         const updatedConfig = (selected.config ?? {}) as Record<string, unknown>
         if (type === 'logo' && (!logoSlot || logoSlot === 'primary')) {

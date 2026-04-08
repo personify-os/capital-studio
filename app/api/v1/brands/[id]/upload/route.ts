@@ -61,7 +61,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const type     = formData.get('type') as string          // 'logo' | 'document'
   const logoSlot = formData.get('logoSlot') as string | null // 'primary' | label for variant
 
-  if (!(file instanceof File)) {
+  if (typeof file === 'string' || !file) {
     return NextResponse.json({ message: 'No file provided' }, { status: 400 })
   }
   if (file.size > MAX_BYTES) {

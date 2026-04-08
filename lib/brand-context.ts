@@ -10,7 +10,7 @@
  */
 
 import { prisma } from '@/lib/db'
-import { getBrandConfig, type BrandConfig, type BrandId } from '@/lib/brands'
+import { getBrandConfig, type BrandConfig, type BrandId, type LogoVariant } from '@/lib/brands'
 import { BrandType } from '@prisma/client'
 
 const BRAND_TYPE_MAP: Record<BrandId, BrandType> = {
@@ -75,15 +75,27 @@ export async function resolveBrandConfig(
     }
   }
 
-  // Prepend free-form guidelines as the first knowledge-base entry so it gets
-  // the highest prompt weight. Static KB still follows as structured facts.
-  const guidelinesEntry = typeof cfg.guidelines === 'string' && cfg.guidelines.trim()
-    ? cfg.guidelines.trim()
-    : null
+  // includeLogo toggle
+  if (typeof cfg.includeLogo === 'boolean') overrides.includeLogo = cfg.includeLogo
 
-  const knowledgeBase = guidelinesEntry
-    ? [guidelinesEntry, ...base.knowledgeBase]
-    : base.knowledgeBase
+  // Logo variants
+  if (Array.isArray(cfg.logoVariants) && cfg.logoVariants.length) {
+    overrides.logoVariants = (cfg.logoVariants as LogoVariant[]).filter(
+      (v) => v && typeof v.label === 'string' && typeof v.url === 'string',
+    )
+  }
+
+  // Knowledge base: if config has a direct knowledgeBase override array, use it.
+  // Otherwise prepend free-form guidelines as the highest-weight fact.
+  let knowledgeBase: string[]
+  if (Array.isArray(cfg.knowledgeBase) && (cfg.knowledgeBase as unknown[]).length > 0) {
+    knowledgeBase = (cfg.knowledgeBase as string[]).filter((f) => typeof f === 'string' && f.trim())
+  } else {
+    const guidelinesEntry = typeof cfg.guidelines === 'string' && cfg.guidelines.trim()
+      ? cfg.guidelines.trim()
+      : null
+    knowledgeBase = guidelinesEntry ? [guidelinesEntry, ...base.knowledgeBase] : base.knowledgeBase
+  }
 
   return { ...base, ...overrides, knowledgeBase }
 }

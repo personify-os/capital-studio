@@ -56,7 +56,7 @@ export default function AssetCard({ asset, copied, onCopy }: Props) {
           style={{ transform: 'scale(0.25)', transformOrigin: 'top left', width: '400%', height: '400%' }}
           title="Graphic"
         />
-      ) : asset.type === 'VIDEO' && asset.s3Url ? (
+      ) : (asset.type === 'VIDEO' || asset.type === 'MOTION' || asset.type === 'LIKENESS') && asset.s3Url ? (
         <>
           <video src={asset.s3Url} className="w-full h-full object-cover" preload="metadata" muted />
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -74,7 +74,7 @@ export default function AssetCard({ asset, copied, onCopy }: Props) {
 
       {/* Hover overlay */}
       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 p-2">
-        {asset.s3Url && asset.type !== 'VIDEO' && (
+        {asset.s3Url && asset.type !== 'VIDEO' && asset.type !== 'MOTION' && asset.type !== 'LIKENESS' && (
           <button
             type="button"
             onClick={() => window.open(asset.s3Url!, '_blank', 'noopener')}
@@ -83,13 +83,13 @@ export default function AssetCard({ asset, copied, onCopy }: Props) {
             <Download size={10} /> Download
           </button>
         )}
-        {asset.s3Url && asset.type === 'VIDEO' && (
+        {asset.s3Url && (asset.type === 'VIDEO' || asset.type === 'MOTION' || asset.type === 'LIKENESS') && (
           <a href={asset.s3Url} target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-1 bg-white text-brand-navy text-[10px] font-semibold px-3 py-1.5 rounded-full hover:bg-gray-50 w-full justify-center">
-            <Play size={10} /> Open
+            <Play size={10} /> Open / Download
           </a>
         )}
-        {asset.type === 'VIDEO' && meta?.prompt && (
+        {(asset.type === 'VIDEO' || asset.type === 'MOTION' || asset.type === 'LIKENESS') && meta?.prompt && (
           <button
             type="button"
             onClick={() => { localStorage.setItem('writerDraft', JSON.stringify({ referenceContent: meta!.prompt })); router.push('/writer') }}
@@ -116,7 +116,7 @@ export default function AssetCard({ asset, copied, onCopy }: Props) {
             <PenSquare size={10} /> Write Caption
           </button>
         )}
-        {(asset.type === 'IMAGE' || asset.type === 'VIDEO') && (
+        {(asset.type === 'IMAGE' || asset.type === 'VIDEO' || asset.type === 'MOTION' || asset.type === 'LIKENESS') && (
           <button
             type="button"
             onClick={sendToScheduler}

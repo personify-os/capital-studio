@@ -7,22 +7,25 @@ import { z } from 'zod'
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{3,8}$/)
 
 const patchSchema = z.object({
-  tagline:      z.string().max(200).optional(),
-  tone:         z.string().max(500).optional(),
-  audience:     z.string().max(500).optional(),
-  products:     z.array(z.string()).optional(),
-  guidelines:   z.string().max(5000).optional(),
-  visualStyle:  z.string().max(1000).optional(),
-  keyMessages:  z.array(z.string()).optional(),
-  logoUrl:      z.string().url().optional().or(z.literal('')),
-  colors:       z.object({
+  tagline:       z.string().max(200).optional(),
+  tone:          z.string().max(500).optional(),
+  audience:      z.string().max(500).optional(),
+  products:      z.array(z.string()).optional(),
+  guidelines:    z.string().max(10000).optional(),
+  visualStyle:   z.string().max(1000).optional(),
+  keyMessages:   z.array(z.string().max(500)).max(30).optional(),
+  knowledgeBase: z.array(z.string().max(600)).max(40).optional(),
+  includeLogo:   z.boolean().optional(),
+  logoUrl:       z.string().url().optional().or(z.literal('')),
+  logoVariants:  z.array(z.object({ label: z.string().max(50), url: z.string().url() })).max(10).optional(),
+  colors:        z.object({
     primary:   hexColor.optional(),
     secondary: hexColor.optional(),
     accent:    hexColor.optional(),
     dark:      hexColor.optional(),
     light:     hexColor.optional(),
   }).optional(),
-  fonts:        z.object({
+  fonts:         z.object({
     heading: z.string().max(100).optional(),
     body:    z.string().max(100).optional(),
   }).optional(),

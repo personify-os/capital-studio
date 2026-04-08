@@ -14,13 +14,17 @@ function clientIp(req: NextRequest): string {
 }
 
 function tooManyRequests(resetAt: number) {
-  return new NextResponse('Too Many Requests', {
-    status: 429,
-    headers: {
-      'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)),
-      'X-RateLimit-Reset': String(resetAt),
+  const retryAfter = Math.ceil((resetAt - Date.now()) / 1000)
+  return NextResponse.json(
+    { message: `Too many requests. Please wait ${retryAfter}s and try again.` },
+    {
+      status: 429,
+      headers: {
+        'Retry-After':     String(retryAfter),
+        'X-RateLimit-Reset': String(resetAt),
+      },
     },
-  })
+  )
 }
 
 // ── Middleware ────────────────────────────────────────────────────────────────

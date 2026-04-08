@@ -128,10 +128,10 @@ Controlled via `FLAG_*` env vars — see `lib/flags.ts`.
 
 | Flag                    | Default | Controls |
 |-------------------------|---------|----------|
-| `FLAG_VIDEO_GENERATION` | OFF     | `/videos` page + sidebar link |
-| `FLAG_VOICEOVER`        | OFF     | `/audio` page + sidebar link |
-| `FLAG_MOTION_VIDEO`     | OFF     | `/motion` page + sidebar link |
-| `FLAG_LIKENESS_VIDEO`   | OFF     | (Phase 2, planned) |
+| `FLAG_VIDEO_GENERATION` | ON      | `/videos` page + sidebar link |
+| `FLAG_VOICEOVER`        | ON      | `/audio` page + sidebar link |
+| `FLAG_MOTION_VIDEO`     | ON      | `/motion` page + sidebar link |
+| `FLAG_LIKENESS_VIDEO`   | ON      | `/likeness` page + sidebar link |
 | `FLAG_SOCIAL_YOUTUBE`   | OFF     | YouTube connect + posting |
 | `FLAG_SOCIAL_TIKTOK`    | OFF     | TikTok connect + posting |
 | `FLAG_ANALYTICS`        | ON      | Analytics sidebar link |
@@ -231,7 +231,7 @@ Controlled via `FLAG_*` env vars — see `lib/flags.ts`.
 | Social Scheduler | Built                   |
 | Video Studio     | Built (Phase 2 gate)    |
 | VoiceOver Studio | Built (Phase 2 gate)    |
-| Likeness Video   | Planned (Phase 2)       |
+| Likeness Video   | Built (Phase 2 gate)    |
 
 ---
 

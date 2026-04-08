@@ -1,0 +1,224 @@
+THE SIMRP — BRAND KNOWLEDGE BASE
+"The Infinite Savings Plan"
+Capital Studio Brand Vault | Last updated: April 2026
+=======================================================
+
+WHAT IS THE SIMRP?
+------------------
+The SIMRP (Self-Insured Medical Reimbursement Plan) is an IRS-authorized employee benefits tax strategy. It is NOT insurance — it is a tax optimization plan that uses three sections of the Internal Revenue Code to redirect existing FICA payroll taxes into tax-exempt supplemental benefits for employees.
+
+Official name: Self-Insured Medical Reimbursement Plan
+Brand tagline: "The Infinite Savings Plan"
+Website: thesimrp.com
+
+IRS AUTHORIZATION
+-----------------
+The SIMRP operates under:
+- IRS §125 — Cafeteria Plan (allows pre-tax salary reductions for qualified benefits)
+- IRS §106(a) — Employer-paid contributions to accident and health plans are excluded from gross income
+- IRS §105(b) — Amounts received under employer-funded accident/health plans are excluded from gross income
+- IRS §1.105-11 — Self-insured medical reimbursement plans
+- ADA Compliant (Americans with Disabilities Act)
+- ERISA Compliant (Employee Retirement Income Security Act)
+- HIPAA Compliant (Health Insurance Portability and Accountability Act)
+- ACA Compliant (Affordable Care Act) — does NOT replace MEC (Minimum Essential Coverage)
+
+The SIMRP has been in active use by U.S. employers since the early 2000s. It is not a new concept or loophole — it is an established, IRS-recognized benefits structure used by tens of thousands of companies nationwide.
+
+HOW IT WORKS — THE MECHANISM
+-----------------------------
+Step 1: Employee agrees to a voluntary pre-tax salary reduction (via §125 Cafeteria Plan election)
+Step 2: The redirected dollars fund a Supplemental Benefits Allotment for the employee
+Step 3: Employer's FICA tax obligation decreases because taxable wages decrease
+Step 4: Employee's FICA tax obligation also decreases (both sides of the 7.65% split benefit)
+Step 5: The allotment funds a suite of supplemental benefits the employee can use immediately
+
+Result:
+- Employer saves ~$550 per enrolled employee per year in FICA taxes
+- Employee receives $125–$150/month in supplemental benefits
+- No change to the employee's take-home pay (the tax savings offset the salary reduction)
+- No new cost to the employer
+
+PAYROLL MATH EXAMPLE
+--------------------
+Employee earning $5,000/month ($60,000/year):
+
+WITHOUT SIMRP:
+- Gross wages: $5,000/month
+- Employee FICA (7.65%): $382.50/month owed by employee
+- Employer FICA (7.65%): $382.50/month owed by employer
+
+WITH SIMRP ($225 allotment):
+- Pre-tax salary reduction: $225/month
+- New taxable wage base: $4,775/month
+- Employee FICA savings: ~$17.21/month
+- Employer FICA savings: ~$17.21/month
+- Employee receives: $225/month in supplemental benefits
+- Net change to employee take-home: ~$0 (tax savings offset salary reduction)
+- Employer net annual savings on just this employee: ~$206/year in FICA
+
+At scale (e.g., 50 employees): ~$10,300+/year in employer FICA savings with ZERO new cost.
+
+Note: Exact savings vary by wage level and participation rate. Estimates are based on IRS FICA rates.
+
+ELIGIBILITY REQUIREMENTS
+------------------------
+For businesses:
+- 10 or more W-2 employees (some programs start at fewer)
+- Employees must earn $22,000+ annually ($1,833+/month)
+- Business must offer employees access to health insurance (does not need to be employer-paid)
+- Employees on Medicare or Medicaid are NOT eligible for the SIMRP allotment
+- No industry restrictions — works for any type of business
+
+For employees:
+- Must be a W-2 employee (not 1099/contractor)
+- Must be enrolled in a qualifying health plan (employer-sponsored, marketplace, or spouse's plan)
+- Not on Medicare or Medicaid
+- Voluntary enrollment — employees choose to participate
+
+WHAT IS NOT THE SIMRP
+---------------------
+The SIMRP is:
+- NOT fixed indemnity insurance (important compliance distinction — fixed indemnity is not ERISA-compliant under the same structure)
+- NOT a health insurance replacement — it works ALONGSIDE existing coverage
+- NOT activity-based (unlike wellness plans that pay for gym attendance or steps)
+- NOT participation-based in the traditional sense — it is election-based (employees choose to enroll)
+- NOT a scheme or loophole — it is a congressionally authorized tax strategy
+
+WELLNESS & SUPPLEMENTAL BENEFITS INCLUDED
+------------------------------------------
+The SIMRP benefit allotment funds a comprehensive suite of supplemental and wellness benefits:
+
+CORE SUPPLEMENTAL BENEFITS (via top-rated carriers):
+- Hospital Indemnity Insurance — cash per day of hospitalization
+- Accident Insurance — cash benefits for covered injuries and emergencies
+- Critical Illness Insurance — lump-sum payment on diagnosis of heart attack, stroke, cancer, etc.
+- Term Life Insurance — affordable death benefit coverage for employees and dependents
+- Chronic Illness / Long-Term Care rider options
+
+VIRTUAL CARE: SAM BY UCM (SamHealth)
+- 24/7 telehealth with zero copay
+- Unlimited urgent care, primary care, and specialist consultations
+- Behavioral health / mental health therapy (zero copay)
+- Dermatology consultations
+- Prescription savings program
+- All services delivered via app or phone — no referral needed
+
+EMPLOYEE ASSISTANCE PROGRAM (EAP):
+- Confidential counseling sessions (mental health, substance abuse, grief, family)
+- Work-life balance resources
+- Financial and legal consultation referrals
+- Available to employee and household members
+
+FREEDOM 365:
+- Prescription drug discount card — average 30–80% savings at major pharmacies
+- Dental and vision discount network
+- Hearing care discounts
+- Nationwide acceptance
+
+COUPLEWARE (CoupleWise):
+- Relationship and couples counseling support
+- Digital and in-person session options
+- Covered for enrolled employees
+
+WELLUTION WELLNESS:
+- Nutrition coaching and wellness programs
+- Fitness resources and challenges
+- Preventive health tools
+
+IMPLEMENTATION PROCESS (5 STEPS)
+---------------------------------
+1. CENSUS — Employer provides employee roster with wages and enrollment data
+2. PROPOSAL — LH Capital runs a savings analysis; employer reviews projected FICA savings
+3. ENROLLMENT — Digital enrollment (~10 minutes per employee); employees elect benefits
+4. PAYROLL INTEGRATION — Payroll system updated to reflect pre-tax salary reductions
+5. SAVINGS — First payroll cycle shows savings; ongoing support from LH Capital team
+
+Implementation timeline: typically 2–4 weeks from census to first enrollment
+White-glove support: LH Capital handles all paperwork, carrier coordination, and ongoing compliance
+
+EMPLOYER SAVINGS SUMMARY
+-------------------------
+Based on average implementation data:
+- Per employee: ~$550/year in FICA tax savings
+- 25 employees: ~$13,750/year
+- 50 employees: ~$27,500/year
+- 100 employees: ~$55,000+/year
+- 500 employees: ~$275,000+/year
+
+These savings compound each year and grow as the workforce grows — hence "The Infinite Savings Plan."
+
+COMPLIANCE Q&A (KEY POINTS)
+----------------------------
+Q: Is this too good to be true?
+A: No. The SIMRP uses the same IRS sections (§125, §105, §106) that have governed FSAs, HSAs, and employer health benefits for decades. Major employers have used this structure for over 20 years.
+
+Q: What do our CPAs and attorneys say?
+A: Multiple CPAs and ERISA attorneys have reviewed and confirmed compliance. Several CPA firms have written formal opinion letters supporting the structure.
+
+Q: Does the SIMRP replace health insurance?
+A: No. The SIMRP works alongside any existing health plan. Employees must have access to qualifying health coverage to participate.
+
+Q: Does it trigger ACA compliance issues?
+A: No. The SIMRP benefit allotment is structured to avoid being classified as employer-sponsored health coverage subject to ACA minimum essential coverage requirements.
+
+Q: What happens if an employee leaves?
+A: Election is voluntary and revocable. Employees who leave or opt out simply return to standard payroll. No penalties.
+
+Q: Is there a cost to implement?
+A: There is a nominal implementation fee, which is typically offset within the first month of FICA savings at most employer sizes.
+
+BRAND VOICE & TONE
+------------------
+- Educational, empowering, clarity-focused
+- Explains complex IRS tax codes in plain language
+- Outcome-driven: savings, benefits, zero impact on take-home pay
+- Authoritative but accessible — like a knowledgeable financial advisor, not a salesperson
+- Uses specific numbers, IRS code citations, and proof points
+- Addresses skepticism proactively and honestly
+
+TARGET AUDIENCE
+---------------
+Primary: Business owners and CFOs with 10–500 employees who want to reduce payroll tax burden
+Secondary: HR directors and benefits managers evaluating ways to improve benefits without budget increases
+Tertiary: Business owners who have heard "you should be offering more benefits" but think they can't afford it
+
+KEY MESSAGES
+------------
+1. The SIMRP is not insurance — it's a tax strategy that funds benefits using dollars already leaving your payroll.
+2. Your employees get $125–$150/month in real benefits. You save ~$550 per employee per year. Nobody's take-home pay changes.
+3. IRS §125, §105, and §106 authorized — the SIMRP has been helping employers save money for over 20 years.
+4. Telehealth, life insurance, accident coverage, critical illness — all funded by redirecting FICA taxes you're already paying.
+5. No disruption to existing benefits. No new costs. Just a smarter way to structure what you already offer.
+6. The Infinite Savings Plan — because as your team grows, so do your savings.
+
+IRS & CPA QUOTES (for content credibility)
+------------------------------------------
+"Section 105 of the Internal Revenue Code allows employees to exclude from gross income amounts received through employer-funded accident and health plans. This has been a cornerstone of employer benefits since the 1950s." — IRS Publication 15-B
+
+"The combination of §125 and §105/106 is a well-established, IRS-recognized structure for providing tax-advantaged benefits. When properly implemented and documented, the SIMRP is compliant with federal tax law." — CPA opinion letter excerpt
+
+VISUAL IDENTITY
+---------------
+Primary Color: #689EB8 (Steel Blue)
+Secondary Color: #0B2147 (Deep Navy)
+Accent Color: #00c4cc (Teal — signature accent for data callouts and CTAs)
+Dark: #0B2147 (Navy text)
+Light: #F0F7FF (Light blue backgrounds)
+
+Visual Style: Clean, data-driven educational aesthetic. Heavy use of infographic layouts: large bold numbers ($550, 7.65%), comparison tables (before/after payroll), flow diagrams showing how dollars redirect. Icons: simple line-based (calculator, shield, dollar sign, checkmark, arrow). Photography: diverse workplace settings, HR meetings, engaged employees. Typography: clear, readable sans-serif. Overall feel: educational, trustworthy, data-backed — like a well-designed financial explainer or IRS-approved benefits guide.
+
+WHAT WE NEVER SAY
+-----------------
+- Do NOT call the SIMRP "insurance" or "health insurance"
+- Do NOT say "free" or "no cost" without explaining the payroll tax redirect mechanism
+- Do NOT make specific savings guarantees — always frame as estimates based on typical cases
+- Do NOT say the SIMRP "replaces" existing health coverage
+
+WHAT WE ALWAYS SAY
+------------------
+- Call it "the SIMRP" or "the Self-Insured Medical Reimbursement Plan" — not "SIMRP plan" (redundant)
+- Explain that savings come from redirecting FICA/payroll taxes, not adding new costs
+- Emphasize zero impact on employee take-home pay
+- Cite IRS authorization sections when establishing credibility
+- Reference the 20+ years of employer adoption

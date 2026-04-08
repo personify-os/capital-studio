@@ -8,7 +8,7 @@ import AssetCard from '@/components/library/AssetCard'
 import CaptionRow from '@/components/library/CaptionRow'
 import AudioRow from '@/components/library/AudioRow'
 
-type FilterValue = 'ALL' | 'IMAGE' | 'GRAPHIC' | 'VIDEO' | 'MOTION' | 'VOICEOVER' | 'CAPTION' | 'MUSIC'
+type FilterValue = 'ALL' | 'IMAGE' | 'GRAPHIC' | 'VIDEO' | 'MOTION' | 'LIKENESS' | 'VOICEOVER' | 'CAPTION' | 'MUSIC'
 type BrandFilter = 'ALL' | 'lhcapital' | 'simrp' | 'personal'
 
 const TYPE_FILTERS: { value: FilterValue; label: string }[] = [
@@ -17,6 +17,7 @@ const TYPE_FILTERS: { value: FilterValue; label: string }[] = [
   { value: 'GRAPHIC',   label: 'Graphics' },
   { value: 'VIDEO',     label: 'Videos' },
   { value: 'MOTION',    label: 'Motion' },
+  { value: 'LIKENESS',  label: 'Likeness' },
   { value: 'VOICEOVER', label: 'Audio' },
   { value: 'MUSIC',     label: 'Music' },
   { value: 'CAPTION',   label: 'Captions' },
@@ -31,7 +32,7 @@ const BRAND_FILTERS: { value: BrandFilter; label: string; dot: string }[] = [
 
 const MEDIA_LABELS: Record<string, string> = {
   IMAGE: 'Images', GRAPHIC: 'Graphics', VIDEO: 'Videos',
-  MOTION: 'Motion', VOICEOVER: 'Audio', MUSIC: 'Music', CAPTION: 'Captions',
+  MOTION: 'Motion', LIKENESS: 'Likeness Videos', VOICEOVER: 'Audio', MUSIC: 'Music', CAPTION: 'Captions',
 }
 
 interface Props {
@@ -91,7 +92,7 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize }
 
   const isCaptionFilter = filter === 'CAPTION'
   const isAudioFilter   = filter === 'VOICEOVER' || filter === 'MUSIC'
-  const isMotionFilter  = filter === 'MOTION'
+  const isVideoFilter   = filter === 'MOTION' || filter === 'LIKENESS'
   const mixedMedia      = filter === 'ALL'
 
   return (
@@ -150,13 +151,13 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize }
         <div className="space-y-3 max-w-2xl">
           {filtered.map((a) => <AudioRow key={a.id} asset={a} copied={copied} onCopy={copyUrl} />)}
         </div>
-      ) : isMotionFilter ? (
+      ) : isVideoFilter ? (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {filtered.map((a) => <AssetCard key={a.id} asset={a} copied={copied} onCopy={copyUrl} />)}
         </div>
       ) : mixedMedia ? (
         <div className="space-y-8">
-          {(['IMAGE', 'GRAPHIC', 'VIDEO', 'MOTION', 'VOICEOVER', 'MUSIC', 'CAPTION'] as const).map((type) => {
+          {(['IMAGE', 'GRAPHIC', 'VIDEO', 'MOTION', 'LIKENESS', 'VOICEOVER', 'MUSIC', 'CAPTION'] as const).map((type) => {
             const group = filtered.filter((a) => a.type === type)
             if (group.length === 0) return null
             return (
@@ -170,7 +171,7 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize }
                   <div className="space-y-3 max-w-2xl">
                     {group.map((a) => <CaptionRow key={a.id} asset={a} copied={copied} onCopy={copyText} />)}
                   </div>
-                ) : type === 'MOTION' ? (
+                ) : type === 'MOTION' || type === 'LIKENESS' ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {group.map((a) => <AssetCard key={a.id} asset={a} copied={copied} onCopy={copyUrl} />)}
                   </div>

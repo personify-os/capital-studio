@@ -10,11 +10,11 @@ import BrandDetailView from '@/components/brand-vault/BrandDetailView'
 interface Props { brands: BrandProfile[] }
 
 export default function BrandVaultClient({ brands: initial }: Props) {
-  const [brands,    setBrands]    = useState(initial)
-  const [selected,  setSelected]  = useState<BrandProfile | null>(brands[0] ?? null)
-  const [editing,   setEditing]   = useState(false)
-  const [adding,    setAdding]    = useState(false)
-  const [uploading,    setUploading]    = useState<'logo' | 'document' | null>(null)
+  const [brands,       setBrands]       = useState(initial)
+  const [selected,     setSelected]     = useState<BrandProfile | null>(brands[0] ?? null)
+  const [editing,      setEditing]      = useState(false)
+  const [adding,       setAdding]       = useState(false)
+  const [uploading,    setUploading]    = useState<string | null>(null)  // 'logo' | 'document' | logoSlot
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   function handleSaved(updated: BrandProfile) {
@@ -22,28 +22,34 @@ export default function BrandVaultClient({ brands: initial }: Props) {
     setSelected((prev) => prev?.id === updated.id ? { ...prev, ...updated } : prev)
   }
 
-  async function handleUpload(file: File, type: 'logo' | 'document') {
+  async function handleUpload(file: File, type: 'logo' | 'document', logoSlot?: string) {
     if (!selected) return
-    setUploading(type); setUploadStatus(null)
+    const uploadKey = type === 'logo' ? (logoSlot ?? 'logo') : 'document'
+    setUploading(uploadKey); setUploadStatus(null)
     try {
       const form = new FormData()
       form.append('file', file)
       form.append('type', type)
+      if (logoSlot) form.append('logoSlot', logoSlot)
       const res  = await fetch(`/api/v1/brands/${selected.id}/upload`, { method: 'POST', body: form })
       const json = await res.json()
       if (!res.ok) { setUploadStatus({ type: 'error', message: json.message ?? 'Upload failed' }); return }
       if (json.url) {
-        handleSaved({ ...selected,
-          ...(type === 'logo' ? { logoUrl: json.url } : {}),
-          config: type === 'document'
-            ? { ...selected.config, documentUrl: json.url, documentName: json.name }
-            : selected.config,
-        } as BrandProfile)
-        setUploadStatus({ type: 'success', message: type === 'logo' ? 'Logo uploaded' : 'Document uploaded' })
-        setTimeout(() => setUploadStatus(null), 3000)
+        const updatedConfig = (selected.config ?? {}) as Record<string, unknown>
+        if (type === 'logo' && (!logoSlot || logoSlot === 'primary')) {
+          handleSaved({ ...selected, logoUrl: json.url } as BrandProfile)
+        } else if (type === 'logo' && logoSlot && logoSlot !== 'primary') {
+          const variants = (updatedConfig.logoVariants as { label: string; url: string }[] | undefined) ?? []
+          handleSaved({ ...selected, config: { ...updatedConfig, logoVariants: [...variants.filter((v) => v.label !== logoSlot), { label: logoSlot, url: json.url }] } } as BrandProfile)
+        } else {
+          handleSaved({ ...selected, config: { ...updatedConfig, documentUrl: json.url, documentName: json.name } } as BrandProfile)
+        }
+        setUploadStatus({ type: 'success', message: type === 'logo' ? 'Logo uploaded' : 'Document uploaded and knowledge base updated' })
+        setTimeout(() => setUploadStatus(null), 4000)
       }
-    } catch {
-      setUploadStatus({ type: 'error', message: 'Upload failed — please try again' })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Upload failed — please try again'
+      setUploadStatus({ type: 'error', message: msg })
     } finally {
       setUploading(null)
     }
@@ -117,6 +123,7 @@ export default function BrandVaultClient({ brands: initial }: Props) {
               uploading={uploading}
               onEdit={() => setEditing(true)}
               onUpload={handleUpload}
+              onBrandUpdate={handleSaved}
             />
           )}
         </div>

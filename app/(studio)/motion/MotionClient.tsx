@@ -31,6 +31,7 @@ export default function MotionClient({ recentVideos: initial }: { recentVideos: 
   const [selectedTopics,  setSelectedTopics]  = useState<string[]>([])
   const [selectedPurpose, setSelectedPurpose] = useState('')
   const [selectedCta,     setSelectedCta]     = useState('')
+  const [includeLogo,     setIncludeLogo]     = useState(true)
 
   const { data, loading, error, generate } = useGenerate<MotionGenerateInput, GenerateResponse>({
     endpoint:  '/api/v1/generate/motion',
@@ -49,8 +50,8 @@ export default function MotionClient({ recentVideos: initial }: { recentVideos: 
     const ctaLabel     = CTA_OPTIONS.find((c) => c.id === selectedCta)?.label ?? ''
     const intent       = buildIntentString(topicLabels, purposeLabel, ctaLabel)
     const fullPrompt   = intent ? `${prompt.trim()}\n\nContent intent: ${intent}` : prompt.trim()
-    generate({ imageUrl: imageUrl.trim(), prompt: fullPrompt, duration, aspectRatio, brandId })
-  }, [imageUrl, prompt, duration, aspectRatio, brandId, selectedTopics, selectedPurpose, selectedCta, generate])
+    generate({ imageUrl: imageUrl.trim(), prompt: fullPrompt, duration, aspectRatio, brandId, includeLogo })
+  }, [imageUrl, prompt, duration, aspectRatio, brandId, includeLogo, selectedTopics, selectedPurpose, selectedCta, generate])
 
   async function handleEnhance() {
     if (!prompt.trim()) return
@@ -99,6 +100,7 @@ export default function MotionClient({ recentVideos: initial }: { recentVideos: 
         onToggleTopic={(id) => setSelectedTopics((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
         selectedPurpose={selectedPurpose} onPurposeChange={setSelectedPurpose}
         selectedCta={selectedCta}         onCtaChange={setSelectedCta}
+        includeLogo={includeLogo}         onIncludeLogo={setIncludeLogo}
         loading={loading} error={uploadError ?? enhanceError ?? error} onGenerate={handleGenerate}
       />
 

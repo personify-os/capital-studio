@@ -20,10 +20,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Invalid input', errors: parsed.error.flatten() }, { status: 400 })
   }
 
-  const { imageUrl, prompt, duration, aspectRatio, brandId } = parsed.data
+  const { imageUrl, prompt, duration, aspectRatio, brandId, includeLogo } = parsed.data
 
   // Enrich motion prompt with brand visual style
-  const brand         = await resolveBrandConfig((brandId ?? 'lhcapital') as BrandId, session.user.tenantId)
+  const resolvedBrand = await resolveBrandConfig((brandId ?? 'lhcapital') as BrandId, session.user.tenantId)
+  const brand         = typeof includeLogo === 'boolean' ? { ...resolvedBrand, includeLogo } : resolvedBrand
   const brandCtx      = buildBrandPromptContext(brand, 'visual')
   const enrichedPrompt = `${prompt}\n\nBrand visual style: ${brandCtx}`
 

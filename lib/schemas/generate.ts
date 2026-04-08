@@ -20,6 +20,7 @@ export const imageGenerateSchema = z.object({
   variations:    z.number().int().min(1).max(4),
   brandId:       z.enum(['lhcapital', 'simrp', 'personal']).optional(),
   enhancePrompt: z.boolean().optional(),
+  includeLogo:   z.boolean().optional(),
 })
 
 export const graphicGenerateSchema = z.object({
@@ -32,6 +33,7 @@ export const graphicGenerateSchema = z.object({
   topic:          z.string().max(100).optional(),
   photoUrl:       z.string().url().optional().or(z.literal('')),
   contentPillar:  z.enum(['awareness', 'education', 'case-study', 'compliance', 'promotional']).optional(),
+  includeLogo:    z.boolean().optional(),
 })
 
 export const captionGenerateSchema = z.object({
@@ -62,6 +64,7 @@ export const videoGenerateSchema = z.object({
   duration:    z.enum(['5', '10']).default('5'),
   aspectRatio: z.enum(['16:9', '9:16', '1:1']).default('16:9'),
   brandId:     z.enum(['lhcapital', 'simrp', 'personal']).optional(),
+  includeLogo: z.boolean().optional(),
 })
 
 export const motionGenerateSchema = z.object({
@@ -70,6 +73,7 @@ export const motionGenerateSchema = z.object({
   duration:    z.enum(['5', '10', '30', '60']).default('5'),
   aspectRatio: z.enum(['16:9', '9:16', '1:1']).default('16:9'),
   brandId:     z.enum(['lhcapital', 'simrp', 'personal']).optional(),
+  includeLogo: z.boolean().optional(),
 })
 
 export const audioGenerateSchema = z.object({

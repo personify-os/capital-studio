@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import BrandSelector from '@/components/shared/BrandSelector'
 import Button from '@/components/ui/Button'
 import Textarea from '@/components/ui/Textarea'
+import Toggle from '@/components/ui/Toggle'
 import ContentIntentSimple from '@/components/shared/ContentIntentSimple'
 import type { BrandId } from '@/lib/brands'
 
@@ -37,6 +38,8 @@ interface Props {
   onPurposeChange: (id: string) => void
   selectedCta:     string
   onCtaChange:     (id: string) => void
+  includeLogo:     boolean
+  onIncludeLogo:   (v: boolean) => void
   loading:         boolean
   error:           string | null
   onGenerate:      () => void
@@ -48,6 +51,7 @@ export default function MotionControls({
   enhancing, onEnhance, uploading, onPhotoUpload,
   intentOpen, onIntentOpen, selectedTopics, onToggleTopic,
   selectedPurpose, onPurposeChange, selectedCta, onCtaChange,
+  includeLogo, onIncludeLogo,
   loading, error, onGenerate,
 }: Props) {
   const fileRef    = useRef<HTMLInputElement>(null)
@@ -71,8 +75,15 @@ export default function MotionControls({
           selectedCta={selectedCta} onCtaChange={onCtaChange}
         />
 
-        <div className="bg-gray-50 rounded-card p-4">
+        <div className="bg-gray-50 rounded-card p-4 space-y-3">
           <BrandSelector value={brandId} onChange={onBrandChange} />
+          <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+            <div>
+              <p className="text-xs font-medium text-gray-700">Include Logo</p>
+              <p className="text-[10px] text-gray-400">Injects the brand logo URL into the generation prompt</p>
+            </div>
+            <Toggle checked={includeLogo} onChange={onIncludeLogo} />
+          </div>
         </div>
 
         <div className="bg-gray-50 rounded-card p-4 space-y-3">

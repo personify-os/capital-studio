@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
-import { Edit2, Upload, FileText, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Edit2, Upload, FileText, Plus, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { type BrandProfile, TYPE_LABELS, TYPE_COLORS } from '@/components/brand-vault/types'
 import { Section, BuiltInKnowledge } from '@/components/brand-vault/BrandDetail'
@@ -21,7 +21,6 @@ type BrandConfig = {
   knowledgeBase?: string[]
   documentUrl?:   string
   documentName?:  string
-  includeLogo?:   boolean
   logoVariants?:  LogoVariant[]
 }
 
@@ -47,20 +46,6 @@ export default function BrandDetailView({ brand, uploading, onEdit, onUpload, on
   const variantRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const config  = brand.config as BrandConfig | null
 
-  async function toggleIncludeLogo() {
-    const next = !(config?.includeLogo ?? true)
-    try {
-      const res  = await fetch(`/api/v1/brands/${brand.id}`, {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ includeLogo: next }),
-      })
-      if (!res.ok) return
-      const { brand: updated } = await res.json()
-      onBrandUpdate(updated)
-    } catch { /* ignore */ }
-  }
-
   async function deleteLogoVariant(slot: string) {
     const currentVariants = config?.logoVariants ?? []
     const updated = currentVariants.filter((v) => v.label !== slot)
@@ -76,7 +61,6 @@ export default function BrandDetailView({ brand, uploading, onEdit, onUpload, on
     } catch { /* ignore */ }
   }
 
-  const includeLogo     = config?.includeLogo ?? true
   const logoVariants    = config?.logoVariants ?? []
 
   return (
@@ -196,20 +180,6 @@ export default function BrandDetailView({ brand, uploading, onEdit, onUpload, on
 
       {/* Logos */}
       <Section title="Logo">
-        {/* Logo toggle */}
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
-          <div>
-            <p className="text-xs font-medium text-brand-navy">Include logo in generated content</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">When enabled, the logo URL is injected into image/graphic/video AI prompts</p>
-          </div>
-          <button type="button" onClick={toggleIncludeLogo} className="flex-shrink-0 ml-3">
-            {includeLogo
-              ? <ToggleRight size={28} className="text-brand-azure" />
-              : <ToggleLeft  size={28} className="text-gray-300" />
-            }
-          </button>
-        </div>
-
         {/* Primary logo */}
         <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Primary</p>
         {brand.logoUrl ? (

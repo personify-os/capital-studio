@@ -21,7 +21,10 @@ export async function POST(req: Request) {
   }
 
   const brandId = (parsed.data.brandId ?? 'lhcapital') as BrandId
-  const brand   = await resolveBrandConfig(brandId, session.user.tenantId)
+  const resolvedBrand = await resolveBrandConfig(brandId, session.user.tenantId)
+  const brand = typeof parsed.data.includeLogo === 'boolean'
+    ? { ...resolvedBrand, includeLogo: parsed.data.includeLogo }
+    : resolvedBrand
 
   let finalPrompt = parsed.data.prompt
   try {

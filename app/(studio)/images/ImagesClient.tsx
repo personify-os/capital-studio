@@ -22,6 +22,7 @@ export default function ImagesClient({ recentImages: initial }: { recentImages: 
   const [variations,      setVariations]      = useState(1)
   const [brandId,         setBrandId]         = useState<BrandId>('lhcapital')
   const [enhancePrompt,   setEnhancePrompt]   = useState(false)
+  const [includeLogo,     setIncludeLogo]     = useState(true)
   const [recentImages,    setRecentImages]    = useState(initial)
   const [copied,          setCopied]          = useState<string | null>(null)
   const [intentOpen,      setIntentOpen]      = useState(true)
@@ -46,8 +47,8 @@ export default function ImagesClient({ recentImages: initial }: { recentImages: 
     const ctaLabel     = CTA_OPTIONS.find((c) => c.id === selectedCta)?.label ?? ''
     const intent       = buildIntentString(topicLabels, purposeLabel, ctaLabel)
     const fullPrompt   = intent ? `${prompt.trim()}\n\nContent intent: ${intent}` : prompt.trim()
-    generate({ prompt: fullPrompt, model, aspectRatio: aspect, variations, brandId, enhancePrompt })
-  }, [prompt, model, aspect, variations, brandId, enhancePrompt, selectedTopics, selectedPurpose, selectedCta, generate])
+    generate({ prompt: fullPrompt, model, aspectRatio: aspect, variations, brandId, enhancePrompt, includeLogo })
+  }, [prompt, model, aspect, variations, brandId, enhancePrompt, includeLogo, selectedTopics, selectedPurpose, selectedCta, generate])
 
   function copyUrl(id: string, url: string) {
     navigator.clipboard.writeText(url).then(() => { setCopied(id); setTimeout(() => setCopied(null), 2000) })
@@ -66,6 +67,7 @@ export default function ImagesClient({ recentImages: initial }: { recentImages: 
         aspect={aspect}             onAspect={setAspect}
         variations={variations}     onVariations={setVariations}
         enhancePrompt={enhancePrompt} onEnhancePrompt={setEnhancePrompt}
+        includeLogo={includeLogo} onIncludeLogo={setIncludeLogo}
         intentOpen={intentOpen}     onIntentOpen={setIntentOpen}
         selectedTopics={selectedTopics}
         onToggleTopic={(id) => setSelectedTopics((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}

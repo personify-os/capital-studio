@@ -96,34 +96,37 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   const currentConfig = (existing.config as Record<string, unknown>) ?? {}
-  const updateData: Record<string, unknown> = {}
-
-  if (isLogo) {
-    const slot = logoSlot ?? 'primary'
-    if (slot === 'primary' || !slot) {
-      // Primary logo — stored in top-level logoUrl field
-      updateData.logoUrl = url
-    } else {
-      // Logo variant — stored in config.logoVariants array
-      const existing_variants = (currentConfig.logoVariants as { label: string; url: string }[] | undefined) ?? []
-      const updatedVariants   = [...existing_variants.filter((v) => v.label !== slot), { label: slot, url }]
-      updateData.config       = { ...currentConfig, logoVariants: updatedVariants }
-    }
-  } else {
-    // Document: store URL for reference + extract text content into guidelines
-    let guidelines = currentConfig.guidelines as string | undefined
-    if (detectedMime === 'text/plain') {
-      const textContent = buffer.toString('utf8').slice(0, 10000).trim()
-      if (textContent) guidelines = textContent
-    }
-    updateData.config = { ...currentConfig, documentUrl: url, documentName: file.name, ...(guidelines !== undefined ? { guidelines } : {}) }
-  }
 
   try {
-    await prisma.brandProfile.update({
-      where: { id: params.id, tenantId: session.user.tenantId },
-      data:  updateData,
-    })
+    if (isLogo) {
+      const slot = logoSlot ?? 'primary'
+      if (slot === 'primary' || !slot) {
+        // Primary logo — top-level logoUrl column
+        await prisma.brandProfile.update({
+          where: { id: params.id, tenantId: session.user.tenantId },
+          data:  { logoUrl: url },
+        })
+      } else {
+        // Logo variant — stored in config.logoVariants
+        const existingVariants = (currentConfig.logoVariants as { label: string; url: string }[] | undefined) ?? []
+        const updatedVariants  = [...existingVariants.filter((v) => v.label !== slot), { label: slot, url }]
+        await prisma.brandProfile.update({
+          where: { id: params.id, tenantId: session.user.tenantId },
+          data:  { config: { ...currentConfig, logoVariants: updatedVariants } },
+        })
+      }
+    } else {
+      // Document: store URL + extract text content into guidelines
+      const newConfig: Record<string, unknown> = { ...currentConfig, documentUrl: url, documentName: file.name }
+      if (detectedMime === 'text/plain') {
+        const textContent = buffer.toString('utf8').slice(0, 10000).trim()
+        if (textContent) newConfig.guidelines = textContent
+      }
+      await prisma.brandProfile.update({
+        where: { id: params.id, tenantId: session.user.tenantId },
+        data:  { config: newConfig },
+      })
+    }
   } catch (err) {
     console.error('[brands/upload] DB update failed:', err)
     return NextResponse.json({ message: 'Failed to save upload.' }, { status: 500 })

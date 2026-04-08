@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { AlertCircle, Upload, Link as LinkIcon } from 'lucide-react'
 import BrandSelector from '@/components/shared/BrandSelector'
 import Button from '@/components/ui/Button'
+import Toggle from '@/components/ui/Toggle'
 import ContentIntentSimple from '@/components/shared/ContentIntentSimple'
 import ContentPillarSelector from '@/components/writer/ContentPillarSelector'
 import { type GraphicTemplate } from '@/app/(studio)/graphics/templates'
@@ -35,6 +36,8 @@ interface Props {
   onCtaChange:     (id: string) => void
   contentPillar:   ContentPillar | ''
   onContentPillar: (v: ContentPillar | '') => void
+  includeLogo:     boolean
+  onIncludeLogo:   (v: boolean) => void
   loading:         boolean
   error:           string | null
   onGenerate:      () => void
@@ -45,7 +48,7 @@ export default function GraphicsControls({
   cta, onCta, topic, onTopic, photoUrl, onPhotoUrl, onPhotoUpload, uploading, uploadError,
   intentOpen, onIntentOpen, selectedTopics, onToggleTopic,
   selectedPurpose, onPurposeChange, selectedCta, onCtaChange,
-  contentPillar, onContentPillar,
+  contentPillar, onContentPillar, includeLogo, onIncludeLogo,
   loading, error, onGenerate,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
@@ -63,8 +66,15 @@ export default function GraphicsControls({
         />
 
         {/* Brand */}
-        <div className="bg-gray-50 rounded-card p-4">
+        <div className="bg-gray-50 rounded-card p-4 space-y-3">
           <BrandSelector value={brandId} onChange={onBrandChange} />
+          <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+            <div>
+              <p className="text-xs font-medium text-gray-700">Include Logo</p>
+              <p className="text-[10px] text-gray-400">Injects the brand logo URL into the generation prompt</p>
+            </div>
+            <Toggle checked={includeLogo} onChange={onIncludeLogo} />
+          </div>
         </div>
 
         {/* Copy fields */}

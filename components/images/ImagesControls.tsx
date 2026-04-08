@@ -45,6 +45,8 @@ interface Props {
   onVariations:    (v: number) => void
   enhancePrompt:   boolean
   onEnhancePrompt: (v: boolean) => void
+  includeLogo:     boolean
+  onIncludeLogo:   (v: boolean) => void
   intentOpen:      boolean
   onIntentOpen:    (v: boolean) => void
   selectedTopics:  string[]
@@ -63,6 +65,7 @@ export type { ModelId, AspectRatio }
 export default function ImagesControls({
   brandId, onBrandChange, prompt, onPrompt, model, onModel,
   aspect, onAspect, variations, onVariations, enhancePrompt, onEnhancePrompt,
+  includeLogo, onIncludeLogo,
   intentOpen, onIntentOpen, selectedTopics, onToggleTopic,
   selectedPurpose, onPurposeChange, selectedCta, onCtaChange,
   loading, error, onGenerate,
@@ -91,6 +94,13 @@ export default function ImagesControls({
               <p className="text-[10px] text-gray-400">Rewrites your prompt with cinematic lighting, composition, and brand style</p>
             </div>
             <Toggle checked={enhancePrompt} onChange={onEnhancePrompt} color="bg-brand-teal" />
+          </div>
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
+            <div>
+              <p className="text-xs font-medium text-gray-700">Include Logo</p>
+              <p className="text-[10px] text-gray-400">Injects the brand logo URL into the generation prompt</p>
+            </div>
+            <Toggle checked={includeLogo} onChange={onIncludeLogo} />
           </div>
         </div>
 

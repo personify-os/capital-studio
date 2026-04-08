@@ -21,7 +21,10 @@ export async function POST(req: Request) {
 
   const input = parsed.data
   const brandId = (input.brandId ?? 'lhcapital') as BrandId
-  const brand   = await resolveBrandConfig(brandId, session.user.tenantId)
+  const resolvedBrand = await resolveBrandConfig(brandId, session.user.tenantId)
+  const brand = typeof input.includeLogo === 'boolean'
+    ? { ...resolvedBrand, includeLogo: input.includeLogo }
+    : resolvedBrand
 
   // Build enriched prompt
   let finalPrompt = input.prompt

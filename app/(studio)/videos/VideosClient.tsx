@@ -28,6 +28,7 @@ export default function VideosClient({ recentVideos: initial }: { recentVideos: 
   const [selectedCta,     setSelectedCta]     = useState('')
   const [enhancing,       setEnhancing]       = useState(false)
   const [enhanceError,    setEnhanceError]    = useState<string | null>(null)
+  const [includeLogo,     setIncludeLogo]     = useState(true)
 
   const { data, loading, error, generate } = useGenerate<VideoGenerateInput, GenerateResponse>({
     endpoint:  '/api/v1/generate/video',
@@ -46,8 +47,8 @@ export default function VideosClient({ recentVideos: initial }: { recentVideos: 
     const ctaLabel     = CTA_OPTIONS.find((c) => c.id === selectedCta)?.label ?? ''
     const intent       = buildIntentString(topicLabels, purposeLabel, ctaLabel)
     const fullPrompt   = intent ? `${prompt.trim()}\n\nContent intent: ${intent}` : prompt.trim()
-    generate({ prompt: fullPrompt, model, duration, aspectRatio, brandId })
-  }, [prompt, model, duration, aspectRatio, brandId, selectedTopics, selectedPurpose, selectedCta, generate])
+    generate({ prompt: fullPrompt, model, duration, aspectRatio, brandId, includeLogo })
+  }, [prompt, model, duration, aspectRatio, brandId, includeLogo, selectedTopics, selectedPurpose, selectedCta, generate])
 
   async function handleEnhance() {
     if (!prompt.trim()) return
@@ -78,6 +79,7 @@ export default function VideosClient({ recentVideos: initial }: { recentVideos: 
         onToggleTopic={(id) => setSelectedTopics((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
         selectedPurpose={selectedPurpose} onPurposeChange={setSelectedPurpose}
         selectedCta={selectedCta} onCtaChange={setSelectedCta}
+        includeLogo={includeLogo} onIncludeLogo={setIncludeLogo}
         loading={loading} error={enhanceError ?? error} onGenerate={handleGenerate}
       />
 

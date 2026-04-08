@@ -39,6 +39,7 @@ export default function GraphicsClient({ recentGraphics: initial }: { recentGrap
   const [selectedPurpose, setSelectedPurpose] = useState('')
   const [selectedCta,     setSelectedCta]     = useState('')
   const [contentPillar,   setContentPillar]   = useState<ContentPillar | ''>('')
+  const [includeLogo,     setIncludeLogo]     = useState(true)
 
   useEffect(() => {
     try {
@@ -89,8 +90,9 @@ export default function GraphicsClient({ recentGraphics: initial }: { recentGrap
       topic:          fullTopic         || undefined,
       photoUrl:       photoUrl.trim()   || undefined,
       contentPillar:  contentPillar     || undefined,
+      includeLogo,
     })
-  }, [template, brandId, headline, subtext, cta, topic, photoUrl, selectedTopics, selectedPurpose, selectedCta, generate])
+  }, [template, brandId, headline, subtext, cta, topic, photoUrl, includeLogo, selectedTopics, selectedPurpose, selectedCta, generate])
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -141,6 +143,7 @@ export default function GraphicsClient({ recentGraphics: initial }: { recentGrap
         selectedPurpose={selectedPurpose} onPurposeChange={setSelectedPurpose}
         selectedCta={selectedCta}         onCtaChange={setSelectedCta}
         contentPillar={contentPillar}     onContentPillar={setContentPillar}
+        includeLogo={includeLogo}         onIncludeLogo={setIncludeLogo}
         loading={loading}
         error={error}
         onGenerate={handleGenerate}

@@ -14,6 +14,7 @@ interface SidebarFlags {
   videoGeneration: boolean
   motionVideo:     boolean
   voiceover:       boolean
+  likenessVideo:   boolean
   musicGeneration: boolean
   analytics:       boolean
   socialScheduler: boolean
@@ -27,6 +28,7 @@ interface NavItem {
   href:  string
   icon:  LucideIcon
   label: string
+  flag?: keyof SidebarFlags
 }
 
 interface NavSection {
@@ -54,25 +56,24 @@ export default function Sidebar({ flags }: Props) {
     {
       id:    'create',
       label: 'Create',
-      // All items always shown — page-level flag guards handle access control
       items: [
-        { href: '/images',   icon: ImageIcon,   label: 'Image Studio'     },
-        { href: '/graphics', icon: Layers,      label: 'Graphics Studio'  },
-        { href: '/videos',   icon: Film,        label: 'Video Studio'     },
-        { href: '/motion',   icon: Clapperboard,label: 'Motion Studio'    },
-        { href: '/likeness', icon: User,        label: 'Likeness Video'   },
-        { href: '/audio',    icon: Mic,         label: 'VoiceOver Studio' },
-        { href: '/music',    icon: Music,       label: 'Music Studio'     },
+        { href: '/images',   icon: ImageIcon,    label: 'Image Studio'     },
+        { href: '/graphics', icon: Layers,       label: 'Graphics Studio'  },
+        { href: '/videos',   icon: Film,         label: 'Video Studio',     flag: 'videoGeneration' },
+        { href: '/motion',   icon: Clapperboard, label: 'Motion Studio',    flag: 'motionVideo'     },
+        { href: '/likeness', icon: User,         label: 'Likeness Video',   flag: 'likenessVideo'   },
+        { href: '/audio',    icon: Mic,          label: 'VoiceOver Studio', flag: 'voiceover'       },
+        { href: '/music',    icon: Music,        label: 'Music Studio',     flag: 'musicGeneration' },
       ],
     },
     {
       id:    'manage',
       label: 'Manage',
       items: [
-        { href: '/scheduler',   icon: Calendar,   label: 'Social Scheduler' },
+        { href: '/scheduler',   icon: Calendar,   label: 'Social Scheduler', flag: 'socialScheduler' },
         { href: '/brand-vault', icon: BookOpen,   label: 'Brand Vault'      },
         { href: '/library',     icon: FolderOpen, label: 'Content Library'  },
-        { href: '/analytics',   icon: BarChart3,  label: 'Analytics'        },
+        { href: '/analytics',   icon: BarChart3,  label: 'Analytics',        flag: 'analytics'       },
       ],
     },
   ]
@@ -96,7 +97,9 @@ export default function Sidebar({ flags }: Props) {
       {/* Nav */}
       <nav className="flex-1 px-3 py-3 overflow-y-auto scrollbar-hide">
         {sections.map(({ id, label, items }) => {
-          const isCollapsed = !!collapsed[id]
+          const isCollapsed  = !!collapsed[id]
+          const visibleItems = items.filter(({ flag }) => !flag || !flags || flags[flag])
+          if (visibleItems.length === 0) return null
           return (
             <div key={id} className={id !== 'main' ? 'mt-2' : ''}>
               {/* Section header — "main" has no label */}
@@ -115,7 +118,7 @@ export default function Sidebar({ flags }: Props) {
 
               {!isCollapsed && (
                 <div className="space-y-0.5">
-                  {items.map(({ href, icon: Icon, label: itemLabel }) => {
+                  {visibleItems.map(({ href, icon: Icon, label: itemLabel }) => {
                     const active = pathname === href || pathname.startsWith(href + '/')
                     return (
                       <Link

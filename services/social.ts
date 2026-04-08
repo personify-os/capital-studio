@@ -195,7 +195,7 @@ function xOAuth1Header(method: string, url: string): string {
     .join('&')
 
   const base      = `${method.toUpperCase()}&${enc(url)}&${enc(paramString)}`
-  const signingKey= `${enc(process.env.TWITTER_API_SECRET!!)}&${enc(process.env.TWITTER_ACCESS_TOKEN_SECRET!)}`
+  const signingKey= `${enc(process.env.TWITTER_API_SECRET!)}&${enc(process.env.TWITTER_ACCESS_TOKEN_SECRET!)}`
   params.oauth_signature = createHmac('sha1', signingKey).update(base).digest('base64')
 
   return 'OAuth ' + Object.keys(params)

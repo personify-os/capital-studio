@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { flags } from '@/lib/flags'
 import Sidebar from '@/components/layout/Sidebar'
+import Topbar from '@/components/layout/Topbar'
 
 export default async function StudioLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions)
@@ -12,6 +13,7 @@ export default async function StudioLayout({ children }: { children: React.React
     videoGeneration: flags.videoGeneration,
     motionVideo:     flags.motionVideo,
     voiceover:       flags.voiceover,
+    likenessVideo:   flags.likenessVideo,
     musicGeneration: flags.musicGeneration,
     analytics:       flags.analytics,
     socialScheduler: flags.socialScheduler,
@@ -20,7 +22,10 @@ export default async function StudioLayout({ children }: { children: React.React
   return (
     <div className="flex h-screen overflow-hidden bg-app-bg">
       <Sidebar flags={sidebarFlags} />
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Topbar />
+        <main className="flex-1 overflow-y-auto">{children}</main>
+      </div>
     </div>
   )
 }

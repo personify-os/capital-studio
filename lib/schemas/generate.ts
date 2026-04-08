@@ -70,7 +70,7 @@ export const videoGenerateSchema = z.object({
 export const motionGenerateSchema = z.object({
   imageUrl:    z.string().url(),
   prompt:      z.string().min(1).max(500),
-  duration:    z.enum(['5', '10', '30', '60']).default('5'),
+  duration:    z.enum(['5', '10']).default('5'),
   aspectRatio: z.enum(['16:9', '9:16', '1:1']).default('16:9'),
   brandId:     z.enum(['lhcapital', 'simrp', 'personal']).optional(),
   includeLogo: z.boolean().optional(),

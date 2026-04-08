@@ -8,7 +8,7 @@ import Toggle from '@/components/ui/Toggle'
 import ContentIntentSimple from '@/components/shared/ContentIntentSimple'
 import type { BrandId } from '@/lib/brands'
 
-type Duration    = '5' | '10' | '30' | '60'
+type Duration    = '5' | '10'
 type AspectRatio = '16:9' | '9:16' | '1:1'
 
 export type { Duration, AspectRatio }
@@ -147,7 +147,7 @@ export default function MotionControls({
           <div>
             <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">Duration</p>
             <div className="flex gap-2">
-              {([['5', '5s'], ['10', '10s'], ['30', '30s'], ['60', '1 min']] as [Duration, string][]).map(([d, label]) => (
+              {([['5', '5s'], ['10', '10s']] as [Duration, string][]).map(([d, label]) => (
                 <button key={d} type="button" onClick={() => onDuration(d)}
                   className={cn('flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-colors',
                     duration === d ? 'bg-brand-azure text-white border-brand-azure' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-azure',
@@ -170,7 +170,7 @@ export default function MotionControls({
 
         <div className="flex items-center gap-2 text-xs text-gray-400 px-1">
           <Zap size={11} className="text-brand-teal" />
-          <span>{Number(duration) >= 60 ? `${Number(duration) / 60} min` : `${duration}s`} · {aspectRatio} · Kling AI</span>
+          <span>{duration}s · {aspectRatio} · Kling AI</span>
         </div>
 
         <Button className="w-full" size="lg" disabled={!canGenerate || loading} loading={loading} onClick={onGenerate}>

@@ -122,18 +122,20 @@ export async function publishPost(postId: string, tenantId?: string): Promise<{ 
 // Uses an atomic status transition to PROCESSING to prevent double-publish
 // if two cron instances fire concurrently.
 export async function publishDuePosts(): Promise<{ published: number; failed: number; errors: string[] }> {
-  // Claim up to 50 due posts atomically — set PROCESSING before reading content
+  // Claim up to 50 due posts atomically — updateMany + findMany in a single transaction
+  // to prevent double-publish if two cron instances fire at the same time.
   const now = new Date()
-  await prisma.scheduledPost.updateMany({
-    where: { status: 'SCHEDULED', scheduledFor: { lte: now } },
-    data:  { status: 'PROCESSING' },
-  })
-
-  const due = await prisma.scheduledPost.findMany({
-    where: { status: 'PROCESSING' },
-    include: { socialAccount: true },
-    take: 50,
-  })
+  const [, due] = await prisma.$transaction([
+    prisma.scheduledPost.updateMany({
+      where: { status: 'SCHEDULED', scheduledFor: { lte: now } },
+      data:  { status: 'PROCESSING' },
+    }),
+    prisma.scheduledPost.findMany({
+      where:   { status: 'PROCESSING' },
+      include: { socialAccount: true },
+      take:    50,
+    }),
+  ])
 
   let published = 0
   let failed    = 0

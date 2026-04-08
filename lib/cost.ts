@@ -48,7 +48,8 @@ const MODEL_COSTS: Record<string, ModelCost> = {
   'heygen-avatar':          { perCall: 0.10  },
 
   // Text (Claude — per graphic/caption call, rough estimate)
-  'claude-sonnet-4-6':    { perCall: 0.02  },
+  'claude-opus-4-5':           { perCall: 0.15  },
+  'claude-sonnet-4-6':         { perCall: 0.02  },
   'claude-haiku-4-5-20251001': { perCall: 0.005 },
 }
 

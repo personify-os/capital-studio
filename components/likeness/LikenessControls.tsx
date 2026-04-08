@@ -10,6 +10,7 @@ interface Props {
   avatars:      HeyGenAvatar[]
   voices:       HeyGenVoice[]
   loadingAssets:boolean
+  assetsError:  boolean
   avatarId:     string
   voiceId:      string
   aspectRatio:  AspectRatio
@@ -33,7 +34,7 @@ const RATIOS: { value: AspectRatio; label: string; sub: string }[] = [
 ]
 
 export default function LikenessControls({
-  avatars, voices, loadingAssets,
+  avatars, voices, loadingAssets, assetsError,
   avatarId, voiceId, aspectRatio, script, brandId,
   onAvatarId, onVoiceId, onAspectRatio, onScript, onBrandId,
   canGenerate, loading, error, onGenerate,
@@ -85,6 +86,8 @@ export default function LikenessControls({
             <>
               {loadingAssets ? (
                 <p className="text-xs text-gray-400">Loading avatars…</p>
+              ) : assetsError ? (
+                <p className="text-xs text-red-500">Failed to load avatars — check your HeyGen API key</p>
               ) : avatars.length === 0 ? (
                 <p className="text-xs text-gray-400">No avatars found in your HeyGen account.</p>
               ) : (

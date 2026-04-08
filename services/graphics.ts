@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { buildBrandPromptContext, getBrandConfig, type BrandConfig } from '@/lib/brands'
 import { BANNED_PHRASES_RULE } from '@/lib/platform-context'
+import { withRetry, isTransient } from '@/lib/retry'
 import type { GraphicGenerateInput } from '@/lib/schemas/generate'
 import type { BrandId } from '@/lib/brands'
 
@@ -39,12 +40,15 @@ ${BANNED_PHRASES_RULE}`
 
   const userPrompt = buildGraphicUserPrompt(input)
 
-  const message = await client.messages.create({
-    model:      'claude-opus-4-5',
-    max_tokens: 4096,
-    messages: [{ role: 'user', content: userPrompt }],
-    system: systemPrompt,
-  })
+  const message = await withRetry(
+    () => client.messages.create({
+      model:      'claude-opus-4-5',
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: userPrompt }],
+      system: systemPrompt,
+    }),
+    { retryOn: isTransient },
+  )
 
   const text = message.content.find((b) => b.type === 'text')?.text ?? ''
   // Strip any accidental markdown code fences

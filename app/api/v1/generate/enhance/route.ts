@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { buildBrandPromptContext } from '@/lib/brands'
 import { resolveBrandConfig } from '@/lib/brand-context'
 import Anthropic from '@anthropic-ai/sdk'
+import { withRetry, isTransient } from '@/lib/retry'
 import { z } from 'zod'
 import type { BrandId } from '@/lib/brands'
 
@@ -75,15 +76,18 @@ export async function POST(req: Request) {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   let message: Awaited<ReturnType<typeof client.messages.create>>
   try {
-    message = await client.messages.create({
-      model:      'claude-haiku-4-5-20251001',
-      max_tokens: type === 'video' ? 450 : 350,
-      system:     systemPrompt,
-      messages:   [{ role: 'user', content: userPrompt }],
-    })
-  } catch (err: any) {
+    message = await withRetry(
+      () => client.messages.create({
+        model:      'claude-haiku-4-5-20251001',
+        max_tokens: type === 'video' ? 450 : 350,
+        system:     systemPrompt,
+        messages:   [{ role: 'user', content: userPrompt }],
+      }),
+      { retryOn: isTransient },
+    )
+  } catch (err) {
     console.error('[enhance] Anthropic API error:', err)
-    return NextResponse.json({ message: err.message ?? 'Enhancement failed.' }, { status: 500 })
+    return NextResponse.json({ message: err instanceof Error ? err.message : 'Enhancement failed.' }, { status: 500 })
   }
 
   const enhanced = message.content.find((b) => b.type === 'text')?.text?.trim() ?? prompt

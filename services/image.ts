@@ -60,10 +60,11 @@ export async function enhanceImagePrompt(rawPrompt: string, brand: BrandConfig):
     `Accent color: ${brand.colors.accent}`,
   ].filter(Boolean).join('\n')
 
-  const message = await client.messages.create({
-    model:      'claude-haiku-4-5-20251001',
-    max_tokens: 350,
-    system: `You are an expert AI image prompt engineer for professional B2B marketing photography.
+  const message = await withRetry(
+    () => client.messages.create({
+      model:      'claude-haiku-4-5-20251001',
+      max_tokens: 350,
+      system: `You are an expert AI image prompt engineer for professional B2B marketing photography.
 Transform basic image prompts into rich, cinematically detailed prompts that produce stunning professional results.
 
 Rules:
@@ -76,11 +77,13 @@ Rules:
 - Preserve the core subject exactly — enrich the visual description, never change what is being depicted
 - Do not add people, objects, or scenes not implied by the original prompt
 - Output ONLY the enhanced prompt text — no labels, no preamble, no explanation — maximum 200 words`,
-    messages: [{
-      role:    'user',
-      content: `Brand context:\n${briefBrandCtx}\n\nPrompt to enhance:\n${rawPrompt}`,
-    }],
-  })
+      messages: [{
+        role:    'user',
+        content: `Brand context:\n${briefBrandCtx}\n\nPrompt to enhance:\n${rawPrompt}`,
+      }],
+    }),
+    { retryOn: isTransient },
+  )
 
   return message.content.find((b) => b.type === 'text')?.text?.trim() ?? rawPrompt
 }
@@ -124,7 +127,10 @@ async function generateWithDalle(prompt: string, count: number, aspectRatio: str
   // DALL-E-3 does not support batching — requests must be sequential
   const urls: string[] = []
   for (let i = 0; i < Math.min(count, 4); i++) {
-    const r = await openai.images.generate({ model: 'dall-e-3', prompt, size: sizeMap[aspectRatio] ?? '1024x1024', quality: 'standard' })
+    const r = await withRetry(
+      () => openai.images.generate({ model: 'dall-e-3', prompt, size: sizeMap[aspectRatio] ?? '1024x1024', quality: 'standard' }),
+      { retryOn: isTransient },
+    )
     for (const d of r.data ?? []) { if (d.url) urls.push(d.url) }
   }
   return urls

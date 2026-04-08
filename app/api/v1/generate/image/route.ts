@@ -44,38 +44,44 @@ export async function POST(req: Request) {
   let urls: string[]
   try {
     urls = await generateImages(input, finalPrompt)
-  } catch (err: any) {
+  } catch (err) {
     console.error('[generate/image]', err)
-    return NextResponse.json({ message: err.message ?? 'Generation failed.' }, { status: 500 })
+    return NextResponse.json({ message: err instanceof Error ? err.message : 'Generation failed.' }, { status: 500 })
   }
 
   // Upload to R2 for permanent storage, then save to DB
-  const assets = await Promise.all(
-    urls.map(async (tempUrl) => {
-      const key        = makeAssetKey(session.user.tenantId, 'images')
-      const permanentUrl = await uploadFromUrl(tempUrl, key)
+  let assets: { id: string; s3Url: string | null }[]
+  try {
+    assets = await Promise.all(
+      urls.map(async (tempUrl) => {
+        const key          = makeAssetKey(session.user.tenantId, 'images')
+        const permanentUrl = await uploadFromUrl(tempUrl, key)
 
-      return prisma.asset.create({
-        data: {
-          tenantId: session.user.tenantId,
-          userId:   session.user.id,
-          type:     'IMAGE',
-          status:   'READY',
-          s3Key:    key,
-          s3Url:    permanentUrl,
-          metadata: {
-            prompt:         input.prompt,
-            enhancedPrompt: input.enhancePrompt && finalPrompt !== input.prompt ? finalPrompt : undefined,
-            model:          input.model,
-            aspectRatio:    input.aspectRatio,
-            brandId,
-            cost:           estimateCost(input.model),
+        return prisma.asset.create({
+          data: {
+            tenantId: session.user.tenantId,
+            userId:   session.user.id,
+            type:     'IMAGE',
+            status:   'READY',
+            s3Key:    key,
+            s3Url:    permanentUrl,
+            metadata: {
+              prompt:         input.prompt,
+              enhancedPrompt: input.enhancePrompt && finalPrompt !== input.prompt ? finalPrompt : undefined,
+              model:          input.model,
+              aspectRatio:    input.aspectRatio,
+              brandId,
+              cost:           estimateCost(input.model),
+            },
           },
-        },
-        select: { id: true, s3Url: true, createdAt: true },
-      })
-    }),
-  )
+          select: { id: true, s3Url: true },
+        })
+      }),
+    )
+  } catch (err) {
+    console.error('[generate/image] post-generation error:', err)
+    return NextResponse.json({ message: 'Failed to save images.' }, { status: 500 })
+  }
 
   return NextResponse.json({ assets: assets.map((a) => ({ id: a.id, url: a.s3Url! })) })
 }

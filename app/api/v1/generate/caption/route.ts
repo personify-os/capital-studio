@@ -8,6 +8,7 @@ import { buildIntentContext } from '@/lib/content-intent'
 import { buildPlatformSystemPrompt } from '@/lib/platform-context'
 import type { ContentIntent } from '@/lib/content-intent'
 import Anthropic from '@anthropic-ai/sdk'
+import { withRetry, isTransient } from '@/lib/retry'
 import type { BrandId } from '@/lib/brands'
 import { prisma } from '@/lib/db'
 import { estimateCost } from '@/lib/cost'
@@ -149,15 +150,18 @@ export async function POST(req: Request) {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   let message: Awaited<ReturnType<typeof client.messages.create>>
   try {
-    message = await client.messages.create({
-      model:      'claude-haiku-4-5-20251001',
-      max_tokens: isMultiple ? 4096 : 2048,
-      system:     systemPrompt,
-      messages:   [{ role: 'user', content: messageContent }],
-    })
-  } catch (err: any) {
+    message = await withRetry(
+      () => client.messages.create({
+        model:      'claude-haiku-4-5-20251001',
+        max_tokens: isMultiple ? 4096 : 2048,
+        system:     systemPrompt,
+        messages:   [{ role: 'user', content: messageContent }],
+      }),
+      { retryOn: isTransient },
+    )
+  } catch (err) {
     console.error('[caption] Anthropic API error:', err)
-    return NextResponse.json({ message: err.message ?? 'Generation failed.' }, { status: 500 })
+    return NextResponse.json({ message: err instanceof Error ? err.message : 'Generation failed.' }, { status: 500 })
   }
 
   const raw  = message.content.find((b) => b.type === 'text')?.text?.trim() ?? ''

@@ -31,14 +31,14 @@ export async function GET(req: Request) {
       const key = makeAssetKey(session.user.tenantId, 'videos', 'mp4')
       const url = await uploadFromUrl(result.videoUrl, key, 'video/mp4')
       await prisma.asset.update({
-        where: { id: assetId },
+        where: { id: assetId, tenantId: session.user.tenantId },
         data:  { status: 'READY', s3Url: url, s3Key: key },
       })
       return NextResponse.json({ status: 'completed', url })
     }
 
     if (result.status === 'failed') {
-      await prisma.asset.update({ where: { id: assetId }, data: { status: 'FAILED' } })
+      await prisma.asset.update({ where: { id: assetId, tenantId: session.user.tenantId }, data: { status: 'FAILED' } })
       return NextResponse.json({ status: 'failed', error: result.error ?? 'HeyGen generation failed' })
     }
 

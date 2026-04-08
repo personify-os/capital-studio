@@ -14,9 +14,10 @@ export default function LikenessClient() {
   const router = useRouter()
 
   // Asset lists
-  const [avatars,       setAvatars]       = useState<HeyGenAvatar[]>([])
-  const [voices,        setVoices]        = useState<HeyGenVoice[]>([])
-  const [loadingAssets, setLoadingAssets] = useState(true)
+  const [avatars,        setAvatars]        = useState<HeyGenAvatar[]>([])
+  const [voices,         setVoices]         = useState<HeyGenVoice[]>([])
+  const [loadingAssets,  setLoadingAssets]  = useState(true)
+  const [assetsError,    setAssetsError]    = useState(false)
 
   // Controls state
   const [avatarId,    setAvatarId]    = useState('')
@@ -39,7 +40,7 @@ export default function LikenessClient() {
     fetch('/api/v1/generate/likeness/avatars')
       .then((r) => r.json())
       .then((d) => { setAvatars(d.avatars ?? []); setVoices(d.voices ?? []) })
-      .catch(() => {})
+      .catch(() => setAssetsError(true))
       .finally(() => setLoadingAssets(false))
   }, [])
 
@@ -103,7 +104,7 @@ export default function LikenessClient() {
   return (
     <div className="flex bg-app-bg">
       <LikenessControls
-        avatars={avatars} voices={voices} loadingAssets={loadingAssets}
+        avatars={avatars} voices={voices} loadingAssets={loadingAssets} assetsError={assetsError}
         avatarId={avatarId}       onAvatarId={setAvatarId}
         voiceId={voiceId}         onVoiceId={setVoiceId}
         aspectRatio={aspectRatio} onAspectRatio={setAspectRatio}

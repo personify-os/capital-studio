@@ -5,6 +5,7 @@ import { buildBrandPromptContext } from '@/lib/brands'
 import { resolveBrandConfig } from '@/lib/brand-context'
 import { buildVoiceoverSystemPrompt } from '@/lib/platform-context'
 import Anthropic from '@anthropic-ai/sdk'
+import { withRetry, isTransient } from '@/lib/retry'
 import { z } from 'zod'
 import type { BrandId } from '@/lib/brands'
 
@@ -67,15 +68,18 @@ export async function POST(req: Request) {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   let message: Awaited<ReturnType<typeof client.messages.create>>
   try {
-    message = await client.messages.create({
-      model:      'claude-haiku-4-5-20251001',
-      max_tokens: 512,
-      system:     systemPrompt,
-      messages:   [{ role: 'user', content: prompt }],
-    })
-  } catch (err: any) {
+    message = await withRetry(
+      () => client.messages.create({
+        model:      'claude-haiku-4-5-20251001',
+        max_tokens: 512,
+        system:     systemPrompt,
+        messages:   [{ role: 'user', content: prompt }],
+      }),
+      { retryOn: isTransient },
+    )
+  } catch (err) {
     console.error('[generate/script] Anthropic API error:', err)
-    return NextResponse.json({ message: err.message ?? 'Script generation failed.' }, { status: 500 })
+    return NextResponse.json({ message: err instanceof Error ? err.message : 'Script generation failed.' }, { status: 500 })
   }
 
   const script = message.content.find((b) => b.type === 'text')?.text?.trim() ?? ''

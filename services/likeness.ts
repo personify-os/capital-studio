@@ -75,19 +75,21 @@ export async function generateLikenessVideo(params: GenerateLikenessParams): Pro
     dimension: dim,
   }
 
-  const res = await fetch(`${HEYGEN_API}/v2/video/generate`, {
-    method:  'POST',
-    headers: heygenHeaders(),
-    body:    JSON.stringify(body),
-  })
-  if (!res.ok) {
-    const msg = await res.text().catch(() => res.status.toString())
-    throw new Error(`HeyGen generate failed (${res.status}): ${msg}`)
-  }
-  const json = await res.json()
-  const videoId = json.data?.video_id
-  if (!videoId) throw new Error('HeyGen returned no video_id')
-  return videoId as string
+  return withRetry(async () => {
+    const res = await fetch(`${HEYGEN_API}/v2/video/generate`, {
+      method:  'POST',
+      headers: heygenHeaders(),
+      body:    JSON.stringify(body),
+    })
+    if (!res.ok) {
+      const msg = await res.text().catch(() => res.status.toString())
+      throw new Error(`HeyGen generate failed (${res.status}): ${msg}`)
+    }
+    const json = await res.json()
+    const videoId = json.data?.video_id
+    if (!videoId) throw new Error('HeyGen returned no video_id')
+    return videoId as string
+  }, { retryOn: isTransient })
 }
 
 // ── Status polling ───────────────────────────────────────────────────────────
@@ -101,16 +103,18 @@ export interface LikenessStatusResult {
 }
 
 export async function getLikenessStatus(videoId: string): Promise<LikenessStatusResult> {
-  const res = await fetch(
-    `${HEYGEN_API}/v1/video_status.get?video_id=${encodeURIComponent(videoId)}`,
-    { headers: heygenHeaders() },
-  )
-  if (!res.ok) throw new Error(`HeyGen status: ${res.status}`)
-  const json = await res.json()
-  const d    = json.data ?? {}
-  return {
-    status:   (d.status ?? 'processing') as LikenessJobStatus,
-    videoUrl: d.video_url ?? undefined,
-    error:    d.error     ?? undefined,
-  }
+  return withRetry(async () => {
+    const res = await fetch(
+      `${HEYGEN_API}/v1/video_status.get?video_id=${encodeURIComponent(videoId)}`,
+      { headers: heygenHeaders() },
+    )
+    if (!res.ok) throw new Error(`HeyGen status: ${res.status}`)
+    const json = await res.json()
+    const d    = json.data ?? {}
+    return {
+      status:   (d.status ?? 'processing') as LikenessJobStatus,
+      videoUrl: d.video_url ?? undefined,
+      error:    d.error     ?? undefined,
+    }
+  }, { retryOn: isTransient })
 }

@@ -48,8 +48,10 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize }
   const [search,        setSearch]        = useState('')
   const [searchResults, setSearchResults] = useState<Asset[] | null>(null)
   const [searching,     setSearching]     = useState(false)
+  const [searchError,   setSearchError]   = useState(false)
   const [copied,        setCopied]        = useState<string | null>(null)
   const [loadingMore,   setLoadingMore]   = useState(false)
+  const [loadMoreError, setLoadMoreError] = useState(false)
   const [page,          setPage]          = useState(1)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasMore = allAssets.length < total
@@ -61,11 +63,15 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize }
     if (!q) { setSearchResults(null); return }
     debounceRef.current = setTimeout(async () => {
       setSearching(true)
+      setSearchError(false)
       try {
         const typeParam = filter !== 'ALL' ? `&type=${filter}` : ''
         const res  = await fetch(`/api/v1/assets?search=${encodeURIComponent(q)}${typeParam}`)
         const json = await res.json().catch(() => ({}))
-        if (res.ok && json.assets) setSearchResults(json.assets as Asset[])
+        if (res.ok && json.assets) { setSearchResults(json.assets as Asset[]) }
+        else { setSearchError(true) }
+      } catch {
+        setSearchError(true)
       } finally {
         setSearching(false)
       }
@@ -74,14 +80,19 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize }
 
   async function loadMore() {
     setLoadingMore(true)
+    setLoadMoreError(false)
     try {
       const nextPage = page + 1
       const res  = await fetch(`/api/v1/assets?page=${nextPage}&limit=${pageSize}`)
-      const json = await res.json()
+      const json = await res.json().catch(() => ({}))
       if (res.ok && json.assets) {
         setAllAssets((prev) => [...prev, ...json.assets])
         setPage(nextPage)
+      } else {
+        setLoadMoreError(true)
       }
+    } catch {
+      setLoadMoreError(true)
     } finally {
       setLoadingMore(false)
     }
@@ -127,11 +138,15 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize }
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setSearchError(false) }}
               placeholder="Search all assets…"
-              className="pl-7 pr-3 py-1 text-xs border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-azure focus:border-transparent w-40"
+              className={cn(
+                'pl-7 pr-3 py-1 text-xs border rounded-full focus:outline-none focus:ring-2 focus:ring-brand-azure focus:border-transparent w-40',
+                searchError ? 'border-red-300' : 'border-gray-200',
+              )}
             />
           </div>
+          {searchError && <span className="text-[10px] text-red-500">Search failed</span>}
           <span className="text-xs text-gray-400 whitespace-nowrap">{filtered.length} {filtered.length === 1 ? 'asset' : 'assets'}</span>
         </div>
       </div>
@@ -205,7 +220,7 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize }
       )}
 
       {hasMore && !search.trim() && filter === 'ALL' && brandFilter === 'ALL' && (
-        <div className="flex justify-center mt-8">
+        <div className="flex flex-col items-center gap-2 mt-8">
           <button
             type="button"
             onClick={loadMore}
@@ -215,6 +230,7 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize }
             {loadingMore ? <Loader2 size={14} className="animate-spin" /> : null}
             {loadingMore ? 'Loading…' : `Load more (${total - allAssets.length} remaining)`}
           </button>
+          {loadMoreError && <p className="text-xs text-red-500">Failed to load — please try again</p>}
         </div>
       )}
     </div>

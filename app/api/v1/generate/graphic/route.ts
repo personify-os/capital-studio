@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db'
 import { graphicGenerateSchema } from '@/lib/schemas/generate'
 import { generateGraphicHtml } from '@/services/graphics'
 import { resolveBrandConfig } from '@/lib/brand-context'
+import { estimateCost } from '@/lib/cost'
 import type { BrandId } from '@/lib/brands'
 
 export async function POST(req: Request) {
@@ -26,9 +27,9 @@ export async function POST(req: Request) {
   let html: string
   try {
     html = await generateGraphicHtml(parsed.data, brand)
-  } catch (err: any) {
+  } catch (err) {
     console.error('[generate/graphic]', err)
-    return NextResponse.json({ message: err.message ?? 'Generation failed.' }, { status: 500 })
+    return NextResponse.json({ message: err instanceof Error ? err.message : 'Generation failed.' }, { status: 500 })
   }
 
   let asset: { id: string; htmlContent: string | null }
@@ -50,6 +51,8 @@ export async function POST(req: Request) {
           topic:          parsed.data.topic          ?? undefined,
           photoUrl:       parsed.data.photoUrl       ?? undefined,
           contentPillar:  parsed.data.contentPillar  ?? undefined,
+          model:          'claude-opus-4-5',
+          cost:           estimateCost('claude-opus-4-5'),
         },
       },
       select: { id: true, htmlContent: true },

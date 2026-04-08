@@ -132,8 +132,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         if (textContent) newConfig.guidelines = textContent
       } else if (detectedMime === 'application/pdf') {
         try {
-          const mod = await import('pdf-parse')
-          const pdfParse = (mod.default ?? mod) as unknown as (buf: Buffer) => Promise<{ text: string }>
+          type PdfParseFn = (buf: Buffer) => Promise<{ text: string }>
+          const { default: pdfParse } = await import('pdf-parse') as unknown as { default: PdfParseFn }
           const pdfData = await pdfParse(buffer)
           const textContent = pdfData.text.replace(/\s+/g, ' ').slice(0, 10000).trim()
           if (textContent) newConfig.guidelines = textContent

@@ -100,8 +100,6 @@ export default function LikenessControls({
   const [voiceSearch,      setVoiceSearch]      = useState('')
   const [avatarsCollapsed, setAvatarsCollapsed] = useState(false)
   const [avatarGender,     setAvatarGender]     = useState('all')
-  const [avatarAge,        setAvatarAge]        = useState('all')
-  const [avatarEthnicity,  setAvatarEthnicity]  = useState('all')
   const [avatarStyle,      setAvatarStyle]      = useState('all')
   const [voiceGender,      setVoiceGender]      = useState('all')
   const [voiceLanguage,    setVoiceLanguage]    = useState('all')
@@ -112,15 +110,12 @@ export default function LikenessControls({
   const voiceGenders  = Array.from(new Set(voices.map((v) => v.gender).filter(Boolean))).sort() as string[]
   const voiceLanguages = Array.from(new Set(voices.map((v) => v.language).filter(Boolean))).sort() as string[]
 
-  // Derive which ethnicity/style options are actually present so we don't show empty filter options
-  const presentEthnicities = Array.from(new Set(avatars.map((av) => inferEthnicity(av.avatar_name)).filter(Boolean))).sort() as string[]
-  const presentStyles      = Array.from(new Set(avatars.map((av) => inferStyle(av.avatar_name)).filter(Boolean))).sort() as string[]
+  // Derive which style options are actually present so we don't show empty entries
+  const presentStyles = Array.from(new Set(avatars.map((av) => inferStyle(av.avatar_name)).filter(Boolean))).sort() as string[]
 
   const filteredAvatars = avatars.filter((av) => {
     if (avatarGender !== 'all' && av.gender?.toLowerCase() !== avatarGender) return false
-    if (avatarAge !== 'all' && inferAge(av.avatar_name) !== avatarAge) return false
-    if (avatarEthnicity !== 'all' && inferEthnicity(av.avatar_name) !== avatarEthnicity) return false
-    if (avatarStyle !== 'all' && inferStyle(av.avatar_name) !== avatarStyle) return false
+    if (avatarStyle  !== 'all' && inferStyle(av.avatar_name) !== avatarStyle) return false
     if (avatarSearch.trim() && !av.avatar_name.toLowerCase().includes(avatarSearch.toLowerCase())) return false
     return true
   })
@@ -160,7 +155,7 @@ export default function LikenessControls({
                 <p className="text-xs text-gray-400">No avatars found in your HeyGen account.</p>
               ) : (
                 <>
-                  {/* Row 1: gender + age */}
+                  {/* Filters: gender + style */}
                   <div className="flex gap-1.5 mb-1.5">
                     {avatarGenders.length > 0 && (
                       <select value={avatarGender} onChange={(e) => setAvatarGender(e.target.value)} className={SELECT_CLS}>
@@ -168,31 +163,13 @@ export default function LikenessControls({
                         {avatarGenders.map((g) => <option key={g} value={g.toLowerCase()}>{toTitleCase(g)}</option>)}
                       </select>
                     )}
-                    <select value={avatarAge} onChange={(e) => setAvatarAge(e.target.value)} className={SELECT_CLS}>
-                      <option value="all">All Ages</option>
-                      <option value="young">Young</option>
-                      <option value="middle">Middle Aged</option>
-                      <option value="old">Senior / Older</option>
-                    </select>
+                    {presentStyles.length > 0 && (
+                      <select value={avatarStyle} onChange={(e) => setAvatarStyle(e.target.value)} className={SELECT_CLS}>
+                        <option value="all">All Styles</option>
+                        {presentStyles.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    )}
                   </div>
-
-                  {/* Row 2: ethnicity + style (only shown if any data matches) */}
-                  {(presentEthnicities.length > 0 || presentStyles.length > 0) && (
-                    <div className="flex gap-1.5 mb-1.5">
-                      {presentEthnicities.length > 0 && (
-                        <select value={avatarEthnicity} onChange={(e) => setAvatarEthnicity(e.target.value)} className={SELECT_CLS}>
-                          <option value="all">All Ethnicities</option>
-                          {presentEthnicities.map((e) => <option key={e} value={e}>{e}</option>)}
-                        </select>
-                      )}
-                      {presentStyles.length > 0 && (
-                        <select value={avatarStyle} onChange={(e) => setAvatarStyle(e.target.value)} className={SELECT_CLS}>
-                          <option value="all">All Styles</option>
-                          {presentStyles.map((s) => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                      )}
-                    </div>
-                  )}
 
                   {/* Search */}
                   <div className="relative mb-2">

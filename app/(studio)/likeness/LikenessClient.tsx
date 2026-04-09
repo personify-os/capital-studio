@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Video, Download, Calendar, CheckCircle, XCircle } from 'lucide-react'
 import LikenessControls from '@/components/likeness/LikenessControls'
 import type { BrandId } from '@/lib/brands'
-import type { HeyGenAvatar, HeyGenTalkingPhoto, HeyGenVoice, AspectRatio } from '@/services/likeness'
+import type { HeyGenAvatar, HeyGenVoice, AspectRatio } from '@/services/likeness'
 
 interface Job { assetId: string; videoId: string }
 type PollStatus = 'pending' | 'processing' | 'waiting' | 'completed' | 'failed'
@@ -14,16 +14,14 @@ export default function LikenessClient() {
   const router = useRouter()
 
   // Asset lists
-  const [avatars,        setAvatars]        = useState<HeyGenAvatar[]>([])
-  const [talkingPhotos,  setTalkingPhotos]  = useState<HeyGenTalkingPhoto[]>([])
-  const [voices,         setVoices]         = useState<HeyGenVoice[]>([])
-  const [loadingAssets,  setLoadingAssets]  = useState(true)
-  const [assetsError,    setAssetsError]    = useState(false)
+  const [avatars,       setAvatars]       = useState<HeyGenAvatar[]>([])
+  const [voices,        setVoices]        = useState<HeyGenVoice[]>([])
+  const [loadingAssets, setLoadingAssets] = useState(true)
+  const [assetsError,   setAssetsError]   = useState(false)
 
-  // Controls state — only one of avatarId / talkingPhotoId is set at a time
-  const [avatarId,       setAvatarId]       = useState('')
-  const [talkingPhotoId, setTalkingPhotoId] = useState('')
-  const [voiceId,        setVoiceId]        = useState('')
+  // Controls state
+  const [avatarId, setAvatarId] = useState('')
+  const [voiceId,  setVoiceId]  = useState('')
   const [aspectRatio,    setAspectRatio]    = useState<AspectRatio>('16:9')
   const [script,         setScript]         = useState('')
   const [brandId,        setBrandId]        = useState<BrandId>('lhcapital')
@@ -38,13 +36,12 @@ export default function LikenessClient() {
   const pollRef     = useRef<ReturnType<typeof setInterval> | null>(null)
   const mountedRef  = useRef(true)
 
-  // Load avatars + talking photos + voices
+  // Load avatars + voices
   useEffect(() => {
     fetch('/api/v1/generate/likeness/avatars')
       .then((r) => r.json())
       .then((d) => {
         setAvatars(d.avatars ?? [])
-        setTalkingPhotos(d.talkingPhotos ?? [])
         setVoices(d.voices ?? [])
       })
       .catch(() => setAssetsError(true))
@@ -61,16 +58,6 @@ export default function LikenessClient() {
       if (draft.script) setScript(draft.script.slice(0, 5000))
     } catch { /* ignore */ }
   }, [])
-
-  // Selecting a system avatar clears any talking photo selection (and vice versa)
-  function handleAvatarId(id: string) {
-    setAvatarId(id)
-    setTalkingPhotoId('')
-  }
-  function handleTalkingPhotoId(id: string) {
-    setTalkingPhotoId(id)
-    setAvatarId('')
-  }
 
   // Polling
   const startPolling = useCallback((j: Job) => {
@@ -104,10 +91,7 @@ export default function LikenessClient() {
       const res  = await fetch('/api/v1/generate/likeness', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          script, voiceId, aspectRatio, brandId,
-          ...(talkingPhotoId ? { talkingPhotoId } : { avatarId }),
-        }),
+        body:    JSON.stringify({ script, voiceId, aspectRatio, brandId, avatarId }),
       })
       const data = await res.json()
       if (!res.ok) { setSubmitError(data.message ?? 'Submission failed'); return }
@@ -121,21 +105,20 @@ export default function LikenessClient() {
     }
   }
 
-  const canGenerate = (!!avatarId || !!talkingPhotoId) && !!voiceId && script.trim().length > 0
+  const canGenerate = !!avatarId && !!voiceId && script.trim().length > 0
 
   return (
     <div className="flex bg-app-bg">
       <LikenessControls
-        avatars={avatars} talkingPhotos={talkingPhotos} voices={voices}
+        avatars={avatars} voices={voices}
         loadingAssets={loadingAssets} assetsError={assetsError}
-        avatarId={avatarId}             onAvatarId={handleAvatarId}
-        talkingPhotoId={talkingPhotoId} onTalkingPhotoId={handleTalkingPhotoId}
-        voiceId={voiceId}               onVoiceId={setVoiceId}
-        aspectRatio={aspectRatio}       onAspectRatio={setAspectRatio}
-        script={script}                 onScript={setScript}
-        brandId={brandId}               onBrandId={setBrandId}
-        canGenerate={canGenerate}       loading={submitting}
-        error={submitError}             onGenerate={handleGenerate}
+        avatarId={avatarId}       onAvatarId={setAvatarId}
+        voiceId={voiceId}         onVoiceId={setVoiceId}
+        aspectRatio={aspectRatio} onAspectRatio={setAspectRatio}
+        script={script}           onScript={setScript}
+        brandId={brandId}         onBrandId={setBrandId}
+        canGenerate={canGenerate} loading={submitting}
+        error={submitError}       onGenerate={handleGenerate}
       />
 
       <div className="flex-1 p-6 overflow-y-auto">

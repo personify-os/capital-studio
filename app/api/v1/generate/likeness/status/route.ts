@@ -13,6 +13,9 @@ export async function GET(req: Request) {
   const assetId = searchParams.get('assetId')
   const videoId = searchParams.get('videoId')
   if (!assetId || !videoId) return NextResponse.json({ message: 'Missing assetId or videoId' }, { status: 400 })
+  if (videoId.length > 200 || !/^[\w\-]+$/.test(videoId)) {
+    return NextResponse.json({ message: 'Invalid videoId' }, { status: 400 })
+  }
 
   const asset = await prisma.asset.findFirst({
     where: { id: assetId, tenantId: session.user.tenantId },

@@ -46,7 +46,7 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
       fetch('/api/v1/social/accounts')
         .then((r) => r.json())
         .then((j) => { if (j.accounts) setAccounts(j.accounts) })
-        .catch((err) => console.error('[scheduler] account refresh failed:', err))
+        .catch(() => setOauthBanner(`${connected.charAt(0).toUpperCase() + connected.slice(1)} connected — reload to see updated accounts`))
       window.history.replaceState({}, '', '/scheduler')
     } else if (error) {
       setOauthBanner(`Connection failed: ${error.replace(/_/g, ' ')}`)
@@ -59,10 +59,10 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
       const raw = localStorage.getItem('schedulerDraft')
       if (!raw) return
       localStorage.removeItem('schedulerDraft')
-      const draft = JSON.parse(raw) as { caption?: string; platform?: string; imageUrl?: string }
+      const draft = JSON.parse(raw) as { caption?: string; platform?: string; mediaUrl?: string }
       if (draft.caption)  setCaption(draft.caption)
-      if (draft.imageUrl) setImageUrl(draft.imageUrl)
-      const parts = [draft.caption && 'caption', draft.imageUrl && 'image'].filter(Boolean)
+      if (draft.mediaUrl) setImageUrl(draft.mediaUrl)
+      const parts = [draft.caption && 'caption', draft.mediaUrl && 'media'].filter(Boolean)
       if (parts.length) {
         setOauthBanner(`${parts.map((p) => p!.charAt(0).toUpperCase() + p!.slice(1)).join(' + ')} loaded — select an account and schedule it!`)
       }

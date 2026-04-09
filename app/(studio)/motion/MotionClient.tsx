@@ -124,7 +124,7 @@ export default function MotionClient({ recentVideos: initial }: { recentVideos: 
                     <PenSquare size={12} /> Write Caption
                   </button>
                 )}
-                <button type="button" onClick={() => { localStorage.setItem('schedulerDraft', JSON.stringify({ imageUrl: data.asset.url })); router.push('/scheduler') }}
+                <button type="button" onClick={() => { localStorage.setItem('schedulerDraft', JSON.stringify({ mediaUrl: data.asset.url })); router.push('/scheduler') }}
                   className="flex items-center gap-1.5 text-xs text-brand-azure hover:underline">
                   <Calendar size={12} /> Schedule
                 </button>

@@ -33,7 +33,8 @@ export default function LikenessClient() {
   const [pollStatus,  setPollStatus]  = useState<PollStatus | null>(null)
   const [resultUrl,   setResultUrl]   = useState<string | null>(null)
   const [pollError,   setPollError]   = useState<string | null>(null)
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pollRef     = useRef<ReturnType<typeof setInterval> | null>(null)
+  const mountedRef  = useRef(true)
 
   // Load avatars + voices
   useEffect(() => {
@@ -44,7 +45,7 @@ export default function LikenessClient() {
       .finally(() => setLoadingAssets(false))
   }, [])
 
-  // Pre-fill script if arriving from Writer ("audioDraft" key with script)
+  // Pre-fill script if arriving from Writer ("livenessDraft" key with script)
   useEffect(() => {
     try {
       const raw = localStorage.getItem('livenessDraft')
@@ -59,9 +60,11 @@ export default function LikenessClient() {
   const startPolling = useCallback((j: Job) => {
     if (pollRef.current) clearInterval(pollRef.current)
     pollRef.current = setInterval(async () => {
+      if (!mountedRef.current) return
       try {
         const res  = await fetch(`/api/v1/generate/likeness/status?assetId=${j.assetId}&videoId=${j.videoId}`)
         const data = await res.json()
+        if (!mountedRef.current) return
         setPollStatus(data.status)
         if (data.status === 'completed') {
           setResultUrl(data.url)
@@ -76,7 +79,7 @@ export default function LikenessClient() {
     }, 5000)
   }, [])
 
-  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
+  useEffect(() => () => { mountedRef.current = false; if (pollRef.current) clearInterval(pollRef.current) }, [])
 
   async function handleGenerate() {
     setSubmitting(true); setSubmitError(null); setJob(null)

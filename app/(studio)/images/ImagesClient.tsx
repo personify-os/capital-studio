@@ -53,7 +53,7 @@ export default function ImagesClient({ recentImages: initial }: { recentImages: 
   function copyUrl(id: string, url: string) {
     navigator.clipboard.writeText(url).then(() => { setCopied(id); setTimeout(() => setCopied(null), 2000) })
   }
-  function sendToScheduler(url: string) { localStorage.setItem('schedulerDraft', JSON.stringify({ imageUrl: url })); router.push('/scheduler') }
+  function sendToScheduler(url: string) { localStorage.setItem('schedulerDraft', JSON.stringify({ mediaUrl: url })); router.push('/scheduler') }
   function sendToWriter(url: string)    { localStorage.setItem('writerDraft', JSON.stringify({ referenceImageUrl: url })); router.push('/writer') }
 
   const generated = data?.assets ?? []

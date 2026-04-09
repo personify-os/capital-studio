@@ -4,27 +4,30 @@ import { useState } from 'react'
 import { ChevronDown, ChevronUp, Search } from 'lucide-react'
 import BrandSelector from '@/components/shared/BrandSelector'
 import type { BrandId } from '@/lib/brands'
-import type { HeyGenAvatar, HeyGenVoice, AspectRatio } from '@/services/likeness'
+import type { HeyGenAvatar, HeyGenTalkingPhoto, HeyGenVoice, AspectRatio } from '@/services/likeness'
 
 interface Props {
-  avatars:      HeyGenAvatar[]
-  voices:       HeyGenVoice[]
-  loadingAssets:boolean
-  assetsError:  boolean
-  avatarId:     string
-  voiceId:      string
-  aspectRatio:  AspectRatio
-  script:       string
-  brandId:      BrandId
-  onAvatarId:   (v: string) => void
-  onVoiceId:    (v: string) => void
-  onAspectRatio:(v: AspectRatio) => void
-  onScript:     (v: string) => void
-  onBrandId:    (v: BrandId) => void
-  canGenerate:  boolean
-  loading:      boolean
-  error:        string | null
-  onGenerate:   () => void
+  avatars:           HeyGenAvatar[]
+  talkingPhotos:     HeyGenTalkingPhoto[]
+  voices:            HeyGenVoice[]
+  loadingAssets:     boolean
+  assetsError:       boolean
+  avatarId:          string
+  talkingPhotoId:    string
+  voiceId:           string
+  aspectRatio:       AspectRatio
+  script:            string
+  brandId:           BrandId
+  onAvatarId:        (v: string) => void
+  onTalkingPhotoId:  (v: string) => void
+  onVoiceId:         (v: string) => void
+  onAspectRatio:     (v: AspectRatio) => void
+  onScript:          (v: string) => void
+  onBrandId:         (v: BrandId) => void
+  canGenerate:       boolean
+  loading:           boolean
+  error:             string | null
+  onGenerate:        () => void
 }
 
 const RATIOS: { value: AspectRatio; label: string; sub: string }[] = [
@@ -91,9 +94,9 @@ function inferStyle(name: string): string | null {
 const SELECT_CLS = 'flex-1 px-2 py-1 border border-gray-200 rounded-lg text-[10px] appearance-none focus:outline-none focus:ring-1 focus:ring-brand-azure bg-white'
 
 export default function LikenessControls({
-  avatars, voices, loadingAssets, assetsError,
-  avatarId, voiceId, aspectRatio, script, brandId,
-  onAvatarId, onVoiceId, onAspectRatio, onScript, onBrandId,
+  avatars, talkingPhotos, voices, loadingAssets, assetsError,
+  avatarId, talkingPhotoId, voiceId, aspectRatio, script, brandId,
+  onAvatarId, onTalkingPhotoId, onVoiceId, onAspectRatio, onScript, onBrandId,
   canGenerate, loading, error, onGenerate,
 }: Props) {
   const [avatarSearch,     setAvatarSearch]     = useState('')
@@ -151,10 +154,76 @@ export default function LikenessControls({
                 <p className="text-xs text-gray-400">Loading avatars…</p>
               ) : assetsError ? (
                 <p className="text-xs text-red-500">Failed to load avatars — check your HeyGen API key</p>
-              ) : avatars.length === 0 ? (
+              ) : avatars.length === 0 && talkingPhotos.length === 0 ? (
                 <p className="text-xs text-gray-400">No avatars found in your HeyGen account.</p>
               ) : (
                 <>
+                  {/* ── My Photo Avatars (user-created) ── */}
+                  {talkingPhotos.length > 0 && (
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-[10px] font-semibold text-brand-azure uppercase tracking-widest">My Photo Avatars</p>
+                        <a
+                          href="https://app.heygen.com/avatars"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] text-gray-400 hover:text-brand-azure transition-colors"
+                        >
+                          + Create on HeyGen ↗
+                        </a>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        {talkingPhotos.map((tp) => (
+                          <button
+                            key={tp.talking_photo_id} type="button"
+                            onClick={() => onTalkingPhotoId(tp.talking_photo_id)}
+                            className={`relative rounded-lg overflow-hidden border-2 transition-all aspect-square ${
+                              talkingPhotoId === tp.talking_photo_id
+                                ? 'border-brand-azure ring-2 ring-brand-azure/20'
+                                : 'border-transparent hover:border-gray-300'
+                            }`}
+                            title={tp.talking_photo_name}
+                          >
+                            {tp.preview_image_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={tp.preview_image_url} alt={tp.talking_photo_name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full bg-brand-azure/10 flex items-center justify-center text-[10px] text-brand-azure p-1 text-center">
+                                {tp.talking_photo_name}
+                              </div>
+                            )}
+                            <div className="absolute bottom-0 inset-x-0 bg-brand-azure/80 py-0.5">
+                              <p className="text-[8px] text-white text-center font-medium truncate px-1">Me</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                      {avatars.length > 0 && (
+                        <div className="border-t border-gray-100 pt-3 mb-2">
+                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Studio Avatars</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── No talking photos yet — prompt to create ── */}
+                  {talkingPhotos.length === 0 && !loadingAssets && (
+                    <div className="mb-3 px-3 py-2.5 bg-brand-azure/5 border border-brand-azure/20 rounded-lg flex items-start gap-2">
+                      <div className="flex-1">
+                        <p className="text-[10px] font-semibold text-brand-azure mb-0.5">Use Your Own Likeness</p>
+                        <p className="text-[10px] text-gray-500">Create a Photo Avatar on HeyGen to appear as yourself in videos.</p>
+                      </div>
+                      <a
+                        href="https://app.heygen.com/avatars"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-shrink-0 text-[10px] font-semibold text-brand-azure hover:underline whitespace-nowrap mt-0.5"
+                      >
+                        Create ↗
+                      </a>
+                    </div>
+                  )}
+
                   {/* Filters: gender + style */}
                   <div className="flex gap-1.5 mb-1.5">
                     {avatarGenders.length > 0 && (

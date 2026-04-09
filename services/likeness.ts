@@ -19,6 +19,13 @@ export interface HeyGenAvatar {
   gender:            string | null
 }
 
+/** User-created photo avatars — returned in talking_photos[] from /v2/avatars */
+export interface HeyGenTalkingPhoto {
+  talking_photo_id:   string
+  talking_photo_name: string
+  preview_image_url:  string | null
+}
+
 export interface HeyGenVoice {
   voice_id:      string
   language:      string
@@ -29,12 +36,15 @@ export interface HeyGenVoice {
 
 // ── List helpers ─────────────────────────────────────────────────────────────
 
-export async function listAvatars(): Promise<HeyGenAvatar[]> {
+export async function listAvatars(): Promise<{ avatars: HeyGenAvatar[]; talkingPhotos: HeyGenTalkingPhoto[] }> {
   return withRetry(async () => {
     const res = await fetch(`${HEYGEN_API}/v2/avatars`, { headers: heygenHeaders() })
     if (!res.ok) throw new Error(`HeyGen avatars: ${res.status}`)
     const json = await res.json()
-    return (json.data?.avatars ?? []) as HeyGenAvatar[]
+    return {
+      avatars:       (json.data?.avatars        ?? []) as HeyGenAvatar[],
+      talkingPhotos: (json.data?.talking_photos ?? []) as HeyGenTalkingPhoto[],
+    }
   }, { retryOn: isTransient })
 }
 
@@ -58,19 +68,28 @@ const DIMENSIONS: Record<AspectRatio, { width: number; height: number }> = {
 }
 
 export interface GenerateLikenessParams {
-  script:      string
-  avatarId:    string
-  voiceId:     string
-  aspectRatio: AspectRatio
+  script:          string
+  voiceId:         string
+  aspectRatio:     AspectRatio
+  /** System/stock avatar — mutually exclusive with talkingPhotoId */
+  avatarId?:       string
+  /** User-created photo avatar — mutually exclusive with avatarId */
+  talkingPhotoId?: string
 }
 
 /** Submits a HeyGen video generation job. Returns the video_id for polling. */
 export async function generateLikenessVideo(params: GenerateLikenessParams): Promise<string> {
+  if (!params.avatarId && !params.talkingPhotoId) throw new Error('Either avatarId or talkingPhotoId is required')
   const dim = DIMENSIONS[params.aspectRatio]
+
+  const character = params.talkingPhotoId
+    ? { type: 'talking_photo', talking_photo_id: params.talkingPhotoId }
+    : { type: 'avatar', avatar_id: params.avatarId, avatar_style: 'normal' }
+
   const body = {
     video_inputs: [{
-      character: { type: 'avatar', avatar_id: params.avatarId, avatar_style: 'normal' },
-      voice:     { type: 'text',   input_text: params.script,  voice_id: params.voiceId },
+      character,
+      voice: { type: 'text', input_text: params.script, voice_id: params.voiceId },
     }],
     dimension: dim,
   }

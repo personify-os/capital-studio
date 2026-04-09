@@ -8,14 +8,14 @@ export async function GET() {
   if (!session) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
 
   try {
-    const [avatars, voices] = await Promise.all([listAvatars(), listVoices()])
+    const [{ avatars, talkingPhotos }, voices] = await Promise.all([listAvatars(), listVoices()])
     // Surface English voices first, then others
     const sorted = [...voices].sort((a, b) => {
       const aEn = a.language.startsWith('en') ? 0 : 1
       const bEn = b.language.startsWith('en') ? 0 : 1
       return aEn - bEn || a.name.localeCompare(b.name)
     })
-    return NextResponse.json({ avatars, voices: sorted })
+    return NextResponse.json({ avatars, talkingPhotos, voices: sorted })
   } catch (err) {
     console.error('[likeness/avatars]', err)
     return NextResponse.json({ message: 'Failed to load HeyGen avatars/voices' }, { status: 500 })

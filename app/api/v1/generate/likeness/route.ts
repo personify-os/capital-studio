@@ -6,11 +6,14 @@ import { generateLikenessVideo } from '@/services/likeness'
 import { z } from 'zod'
 
 const schema = z.object({
-  script:      z.string().min(1).max(5000),
-  avatarId:    z.string().min(1),
-  voiceId:     z.string().min(1),
-  aspectRatio: z.enum(['16:9', '9:16', '1:1']).default('16:9'),
-  brandId:     z.enum(['lhcapital', 'simrp', 'personal']).optional(),
+  script:          z.string().min(1).max(5000),
+  avatarId:        z.string().min(1).optional(),
+  talkingPhotoId:  z.string().min(1).optional(),
+  voiceId:         z.string().min(1),
+  aspectRatio:     z.enum(['16:9', '9:16', '1:1']).default('16:9'),
+  brandId:         z.enum(['lhcapital', 'simrp', 'personal']).optional(),
+}).refine((d) => d.avatarId || d.talkingPhotoId, {
+  message: 'Either avatarId or talkingPhotoId is required',
 })
 
 export async function POST(req: Request) {
@@ -21,10 +24,10 @@ export async function POST(req: Request) {
   const parsed = schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ message: 'Invalid request', errors: parsed.error.flatten() }, { status: 400 })
 
-  const { script, avatarId, voiceId, aspectRatio, brandId } = parsed.data
+  const { script, avatarId, talkingPhotoId, voiceId, aspectRatio, brandId } = parsed.data
 
   try {
-    const videoId = await generateLikenessVideo({ script, avatarId, voiceId, aspectRatio })
+    const videoId = await generateLikenessVideo({ script, avatarId, talkingPhotoId, voiceId, aspectRatio })
 
     const asset = await prisma.asset.create({
       data: {
@@ -33,7 +36,13 @@ export async function POST(req: Request) {
         type:     'LIKENESS',
         status:   'PENDING',
         brandId:  brandId ?? null,
-        metadata: { videoId, script: script.slice(0, 200), avatarId, voiceId, aspectRatio, cost: 0.10 },
+        metadata: {
+          videoId,
+          script:         script.slice(0, 200),
+          avatarId:        avatarId        ?? undefined,
+          talkingPhotoId:  talkingPhotoId  ?? undefined,
+          voiceId, aspectRatio, cost: 0.10,
+        },
       },
     })
 

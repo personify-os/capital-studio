@@ -33,33 +33,42 @@ const RATIOS: { value: AspectRatio; label: string; sub: string }[] = [
   { value: '1:1',  label: '1:1',  sub: 'Square'    },
 ]
 
-// ── Keyword-based inference helpers ──────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const AGE_YOUNG      = /young|youth|teen|kid|child|jr\b/i
-const AGE_OLD        = /senior|elder|old|mature|aged/i
+/** Title-case a string: first letter of every word capitalised. */
+function toTitleCase(s: string): string {
+  return s.replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+// ── Keyword-based inference ───────────────────────────────────────────────────
+// HeyGen avatar/voice names embed descriptors like "Young_Professional_Female"
+// or "Senior_Man_Office". Patterns are intentionally broad to catch variants.
+
+const AGE_YOUNG = /\b(young|youth|teen|kid|child|jr|girl|boy|college|student|intern|millennial|gen.?z|20s|2[0-9]s)\b/i
+const AGE_OLD   = /\b(senior|elder|old|mature|aged|grandfather|grandmother|grandpa|grandma|grandparent|grand|veteran|retired|retiree|silver|gray.?hair|grey.?hair|50s|6[0-9]s|7[0-9]s|8[0-9]s|9[0-9]s|60\+|older)\b/i
 // anything not matching young/old falls into middle aged
 
 const ETHNICITY_KEYWORDS: [RegExp, string][] = [
-  [/asian|chinese|korean|japanese|thai|vietnamese|filipin/i,      'Asian'],
-  [/black|african|afro/i,                                         'Black / African'],
-  [/latin[ao]|hispanic|mexican|spanish/i,                         'Latino / Hispanic'],
-  [/indian|south.?asian|bengali|pakistan/i,                       'South Asian'],
-  [/arabic|arab|middle.?east|persian|turkish/i,                   'Middle Eastern'],
-  [/caucasian|white|european/i,                                   'Caucasian'],
+  [/\b(asian|chinese|korean|japanese|thai|vietnamese|filipin|taiwanese|singapor)\b/i, 'Asian'],
+  [/\b(black|african|afro|nigerian|ghana|kenyan|ethiopian)\b/i,                       'Black / African'],
+  [/\b(latin[ao]|hispanic|mexican|spanish|colombian|brazilian|peruvian)\b/i,          'Latino / Hispanic'],
+  [/\b(indian|south.?asian|bengali|pakistan|sri.?lanka|nepali|banglad)\b/i,           'South Asian'],
+  [/\b(arabic|arab|middle.?east|persian|turkish|iranian|lebanese|saudi)\b/i,          'Middle Eastern'],
+  [/\b(caucasian|white|european|western)\b/i,                                         'Caucasian'],
 ]
 
 const STYLE_KEYWORDS: [RegExp, string][] = [
-  [/doctor|nurse|medical|scrub|clinic|health/i,    'Medical'],
-  [/business|suit|executive|ceo|corporate/i,       'Business'],
-  [/casual|street|relax|everyday/i,               'Casual'],
-  [/professional|formal|office|work/i,             'Professional'],
-  [/news|anchor|journalist|reporter/i,             'News / Media'],
-  [/teacher|tutor|instructor|educat/i,             'Education'],
+  [/\b(doctor|dr\b|nurse|medical|scrub|clinic|health|pharma|hospital)\b/i, 'Medical'],
+  [/\b(business|suit|executive|ceo|cfo|corporate|banker|finance|wall.?st)\b/i, 'Business'],
+  [/\b(casual|street|relax|everyday|weekend|jeans|t.?shirt)\b/i,           'Casual'],
+  [/\b(professional|formal|office|work|manager|director|presenter)\b/i,    'Professional'],
+  [/\b(news|anchor|journalist|reporter|broadcast)\b/i,                     'News / Media'],
+  [/\b(teacher|tutor|instructor|educat|professor|lecture|coach)\b/i,       'Education'],
 ]
 
 function inferAge(name: string): 'young' | 'middle' | 'old' {
+  if (AGE_OLD.test(name))   return 'old'    // check old before young to avoid "old-young" edge cases
   if (AGE_YOUNG.test(name)) return 'young'
-  if (AGE_OLD.test(name))   return 'old'
   return 'middle'
 }
 
@@ -155,14 +164,14 @@ export default function LikenessControls({
                   <div className="flex gap-1.5 mb-1.5">
                     {avatarGenders.length > 0 && (
                       <select value={avatarGender} onChange={(e) => setAvatarGender(e.target.value)} className={SELECT_CLS}>
-                        <option value="all">All genders</option>
-                        {avatarGenders.map((g) => <option key={g} value={g.toLowerCase()} className="capitalize">{g}</option>)}
+                        <option value="all">All Genders</option>
+                        {avatarGenders.map((g) => <option key={g} value={g.toLowerCase()}>{toTitleCase(g)}</option>)}
                       </select>
                     )}
                     <select value={avatarAge} onChange={(e) => setAvatarAge(e.target.value)} className={SELECT_CLS}>
-                      <option value="all">All ages</option>
+                      <option value="all">All Ages</option>
                       <option value="young">Young</option>
-                      <option value="middle">Middle aged</option>
+                      <option value="middle">Middle Aged</option>
                       <option value="old">Senior / Older</option>
                     </select>
                   </div>
@@ -172,13 +181,13 @@ export default function LikenessControls({
                     <div className="flex gap-1.5 mb-1.5">
                       {presentEthnicities.length > 0 && (
                         <select value={avatarEthnicity} onChange={(e) => setAvatarEthnicity(e.target.value)} className={SELECT_CLS}>
-                          <option value="all">All ethnicities</option>
+                          <option value="all">All Ethnicities</option>
                           {presentEthnicities.map((e) => <option key={e} value={e}>{e}</option>)}
                         </select>
                       )}
                       {presentStyles.length > 0 && (
                         <select value={avatarStyle} onChange={(e) => setAvatarStyle(e.target.value)} className={SELECT_CLS}>
-                          <option value="all">All styles</option>
+                          <option value="all">All Styles</option>
                           {presentStyles.map((s) => <option key={s} value={s}>{s}</option>)}
                         </select>
                       )}
@@ -253,14 +262,14 @@ export default function LikenessControls({
             <div className="flex gap-1.5 mb-1.5">
               {voiceGenders.length > 0 && (
                 <select value={voiceGender} onChange={(e) => setVoiceGender(e.target.value)} className={SELECT_CLS}>
-                  <option value="all">All genders</option>
-                  {voiceGenders.map((g) => <option key={g} value={g.toLowerCase()} className="capitalize">{g}</option>)}
+                  <option value="all">All Genders</option>
+                  {voiceGenders.map((g) => <option key={g} value={g.toLowerCase()}>{toTitleCase(g)}</option>)}
                 </select>
               )}
               {voiceLanguages.length > 1 && (
                 <select value={voiceLanguage} onChange={(e) => setVoiceLanguage(e.target.value)} className={SELECT_CLS}>
-                  <option value="all">All languages</option>
-                  {voiceLanguages.map((l) => <option key={l} value={l.toLowerCase()}>{l}</option>)}
+                  <option value="all">All Languages</option>
+                  {voiceLanguages.map((l) => <option key={l} value={l.toLowerCase()}>{toTitleCase(l)}</option>)}
                 </select>
               )}
             </div>
@@ -269,9 +278,9 @@ export default function LikenessControls({
           {/* Age range filter */}
           <div className="mb-2">
             <select value={voiceAge} onChange={(e) => setVoiceAge(e.target.value)} className={`${SELECT_CLS} w-full`}>
-              <option value="all">All age ranges</option>
+              <option value="all">All Age Ranges</option>
               <option value="young">Young</option>
-              <option value="middle">Middle aged</option>
+              <option value="middle">Middle Aged</option>
               <option value="old">Senior / Older</option>
             </select>
           </div>

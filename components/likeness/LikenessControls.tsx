@@ -33,6 +33,54 @@ const RATIOS: { value: AspectRatio; label: string; sub: string }[] = [
   { value: '1:1',  label: '1:1',  sub: 'Square'    },
 ]
 
+// ── Keyword-based inference helpers ──────────────────────────────────────────
+
+const AGE_YOUNG      = /young|youth|teen|kid|child|jr\b/i
+const AGE_OLD        = /senior|elder|old|mature|aged/i
+// anything not matching young/old falls into middle aged
+
+const ETHNICITY_KEYWORDS: [RegExp, string][] = [
+  [/asian|chinese|korean|japanese|thai|vietnamese|filipin/i,      'Asian'],
+  [/black|african|afro/i,                                         'Black / African'],
+  [/latin[ao]|hispanic|mexican|spanish/i,                         'Latino / Hispanic'],
+  [/indian|south.?asian|bengali|pakistan/i,                       'South Asian'],
+  [/arabic|arab|middle.?east|persian|turkish/i,                   'Middle Eastern'],
+  [/caucasian|white|european/i,                                   'Caucasian'],
+]
+
+const STYLE_KEYWORDS: [RegExp, string][] = [
+  [/doctor|nurse|medical|scrub|clinic|health/i,    'Medical'],
+  [/business|suit|executive|ceo|corporate/i,       'Business'],
+  [/casual|street|relax|everyday/i,               'Casual'],
+  [/professional|formal|office|work/i,             'Professional'],
+  [/news|anchor|journalist|reporter/i,             'News / Media'],
+  [/teacher|tutor|instructor|educat/i,             'Education'],
+]
+
+function inferAge(name: string): 'young' | 'middle' | 'old' {
+  if (AGE_YOUNG.test(name)) return 'young'
+  if (AGE_OLD.test(name))   return 'old'
+  return 'middle'
+}
+
+function inferEthnicity(name: string): string | null {
+  for (const [re, label] of ETHNICITY_KEYWORDS) {
+    if (re.test(name)) return label
+  }
+  return null
+}
+
+function inferStyle(name: string): string | null {
+  for (const [re, label] of STYLE_KEYWORDS) {
+    if (re.test(name)) return label
+  }
+  return null
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SELECT_CLS = 'flex-1 px-2 py-1 border border-gray-200 rounded-lg text-[10px] appearance-none focus:outline-none focus:ring-1 focus:ring-brand-azure bg-white'
+
 export default function LikenessControls({
   avatars, voices, loadingAssets, assetsError,
   avatarId, voiceId, aspectRatio, script, brandId,
@@ -42,17 +90,28 @@ export default function LikenessControls({
   const [avatarSearch,     setAvatarSearch]     = useState('')
   const [voiceSearch,      setVoiceSearch]      = useState('')
   const [avatarsCollapsed, setAvatarsCollapsed] = useState(false)
-  const [avatarGender,     setAvatarGender]     = useState<string>('all')
-  const [voiceGender,      setVoiceGender]      = useState<string>('all')
-  const [voiceLanguage,    setVoiceLanguage]    = useState<string>('all')
+  const [avatarGender,     setAvatarGender]     = useState('all')
+  const [avatarAge,        setAvatarAge]        = useState('all')
+  const [avatarEthnicity,  setAvatarEthnicity]  = useState('all')
+  const [avatarStyle,      setAvatarStyle]      = useState('all')
+  const [voiceGender,      setVoiceGender]      = useState('all')
+  const [voiceLanguage,    setVoiceLanguage]    = useState('all')
+  const [voiceAge,         setVoiceAge]         = useState('all')
 
-  // Derive unique filter options from available data
-  const avatarGenders  = Array.from(new Set(avatars.map((av) => av.gender).filter(Boolean))).sort() as string[]
-  const voiceGenders   = Array.from(new Set(voices.map((v) => v.gender).filter(Boolean))).sort() as string[]
+  // Derive unique filter options from data
+  const avatarGenders = Array.from(new Set(avatars.map((av) => av.gender).filter(Boolean))).sort() as string[]
+  const voiceGenders  = Array.from(new Set(voices.map((v) => v.gender).filter(Boolean))).sort() as string[]
   const voiceLanguages = Array.from(new Set(voices.map((v) => v.language).filter(Boolean))).sort() as string[]
+
+  // Derive which ethnicity/style options are actually present so we don't show empty filter options
+  const presentEthnicities = Array.from(new Set(avatars.map((av) => inferEthnicity(av.avatar_name)).filter(Boolean))).sort() as string[]
+  const presentStyles      = Array.from(new Set(avatars.map((av) => inferStyle(av.avatar_name)).filter(Boolean))).sort() as string[]
 
   const filteredAvatars = avatars.filter((av) => {
     if (avatarGender !== 'all' && av.gender?.toLowerCase() !== avatarGender) return false
+    if (avatarAge !== 'all' && inferAge(av.avatar_name) !== avatarAge) return false
+    if (avatarEthnicity !== 'all' && inferEthnicity(av.avatar_name) !== avatarEthnicity) return false
+    if (avatarStyle !== 'all' && inferStyle(av.avatar_name) !== avatarStyle) return false
     if (avatarSearch.trim() && !av.avatar_name.toLowerCase().includes(avatarSearch.toLowerCase())) return false
     return true
   })
@@ -60,11 +119,11 @@ export default function LikenessControls({
   const filteredVoices = voices.filter((v) => {
     if (voiceGender   !== 'all' && v.gender.toLowerCase()   !== voiceGender)   return false
     if (voiceLanguage !== 'all' && v.language.toLowerCase() !== voiceLanguage) return false
+    if (voiceAge !== 'all' && inferAge(v.name) !== voiceAge) return false
     if (voiceSearch.trim() && !v.name.toLowerCase().includes(voiceSearch.toLowerCase()) && !v.language.toLowerCase().includes(voiceSearch.toLowerCase())) return false
     return true
   })
 
-  // Find the selected avatar name for display when collapsed
   const selectedAvatarName = avatars.find((av) => av.avatar_id === avatarId)?.avatar_name
 
   return (
@@ -72,7 +131,7 @@ export default function LikenessControls({
       <div className="flex-1 p-5 space-y-5">
         <BrandSelector value={brandId} onChange={onBrandId} />
 
-        {/* Avatar selection */}
+        {/* ── Avatar ── */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Avatar</p>
@@ -92,28 +151,50 @@ export default function LikenessControls({
                 <p className="text-xs text-gray-400">No avatars found in your HeyGen account.</p>
               ) : (
                 <>
-                  {/* Filters */}
-                  {(avatarGenders.length > 0 || avatars.length > 6) && (
-                    <div className="flex gap-1.5 mb-2">
-                      {avatarGenders.length > 0 && (
-                        <select value={avatarGender} onChange={(e) => setAvatarGender(e.target.value)}
-                          className="flex-1 px-2 py-1 border border-gray-200 rounded-lg text-[10px] appearance-none focus:outline-none focus:ring-1 focus:ring-brand-azure bg-white capitalize">
-                          <option value="all">All genders</option>
-                          {avatarGenders.map((g) => <option key={g} value={g.toLowerCase()} className="capitalize">{g}</option>)}
+                  {/* Row 1: gender + age */}
+                  <div className="flex gap-1.5 mb-1.5">
+                    {avatarGenders.length > 0 && (
+                      <select value={avatarGender} onChange={(e) => setAvatarGender(e.target.value)} className={SELECT_CLS}>
+                        <option value="all">All genders</option>
+                        {avatarGenders.map((g) => <option key={g} value={g.toLowerCase()} className="capitalize">{g}</option>)}
+                      </select>
+                    )}
+                    <select value={avatarAge} onChange={(e) => setAvatarAge(e.target.value)} className={SELECT_CLS}>
+                      <option value="all">All ages</option>
+                      <option value="young">Young</option>
+                      <option value="middle">Middle aged</option>
+                      <option value="old">Senior / Older</option>
+                    </select>
+                  </div>
+
+                  {/* Row 2: ethnicity + style (only shown if any data matches) */}
+                  {(presentEthnicities.length > 0 || presentStyles.length > 0) && (
+                    <div className="flex gap-1.5 mb-1.5">
+                      {presentEthnicities.length > 0 && (
+                        <select value={avatarEthnicity} onChange={(e) => setAvatarEthnicity(e.target.value)} className={SELECT_CLS}>
+                          <option value="all">All ethnicities</option>
+                          {presentEthnicities.map((e) => <option key={e} value={e}>{e}</option>)}
                         </select>
                       )}
-                      {avatars.length > 6 && (
-                        <div className="relative flex-1">
-                          <Search size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                          <input
-                            type="text" value={avatarSearch} onChange={(e) => setAvatarSearch(e.target.value)}
-                            placeholder="Search…"
-                            className="w-full pl-5 pr-2 py-1 border border-gray-200 rounded-lg text-[10px] focus:outline-none focus:ring-1 focus:ring-brand-azure"
-                          />
-                        </div>
+                      {presentStyles.length > 0 && (
+                        <select value={avatarStyle} onChange={(e) => setAvatarStyle(e.target.value)} className={SELECT_CLS}>
+                          <option value="all">All styles</option>
+                          {presentStyles.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
                       )}
                     </div>
                   )}
+
+                  {/* Search */}
+                  <div className="relative mb-2">
+                    <Search size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <input
+                      type="text" value={avatarSearch} onChange={(e) => setAvatarSearch(e.target.value)}
+                      placeholder="Search avatars…"
+                      className="w-full pl-5 pr-2 py-1.5 border border-gray-200 rounded-lg text-[10px] focus:outline-none focus:ring-1 focus:ring-brand-azure"
+                    />
+                  </div>
+
                   {filteredAvatars.length === 0 ? (
                     <p className="text-xs text-gray-400">No avatars match the selected filters</p>
                   ) : (
@@ -153,38 +234,48 @@ export default function LikenessControls({
           )}
         </div>
 
-        {/* Voice */}
+        {/* ── Voice ── */}
         <div>
           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">Voice</p>
-          {/* Voice filters */}
+
+          {/* Search first */}
+          <div className="relative mb-2">
+            <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text" value={voiceSearch} onChange={(e) => setVoiceSearch(e.target.value)}
+              placeholder="Search by name…"
+              className="w-full pl-7 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-azure"
+            />
+          </div>
+
+          {/* Filter row: gender + language */}
           {(voiceGenders.length > 0 || voiceLanguages.length > 1) && (
-            <div className="flex gap-1.5 mb-2">
+            <div className="flex gap-1.5 mb-1.5">
               {voiceGenders.length > 0 && (
-                <select value={voiceGender} onChange={(e) => setVoiceGender(e.target.value)}
-                  className="flex-1 px-2 py-1 border border-gray-200 rounded-lg text-[10px] appearance-none focus:outline-none focus:ring-1 focus:ring-brand-azure bg-white capitalize">
+                <select value={voiceGender} onChange={(e) => setVoiceGender(e.target.value)} className={SELECT_CLS}>
                   <option value="all">All genders</option>
                   {voiceGenders.map((g) => <option key={g} value={g.toLowerCase()} className="capitalize">{g}</option>)}
                 </select>
               )}
               {voiceLanguages.length > 1 && (
-                <select value={voiceLanguage} onChange={(e) => setVoiceLanguage(e.target.value)}
-                  className="flex-1 px-2 py-1 border border-gray-200 rounded-lg text-[10px] appearance-none focus:outline-none focus:ring-1 focus:ring-brand-azure bg-white">
+                <select value={voiceLanguage} onChange={(e) => setVoiceLanguage(e.target.value)} className={SELECT_CLS}>
                   <option value="all">All languages</option>
                   {voiceLanguages.map((l) => <option key={l} value={l.toLowerCase()}>{l}</option>)}
                 </select>
               )}
             </div>
           )}
-          {voices.length > 8 && (
-            <div className="relative mb-2">
-              <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              <input
-                type="text" value={voiceSearch} onChange={(e) => setVoiceSearch(e.target.value)}
-                placeholder="Search by name…"
-                className="w-full pl-7 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-azure"
-              />
-            </div>
-          )}
+
+          {/* Age range filter */}
+          <div className="mb-2">
+            <select value={voiceAge} onChange={(e) => setVoiceAge(e.target.value)} className={`${SELECT_CLS} w-full`}>
+              <option value="all">All age ranges</option>
+              <option value="young">Young</option>
+              <option value="middle">Middle aged</option>
+              <option value="old">Senior / Older</option>
+            </select>
+          </div>
+
           <div className="relative">
             <select
               value={voiceId} onChange={(e) => onVoiceId(e.target.value)}
@@ -199,12 +290,12 @@ export default function LikenessControls({
             </select>
             <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
-          {(voiceSearch || voiceGender !== 'all' || voiceLanguage !== 'all') && filteredVoices.length === 0 && (
+          {(voiceSearch || voiceGender !== 'all' || voiceLanguage !== 'all' || voiceAge !== 'all') && filteredVoices.length === 0 && (
             <p className="text-[10px] text-gray-400 mt-1">No voices match the selected filters</p>
           )}
         </div>
 
-        {/* Aspect ratio */}
+        {/* ── Aspect ratio ── */}
         <div>
           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">Format</p>
           <div className="flex gap-2">
@@ -223,7 +314,7 @@ export default function LikenessControls({
           </div>
         </div>
 
-        {/* Script */}
+        {/* ── Script ── */}
         <div>
           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">Script</p>
           <textarea

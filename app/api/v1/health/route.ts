@@ -5,8 +5,8 @@ export async function GET() {
   try {
     // Lightweight query — wakes the Neon DB from cold-start
     await prisma.tenant.count({ take: 1 })
-    return NextResponse.json({ status: 'ok' })
+    return NextResponse.json({ status: 'ok', timestamp: new Date().toISOString() })
   } catch {
-    return NextResponse.json({ status: 'unavailable' }, { status: 503 })
+    return NextResponse.json({ status: 'unavailable', timestamp: new Date().toISOString() }, { status: 503 })
   }
 }

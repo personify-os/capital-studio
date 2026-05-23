@@ -203,15 +203,50 @@ Controlled via `FLAG_*` env vars — see `lib/flags.ts`.
 - HTTPS enforced at hosting layer (Railway)
 - No SMS/outbound calls — TCPA not applicable
 - HIPAA: not applicable — no health data handled
+- **SSO deferred** — credentials-only auth is a conscious decision for this internal tool; revisit if the user base grows beyond the LH Capital team
+- **Data retention** — assets and user records retained indefinitely; no automated cleanup. Review if R2 storage exceeds budget thresholds.
+
+---
+
+## Postgres Row Level Security (RLS)
+Application-layer tenant scoping (`where: { tenantId }`) is enforced on all queries. Postgres RLS is the required second enforcement layer (defense-in-depth). Status: **pending** — enable on all multi-tenant tables via a Prisma migration using `db.execute(sql`...`)` before scaling beyond a single tenant.
+
+Tables requiring RLS: `Asset`, `ScheduledPost`, `SocialAccount`, `BrandProfile`, `User`.
+
+---
+
+## Infrastructure
+- **RTO target:** < 1 hour for production outages
+- **RPO target:** < 24 hours (daily Neon PITR backup)
+- Neon PITR backups: verify enabled in the Neon console (project → Branches → main → Backup)
+- Uptime monitoring: set up Better Stack or Uptime Robot on `GET /api/v1/health` (pending)
+- Cloudflare WAF: verify `studio.lhccapital.org` is proxied through Cloudflare (orange cloud) with WAF Managed Ruleset + Bot Fight Mode enabled (pending)
+
+### Runbook — Common Failure Modes
+
+**502 / Application failed to respond**
+1. Check Railway dashboard → capital-studio service → Deployments → view logs
+2. If health check failing: Neon DB may be suspended (inactivity) — trigger a redeploy to wake it
+3. If process crash: check Railway logs for `Error:` lines on startup (missing env var most likely)
+4. Rollback: Railway dashboard → Deployments → click any prior successful deploy → "Redeploy"
+
+**Missing env var crash**
+- `TOKEN_ENCRYPTION_KEY` — throws in production if absent; generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+- `DATABASE_URL` — Prisma crashes on first DB query; verify in Railway Variables tab
+
+**API key rotation**
+- Anthropic, fal.ai, R2, ElevenLabs, HeyGen — update in Railway Variables tab; redeploy
+- Document rotation date in `.env.example` comment
 
 ---
 
 ## CI/CD
 - GitHub Actions: `.github/workflows/ci.yml`
-- On every PR: type-check → lint → build
+- On every PR: dependency audit → secrets scan → type-check → lint → build
 - On merge to `main`: validate then `railway up --detach`
 - Required secrets: `DATABASE_URL`, `DIRECT_URL`, `RAILWAY_TOKEN`
 - Run `prisma migrate deploy` (not `dev`) in production deploys
+- Dependabot: enable in GitHub → Settings → Security → Dependabot alerts + security updates
 
 ---
 

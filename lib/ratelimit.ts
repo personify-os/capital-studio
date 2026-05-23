@@ -47,7 +47,7 @@ export function checkRateLimit(
   return { allowed: true, remaining: limit - win.count, resetAt: win.resetAt }
 }
 
-/** Limits: aligned to enterprise_readiness_v3 Pillar 11 recommendations */
+/** Limits: aligned to enterprise_readiness_v4 Pillar 11 recommendations */
 export const LIMITS = {
   AUTH:     { limit: 5,  windowMs: 60_000 },   // 5 / min  — brute-force guard
   GENERATE: { limit: 10, windowMs: 60_000 },   // 10 / min — AI cost guard

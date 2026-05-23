@@ -227,8 +227,8 @@ RLS is enabled on all 5 multi-tenant tables: `Asset`, `ScheduledPost`, `SocialAc
 - **RTO target:** < 1 hour for production outages
 - **RPO target:** < 24 hours (daily Neon PITR backup)
 - Neon PITR backups: verify enabled in the Neon console (project → Branches → main → Backup)
-- Uptime monitoring: set up Better Stack or Uptime Robot on `GET /api/v1/health` (pending)
-- Cloudflare WAF: verify `studio.lhccapital.org` is proxied through Cloudflare (orange cloud) with WAF Managed Ruleset + Bot Fight Mode enabled (pending)
+- Uptime monitoring: Better Stack active on `GET /api/v1/health` ✓
+- Cloudflare WAF: **accepted gap** — internal tool, low public exposure. To add: connect `lhccapital.org` to Cloudflare (nameserver change at registrar), then enable orange-cloud proxy + WAF Managed Ruleset + Bot Fight Mode on `studio.lhccapital.org`. Revisit if app becomes externally facing.
 
 ### Runbook — Common Failure Modes
 

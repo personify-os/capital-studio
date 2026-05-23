@@ -203,6 +203,8 @@ Controlled via `FLAG_*` env vars — see `lib/flags.ts`.
 - HTTPS enforced at hosting layer (Railway)
 - No SMS/outbound calls — TCPA not applicable
 - HIPAA: not applicable — no health data handled
+- **GDPR:** not applicable — no EU resident data processed (US-only internal tool)
+- **CCPA:** evaluate if California business owners' data is processed via Content Writer or Social Scheduler; if so, data subject rights (access, delete, export) apply
 - **SSO deferred** — credentials-only auth is a conscious decision for this internal tool; revisit if the user base grows beyond the LH Capital team
 - **Data retention** — assets and user records retained indefinitely; no automated cleanup. Review if R2 storage exceeds budget thresholds.
 

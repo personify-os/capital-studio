@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { signIn } from 'next-auth/react'
+import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, ShieldCheck, TrendingUp, Users, BarChart3 } from 'lucide-react'
 
@@ -40,6 +40,14 @@ export default function LoginForm() {
       setError('Too many attempts. Please wait a minute and try again.')
       setLoading(false)
     } else {
+      // Neon cold-start: auth can succeed server-side but the client gets a
+      // slow/error response. Check whether a session was actually established
+      // before showing an error — if so, redirect instead.
+      const session = await getSession()
+      if (session) {
+        router.push('/dashboard')
+        return
+      }
       setError('Invalid email or password.')
       setLoading(false)
     }

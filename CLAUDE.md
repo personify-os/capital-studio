@@ -211,9 +211,15 @@ Controlled via `FLAG_*` env vars — see `lib/flags.ts`.
 ---
 
 ## Postgres Row Level Security (RLS)
-Application-layer tenant scoping (`where: { tenantId }`) is enforced on all queries. Postgres RLS is the required second enforcement layer (defense-in-depth). Status: **pending** — enable on all multi-tenant tables via a Prisma migration using `db.execute(sql`...`)` before scaling beyond a single tenant.
 
-Tables requiring RLS: `Asset`, `ScheduledPost`, `SocialAccount`, `BrandProfile`, `User`.
+**Phase 1 — complete** (`prisma/migrations/20260523000000_add_rls_tenant_isolation`)
+RLS is enabled on all 5 multi-tenant tables: `Asset`, `ScheduledPost`, `SocialAccount`, `BrandProfile`, `User`. Each has a `tenant_isolation` policy using `current_setting('app.tenant_id', true)`. The Prisma app role (database owner) bypasses RLS by default, so existing queries are unaffected. Non-owner direct DB connections are now blocked.
+
+**Phase 2 — pending** (full enforcement)
+1. Migrate all API routes to use `withTenant(tenantId, (tx) => ...)` from `lib/db.ts`. This sets `app.tenant_id` as a transaction-local variable so RLS policies enforce tenant isolation for the app itself.
+2. Once all routes use `withTenant()`, add `ALTER TABLE <name> FORCE ROW LEVEL SECURITY` to enforce RLS for the owner role as well — completing defense-in-depth.
+
+**Rule:** All new API routes MUST use `withTenant()`. Existing routes are grandfathered but should be migrated.
 
 ---
 

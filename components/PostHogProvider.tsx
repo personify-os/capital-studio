@@ -13,9 +13,9 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       person_profiles:       'identified_only',
       capture_pageview:      true,
       capture_pageleave:     true,
-      // Mask all text in session recordings to protect PII
       session_recording: { maskAllInputs: true, maskTextSelector: '*' },
     })
+    posthog.register({ app: 'capital-studio' })
   }, [])
 
   return <PHProvider client={posthog}>{children}</PHProvider>

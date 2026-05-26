@@ -186,6 +186,7 @@ Controlled via `FLAG_*` env vars — see `lib/flags.ts`.
 
 ## Observability
 - Error tracking: Sentry (`@sentry/nextjs`) — `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`. Add `SENTRY_DSN` to Railway env vars.
+- Product analytics: PostHog (`posthog-js`) — `components/PostHogProvider.tsx` wraps the app. Add `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST` to Railway env vars. Session recordings have full PII masking enabled.
 - AI cost tracking: `metadata.cost` stored on every Asset (see `lib/cost.ts`)
 - Uptime: Better Stack on `GET /api/v1/health`
 

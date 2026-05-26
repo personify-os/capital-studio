@@ -1,3 +1,5 @@
+import { withSentryConfig } from '@sentry/nextjs'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
@@ -27,4 +29,13 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+export default withSentryConfig(nextConfig, {
+  org:     process.env.SENTRY_ORG     ?? 'personify-os',
+  project: process.env.SENTRY_PROJECT ?? 'capital-studio',
+  silent: true,
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
+  tunnelRoute: undefined,
+  disableLogger: true,
+})

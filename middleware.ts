@@ -38,7 +38,7 @@ export async function middleware(req: NextRequest) {
   // the limit causing white-screen 429s for normal usage.
   if (pathname === '/api/auth/callback/credentials' && req.method === 'POST') {
     const ip = clientIp(req)
-    const { allowed, resetAt } = checkRateLimit(`auth:${ip}`, LIMITS.AUTH.limit, LIMITS.AUTH.windowMs)
+    const { allowed, resetAt } = await checkRateLimit(`auth:${ip}`, LIMITS.AUTH.limit, LIMITS.AUTH.windowMs)
     if (!allowed) return tooManyRequests(resetAt)
     return NextResponse.next()
   }
@@ -47,7 +47,7 @@ export async function middleware(req: NextRequest) {
   if (pathname.startsWith('/api/v1/generate')) {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
     const id    = token?.id ?? clientIp(req)
-    const { allowed, resetAt } = checkRateLimit(`gen:${id}`, LIMITS.GENERATE.limit, LIMITS.GENERATE.windowMs)
+    const { allowed, resetAt } = await checkRateLimit(`gen:${id}`, LIMITS.GENERATE.limit, LIMITS.GENERATE.windowMs)
     if (!allowed) return tooManyRequests(resetAt)
     return NextResponse.next()
   }
@@ -56,7 +56,7 @@ export async function middleware(req: NextRequest) {
   if (pathname.startsWith('/api/v1/')) {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
     const id    = token?.tenantId ?? clientIp(req)
-    const { allowed, resetAt } = checkRateLimit(`api:${id}`, LIMITS.API.limit, LIMITS.API.windowMs)
+    const { allowed, resetAt } = await checkRateLimit(`api:${id}`, LIMITS.API.limit, LIMITS.API.windowMs)
     if (!allowed) return tooManyRequests(resetAt)
     return NextResponse.next()
   }

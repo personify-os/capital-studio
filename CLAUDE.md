@@ -170,8 +170,9 @@ Controlled via `FLAG_*` env vars — see `lib/flags.ts`.
 - Auth endpoints: 5 req/min per IP — brute-force guard
 - AI generation endpoints: 10 req/min per user — cost guard
 - General API: 60 req/min per tenant
-- Implementation: `lib/ratelimit.ts` (in-memory sliding window) + `middleware.ts`
-- **Important:** In-memory store breaks at 2+ Railway instances. Upgrade to Upstash Redis before scaling out.
+- Implementation: `lib/ratelimit.ts` (Upstash Redis sliding window, falls back to in-memory in dev) + `middleware.ts`
+- Keys prefixed `capital-studio:` — safe to share an Upstash database with other Personify apps
+- Add `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to Railway env vars
 
 ---
 
@@ -184,9 +185,9 @@ Controlled via `FLAG_*` env vars — see `lib/flags.ts`.
 ---
 
 ## Observability
-- Error visibility: Railway log dashboard + `console.error` in every API catch block
+- Error tracking: Sentry (`@sentry/nextjs`) — `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`. Add `SENTRY_DSN` to Railway env vars.
 - AI cost tracking: `metadata.cost` stored on every Asset (see `lib/cost.ts`)
-- Internal tool — Sentry not needed; Railway logs are sufficient
+- Uptime: Better Stack on `GET /api/v1/health`
 
 ---
 

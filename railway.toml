@@ -1,5 +1,9 @@
 [build]
 builder = "NIXPACKS"
+nixpacksVersion = "1"
+
+[build.nixpacks]
+nodeVersion = "20"
 
 [deploy]
 startCommand = "next start -p ${PORT:-3004}"

@@ -2,10 +2,8 @@ import { withSentryConfig } from '@sentry/nextjs'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    // Keep Neon's ws dependency in Node.js runtime (server-side only)
-    serverComponentsExternalPackages: ['ws', '@neondatabase/serverless', 'pdf-parse'],
-  },
+  // Keep Neon's ws and pdf-parse in Node.js runtime (server-side only)
+  serverExternalPackages: ['ws', '@neondatabase/serverless', 'pdf-parse'],
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**.amazonaws.com' },
@@ -37,5 +35,4 @@ export default withSentryConfig(nextConfig, {
     disable: !process.env.SENTRY_AUTH_TOKEN,
   },
   tunnelRoute: undefined,
-  disableLogger: true,
 })

@@ -9,8 +9,6 @@ updates:
     labels:
       - "dependencies"
     ignore:
-      # next@14 and next-auth@4 require a breaking major upgrade — tracked separately
-      - dependency-name: "next"
-        update-types: ["version-update:semver-major"]
+      # next-auth@4 requires a breaking major upgrade to v5 — tracked separately
       - dependency-name: "next-auth"
         update-types: ["version-update:semver-major"]

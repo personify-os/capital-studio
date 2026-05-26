@@ -4,15 +4,16 @@ import { authOptions }        from '@/lib/auth'
 import { prisma }             from '@/lib/db'
 import { getSubstackProfile } from '@/services/social'
 import { encryptToken }       from '@/lib/crypto'
+import { substackConnectSchema } from '@/lib/schemas/social'
 
 // POST — user pastes their Substack subdomain + connect.sid session cookie
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
 
-  const { subdomain, cookie } = await req.json()
-  if (!subdomain?.trim()) return NextResponse.json({ message: 'Publication URL required' }, { status: 400 })
-  if (!cookie?.trim())    return NextResponse.json({ message: 'Session cookie required' }, { status: 400 })
+  const parsed = substackConnectSchema.safeParse(await req.json())
+  if (!parsed.success) return NextResponse.json({ message: parsed.error.flatten() }, { status: 400 })
+  const { subdomain, cookie } = parsed.data
 
   // Strip full URL down to subdomain if user pastes whole URL
   const slug = subdomain.trim()

@@ -32,8 +32,8 @@ jobs:
         run: npm ci
 
       - name: Dependency audit
-        # High findings in next@14 and next-auth@4 require a breaking major-version
-        # upgrade — tracked separately. Fail CI on critical CVEs only.
+        # Remaining moderates: postcss inside next (no non-breaking fix) and uuid
+        # inside next-auth@4 (requires v5 major upgrade). Fail CI on critical only.
         run: npm audit --audit-level=critical
 
       - name: Secrets scan

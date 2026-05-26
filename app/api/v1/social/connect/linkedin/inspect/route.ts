@@ -1,13 +1,15 @@
 import { NextResponse }     from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions }      from '@/lib/auth'
+import { linkedinInspectSchema } from '@/lib/schemas/social'
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
 
-  const { accessToken } = await req.json()
-  if (!accessToken?.trim()) return NextResponse.json({ message: 'Token required' }, { status: 400 })
+  const parsed = linkedinInspectSchema.safeParse(await req.json())
+  if (!parsed.success) return NextResponse.json({ message: 'Token required' }, { status: 400 })
+  const { accessToken } = parsed.data
 
   const clientId     = process.env.LINKEDIN_CLIENT_ID
   const clientSecret = process.env.LINKEDIN_CLIENT_SECRET

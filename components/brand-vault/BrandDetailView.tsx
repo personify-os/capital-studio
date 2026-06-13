@@ -3,6 +3,7 @@
 import { useRef } from 'react'
 import { Edit2, Upload, FileText, Plus, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { DOC_ACCEPT } from '@/lib/extract-text'
 import { type BrandProfile, TYPE_LABELS, TYPE_COLORS } from '@/components/brand-vault/types'
 import { Section, BuiltInKnowledge } from '@/components/brand-vault/BrandDetail'
 
@@ -166,7 +167,7 @@ export default function BrandDetailView({ brand, uploading, onEdit, onUpload, on
           </div>
         ) : (
           <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
-            <p className="text-sm text-gray-400 mb-1">Upload a .txt or PDF knowledge base file.</p>
+            <p className="text-sm text-gray-400 mb-1">Upload a TXT, MD, CSV, PDF, or Word (.docx) knowledge base file.</p>
             <p className="text-xs text-gray-400 mb-3">Text content is automatically extracted and prepended to the AI knowledge base.</p>
             <button type="button" onClick={() => docRef.current?.click()} disabled={uploading === 'document'}
               className="px-4 py-2 bg-brand-azure text-white text-xs font-semibold rounded-lg hover:bg-brand-navy transition-colors disabled:opacity-50">
@@ -174,7 +175,7 @@ export default function BrandDetailView({ brand, uploading, onEdit, onUpload, on
             </button>
           </div>
         )}
-        <input ref={docRef} type="file" accept=".pdf,.txt,text/plain,application/pdf" className="hidden"
+        <input ref={docRef} type="file" accept={DOC_ACCEPT} className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f, 'document') }} />
       </Section>
 

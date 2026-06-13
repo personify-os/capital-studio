@@ -3,10 +3,20 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { uploadBuffer, makeAssetKey } from '@/lib/storage'
+import { extractText } from '@/lib/extract-text'
 import type { Prisma } from '@prisma/client'
 
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
-const ALLOWED_DOC_TYPES   = ['application/pdf', 'text/plain']
+const ALLOWED_DOC_TYPES   = ['application/pdf', 'text/plain', 'text/markdown', 'text/csv', DOCX_MIME]
+// Map a detected/declared doc MIME to the extension extractText keys off of.
+const DOC_EXT_BY_MIME: Record<string, string> = {
+  'application/pdf': 'pdf',
+  'text/plain':      'txt',
+  'text/markdown':   'md',
+  'text/csv':        'csv',
+  [DOCX_MIME]:       'docx',
+}
 const MAX_BYTES = 20 * 1024 * 1024 // 20 MB
 
 // Normalize MIME types — browsers may include charset or other params
@@ -26,6 +36,8 @@ function detectMimeFromBytes(buf: Buffer): string | null {
   for (const { sig, mime } of MAGIC_BYTES) {
     if (sig.every((b, i) => buf[i] === b)) return mime
   }
+  // .docx is a ZIP container — local file header "PK\x03\x04".
+  if (buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04) return DOCX_MIME
   const str = buf.slice(0, 64).toString('utf8').trimStart()
   if (str.startsWith('<svg') || str.startsWith('<?xml') || str.startsWith('<!DOCTYPE svg')) return 'image/svg+xml'
   // Plain text: no null bytes in first 512 bytes
@@ -128,20 +140,13 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     } else {
       // Document: store URL + extract text content into guidelines
       const newConfig: Prisma.JsonObject = { ...currentConfig, documentUrl: url, documentName: file.name }
-      if (detectedMime === 'text/plain') {
-        const textContent = buffer.toString('utf8').slice(0, 10000).trim()
+      try {
+        const docExt = DOC_EXT_BY_MIME[detectedMime] ?? ext
+        const textContent = await extractText(buffer, `doc.${docExt}`, 10000)
         if (textContent) newConfig.guidelines = textContent
-      } else if (detectedMime === 'application/pdf') {
-        try {
-          type PdfParseFn = (buf: Buffer) => Promise<{ text: string }>
-          const { default: pdfParse } = await import('pdf-parse') as unknown as { default: PdfParseFn }
-          const pdfData = await pdfParse(buffer)
-          const textContent = pdfData.text.replace(/\s+/g, ' ').slice(0, 10000).trim()
-          if (textContent) newConfig.guidelines = textContent
-        } catch (err) {
-          console.error('[brands/upload] PDF text extraction failed:', err)
-          // Non-fatal: document is still saved, guidelines just won't be populated
-        }
+      } catch (err) {
+        console.error('[brands/upload] text extraction failed:', err)
+        // Non-fatal: document is still saved, guidelines just won't be populated
       }
       await prisma.brandProfile.update({
         where: { id: params.id, tenantId: session.user.tenantId },

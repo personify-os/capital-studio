@@ -4,31 +4,41 @@ import { prisma } from '@/lib/db'
 import Topbar from '@/components/layout/Topbar'
 import LibraryClient from './LibraryClient'
 
-interface RawAsset {
-  id:          string
-  type:        string
-  brandId:     string | null
-  s3Url:       string | null
-  htmlContent: string | null
-  metadata:    unknown
-  createdAt:   Date
+const SCHEDULED_POSTS_SELECT = {
+  orderBy: { scheduledFor: 'desc' as const },
+  select:  {
+    status:        true,
+    scheduledFor:  true,
+    publishedAt:   true,
+    socialAccount: { select: { platform: true } },
+  },
 }
 
-export default async function LibraryPage() {
+export default async function LibraryPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session) return null
 
-  let assets: RawAsset[] = []
+  const { type } = await searchParams
+
+  let assets: Awaited<ReturnType<typeof fetchAssets>> = []
   let total = 0
   const PAGE_SIZE = 48
+
+  async function fetchAssets(tenantId: string) {
+    return prisma.asset.findMany({
+      where:   { tenantId, status: 'READY' },
+      orderBy: { createdAt: 'desc' },
+      take:    PAGE_SIZE,
+      select:  {
+        id: true, type: true, brandId: true, s3Url: true, htmlContent: true, metadata: true, createdAt: true,
+        scheduledPosts: SCHEDULED_POSTS_SELECT,
+      },
+    })
+  }
+
   try {
     ;[assets, total] = await Promise.all([
-      prisma.asset.findMany({
-        where:   { tenantId: session.user.tenantId, status: 'READY' },
-        orderBy: { createdAt: 'desc' },
-        take:    PAGE_SIZE,
-        select:  { id: true, type: true, brandId: true, s3Url: true, htmlContent: true, metadata: true, createdAt: true },
-      }) as Promise<RawAsset[]>,
+      fetchAssets(session.user.tenantId),
       prisma.asset.count({ where: { tenantId: session.user.tenantId, status: 'READY' } }),
     ])
   } catch (err) { console.error('[library/page]', err) }
@@ -37,9 +47,19 @@ export default async function LibraryPage() {
     <>
       <Topbar title="Content Library" description="All your generated assets in one place" />
       <LibraryClient
-        assets={assets.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() }))}
+        assets={assets.map((a) => ({
+          ...a,
+          createdAt:      a.createdAt.toISOString(),
+          scheduledPosts: a.scheduledPosts.map((p) => ({
+            status:       p.status,
+            platform:     p.socialAccount.platform,
+            scheduledFor: p.scheduledFor.toISOString(),
+            publishedAt:  p.publishedAt?.toISOString() ?? null,
+          })),
+        }))}
         total={total}
         pageSize={PAGE_SIZE}
+        initialFilter={type}
       />
     </>
   )

@@ -69,6 +69,22 @@ export default function WriterClient() {
     router.push('/scheduler')
   }
 
+  function sendToImages(text: string) {
+    localStorage.setItem('imagesDraft', JSON.stringify({ prompt: text, brandId }))
+    router.push('/images')
+  }
+
+  function sendToGraphics(text: string) {
+    const firstLine = text.split('\n').find((l) => l.trim())?.trim() ?? text.trim()
+    localStorage.setItem('graphicsDraft', JSON.stringify({
+      brandId,
+      headline: firstLine.slice(0, 100),
+      topic:    text,
+      contentPillar: contentPillar || undefined,
+    }))
+    router.push('/graphics')
+  }
+
   function sendToVoiceover(text: string) {
     localStorage.setItem('audioDraft', JSON.stringify({ script: text }))
     router.push('/audio')
@@ -193,6 +209,8 @@ export default function WriterClient() {
           onCopy={copy}
           onRegen={regenerateSingle}
           onSchedule={sendToScheduler}
+          onAddImage={sendToImages}
+          onAddGraphic={sendToGraphics}
           onVoiceOver={sendToVoiceover}
           onLikeness={sendToLikeness}
         />

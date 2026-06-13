@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ImageIcon } from 'lucide-react'
 import { useGenerate } from '@/hooks/useGenerate'
@@ -29,6 +29,18 @@ export default function ImagesClient({ recentImages: initial }: { recentImages: 
   const [selectedTopics,  setSelectedTopics]  = useState<string[]>([])
   const [selectedPurpose, setSelectedPurpose] = useState('')
   const [selectedCta,     setSelectedCta]     = useState('')
+
+  // Seed the prompt when arriving from another module (e.g. "Add Image" in the Writer)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('imagesDraft')
+      if (!raw) return
+      localStorage.removeItem('imagesDraft')
+      const draft = JSON.parse(raw) as { prompt?: string; brandId?: string }
+      if (draft.prompt)  setPrompt(draft.prompt)
+      if (draft.brandId) setBrandId(draft.brandId as BrandId)
+    } catch { /* ignore malformed draft */ }
+  }, [])
 
   const { data, loading, error, generate } = useGenerate<object, GenerateResponse>({
     endpoint:  '/api/v1/generate/image',

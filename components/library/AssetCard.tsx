@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { Download, Copy, Check, Film, Play, PenSquare, Calendar, Layers } from 'lucide-react'
 import { formatRelativeTime } from '@/lib/utils'
-import { type Asset, BrandDot } from './shared'
+import { type Asset, BrandDot, PostStatusBadge, PostStatusList } from './shared'
 
 interface Props {
   asset:  Asset
@@ -27,7 +27,7 @@ export default function AssetCard({ asset, copied, onCopy }: Props) {
   }
 
   function sendToScheduler() {
-    const draft: Record<string, string> = {}
+    const draft: Record<string, string> = { assetId: asset.id }
     if (asset.s3Url)        draft.imageUrl = asset.s3Url
     if (asset.type === 'GRAPHIC') {
       const gm = asset.metadata as { headline?: string; subtext?: string } | null
@@ -45,6 +45,7 @@ export default function AssetCard({ asset, copied, onCopy }: Props) {
   return (
     <div className="group relative rounded-card overflow-hidden bg-gray-100 aspect-square shadow-card">
       <BrandDot asset={asset} />
+      <PostStatusBadge posts={asset.scheduledPosts} className="absolute top-1.5 right-1.5 z-20 shadow-sm" />
 
       {asset.type === 'IMAGE' && asset.s3Url ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -138,6 +139,9 @@ export default function AssetCard({ asset, copied, onCopy }: Props) {
           <span className="text-[9px] bg-white/20 text-white px-2 py-0.5 rounded-full font-semibold capitalize">
             {contentPillar.replace('-', ' ')}
           </span>
+        )}
+        {asset.scheduledPosts && asset.scheduledPosts.length > 0 && (
+          <PostStatusList posts={asset.scheduledPosts} className="justify-center" />
         )}
         <p className="text-white/50 text-[9px] text-center mt-0.5">{formatRelativeTime(asset.createdAt)}</p>
       </div>

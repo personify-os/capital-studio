@@ -26,6 +26,7 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
   const [caption,       setCaption]       = useState('')
   const [igCaption,     setIgCaption]     = useState('')
   const [imageUrl,      setImageUrl]      = useState('')
+  const [assetId,       setAssetId]       = useState<string | undefined>(undefined)
   const [selectedAccts, setSelectedAccts] = useState<string[]>([])
   const [scheduledFor,  setScheduledFor]  = useState(() => {
     const d = new Date(); d.setHours(d.getHours() + 1, 0, 0, 0)
@@ -59,10 +60,12 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
       const raw = localStorage.getItem('schedulerDraft')
       if (!raw) return
       localStorage.removeItem('schedulerDraft')
-      const draft = JSON.parse(raw) as { caption?: string; platform?: string; mediaUrl?: string }
-      if (draft.caption)  setCaption(draft.caption)
-      if (draft.mediaUrl) setImageUrl(draft.mediaUrl)
-      const parts = [draft.caption && 'caption', draft.mediaUrl && 'media'].filter(Boolean)
+      const draft = JSON.parse(raw) as { caption?: string; platform?: string; imageUrl?: string; mediaUrl?: string; assetId?: string }
+      const media = draft.imageUrl ?? draft.mediaUrl  // imageUrl is canonical; mediaUrl kept for back-compat
+      if (draft.caption) setCaption(draft.caption)
+      if (media)         setImageUrl(media)
+      if (draft.assetId) setAssetId(draft.assetId)
+      const parts = [draft.caption && 'caption', media && 'media'].filter(Boolean)
       if (parts.length) {
         setOauthBanner(`${parts.map((p) => p!.charAt(0).toUpperCase() + p!.slice(1)).join(' + ')} loaded — select an account and schedule it!`)
       }
@@ -87,6 +90,7 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
           caption:          caption.trim(),
           instagramCaption: igCaption.trim() || undefined,
           imageUrl:         imageUrl.trim() || undefined,
+          assetId,
           scheduledFor:     publishNow ? new Date().toISOString() : new Date(scheduledFor).toISOString(),
         }),
       })
@@ -109,11 +113,11 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
         }
       }
 
-      setCaption(''); setIgCaption(''); setImageUrl(''); setSelectedAccts([])
+      setCaption(''); setIgCaption(''); setImageUrl(''); setAssetId(undefined); setSelectedAccts([])
     } finally {
       setScheduling(false)
     }
-  }, [caption, igCaption, imageUrl, selectedAccts, scheduledFor])
+  }, [caption, igCaption, imageUrl, assetId, selectedAccts, scheduledFor])
 
   async function handleDelete(id: string) {
     const res = await fetch(`/api/v1/social/posts/${id}`, { method: 'DELETE' })

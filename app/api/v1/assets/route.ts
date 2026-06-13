@@ -18,6 +18,41 @@ type AssetRow = {
   metadata: unknown; createdAt: string
 }
 
+type PostSummary = {
+  status:       string
+  platform:     string
+  scheduledFor: string
+  publishedAt:  string | null
+}
+
+// Fetch scheduled posts for the given asset ids, grouped by assetId.
+// Used to attach posting status to each library asset.
+async function postsByAssetId(tenantId: string, assetIds: string[]): Promise<Record<string, PostSummary[]>> {
+  if (assetIds.length === 0) return {}
+  const posts = await prisma.scheduledPost.findMany({
+    where:   { tenantId, assetId: { in: assetIds } },
+    orderBy: { scheduledFor: 'desc' },
+    select:  {
+      assetId:      true,
+      status:       true,
+      scheduledFor: true,
+      publishedAt:  true,
+      socialAccount: { select: { platform: true } },
+    },
+  })
+  const grouped: Record<string, PostSummary[]> = {}
+  for (const p of posts) {
+    if (!p.assetId) continue
+    ;(grouped[p.assetId] ??= []).push({
+      status:       p.status,
+      platform:     p.socialAccount.platform,
+      scheduledFor: p.scheduledFor.toISOString(),
+      publishedAt:  p.publishedAt?.toISOString() ?? null,
+    })
+  }
+  return grouped
+}
+
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
@@ -44,7 +79,9 @@ export async function GET(req: Request) {
         ORDER BY "createdAt" DESC
         LIMIT 100
       `)
-      return NextResponse.json({ assets: rows, pagination: { total: rows.length, page: 1, limit: 100, pages: 1 } })
+      const grouped = await postsByAssetId(session.user.tenantId, rows.map((r) => r.id))
+      const assets  = rows.map((r) => ({ ...r, scheduledPosts: grouped[r.id] ?? [] }))
+      return NextResponse.json({ assets, pagination: { total: rows.length, page: 1, limit: 100, pages: 1 } })
     }
 
     // Normal paginated fetch
@@ -55,13 +92,33 @@ export async function GET(req: Request) {
         orderBy: { createdAt: 'desc' },
         skip,
         take:    limit,
-        select:  { id: true, type: true, brandId: true, s3Url: true, htmlContent: true, metadata: true, createdAt: true },
+        select:  {
+          id: true, type: true, brandId: true, s3Url: true, htmlContent: true, metadata: true, createdAt: true,
+          scheduledPosts: {
+            orderBy: { scheduledFor: 'desc' },
+            select:  {
+              status:       true,
+              scheduledFor: true,
+              publishedAt:  true,
+              socialAccount: { select: { platform: true } },
+            },
+          },
+        },
       }),
       prisma.asset.count({ where }),
     ])
 
     return NextResponse.json({
-      assets:     assets.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() })),
+      assets: assets.map((a) => ({
+        ...a,
+        createdAt:      a.createdAt.toISOString(),
+        scheduledPosts: a.scheduledPosts.map((p) => ({
+          status:       p.status,
+          platform:     p.socialAccount.platform,
+          scheduledFor: p.scheduledFor.toISOString(),
+          publishedAt:  p.publishedAt?.toISOString() ?? null,
+        })),
+      })),
       pagination: { total, page, limit, pages: Math.ceil(total / limit) },
     })
   } catch (err) {

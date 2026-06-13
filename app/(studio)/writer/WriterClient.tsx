@@ -63,7 +63,9 @@ export default function WriterClient() {
   }
 
   function sendToScheduler(text: string, platform: Platform) {
-    localStorage.setItem('schedulerDraft', JSON.stringify({ caption: text, platform }))
+    const draft: Record<string, string> = { caption: text, platform }
+    if (referenceImageUrl.trim()) draft.imageUrl = referenceImageUrl.trim()  // bundle the source image
+    localStorage.setItem('schedulerDraft', JSON.stringify(draft))
     router.push('/scheduler')
   }
 

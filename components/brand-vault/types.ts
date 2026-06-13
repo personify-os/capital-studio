@@ -9,6 +9,24 @@ export interface BrandProfile {
   isDefault: boolean
 }
 
+export type LogoVariant = { label: string; url: string }
+
+export type BrandConfig = {
+  colors?:        Record<string, string>
+  fonts?:         Record<string, string>
+  tagline?:       string
+  tone?:          string
+  audience?:      string
+  products?:      string[]
+  guidelines?:    string
+  visualStyle?:   string
+  keyMessages?:   string[]
+  knowledgeBase?: string[]
+  documentUrl?:   string
+  documentName?:  string
+  logoVariants?:  LogoVariant[]
+}
+
 export const TYPE_LABELS: Record<BrandType, string> = {
   LHC:      'LH Capital',
   SIMRP:    'The SIMRP',

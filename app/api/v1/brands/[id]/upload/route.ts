@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { uploadBuffer, makeAssetKey } from '@/lib/storage'
 import { extractText } from '@/lib/extract-text'
+import { brandUploadSchema } from '@/lib/schemas/upload'
 import type { Prisma } from '@prisma/client'
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -17,7 +18,6 @@ const DOC_EXT_BY_MIME: Record<string, string> = {
   'text/csv':        'csv',
   [DOCX_MIME]:       'docx',
 }
-const MAX_BYTES = 20 * 1024 * 1024 // 20 MB
 
 // Normalize MIME types — browsers may include charset or other params
 function normalizeMime(mime: string): string {
@@ -70,20 +70,19 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     return NextResponse.json({ message: 'Invalid form data' }, { status: 400 })
   }
 
-  const file     = formData.get('file')
-  const type     = formData.get('type') as string          // 'logo' | 'document'
-  const logoSlot = formData.get('logoSlot') as string | null // 'primary' | label for variant
-
-  if (typeof file === 'string' || !file) {
-    return NextResponse.json({ message: 'No file provided' }, { status: 400 })
+  const parsed = brandUploadSchema.safeParse({
+    file:     formData.get('file'),
+    type:     formData.get('type'),
+    logoSlot: formData.get('logoSlot'),
+  })
+  if (!parsed.success) {
+    return NextResponse.json({ message: parsed.error.issues[0]?.message ?? 'Invalid upload' }, { status: 400 })
   }
-  if (file.size > MAX_BYTES) {
-    return NextResponse.json({ message: 'File exceeds 20 MB limit' }, { status: 400 })
-  }
+  const { file, type, logoSlot } = parsed.data
 
   const isLogo     = type === 'logo'
   const isDocument = type === 'document'
-  const allowed    = isLogo ? ALLOWED_IMAGE_TYPES : isDocument ? ALLOWED_DOC_TYPES : []
+  const allowed    = isLogo ? ALLOWED_IMAGE_TYPES : ALLOWED_DOC_TYPES
 
   // Normalize the browser-supplied MIME type (strip charset/params)
   const normalizedMime = normalizeMime(file.type)
@@ -107,6 +106,23 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
   const detectedMime = detectMimeFromBytes(buffer)
   if (!detectedMime || !allowed.includes(detectedMime)) {
     return NextResponse.json({ message: 'File content does not match an allowed type' }, { status: 400 })
+  }
+
+  // For documents, extract text up front. A thrown error means the file is not a
+  // valid document of its claimed type (e.g. a non-DOCX ZIP) — reject before we
+  // persist anything. (Empty text, e.g. a scanned PDF, is allowed but unhelpful.)
+  let guidelinesText = ''
+  if (isDocument) {
+    try {
+      const docExt = DOC_EXT_BY_MIME[detectedMime] ?? ext
+      guidelinesText = await extractText(buffer, `doc.${docExt}`, 10000)
+    } catch (err) {
+      console.error('[brands/upload] text extraction failed:', err)
+      return NextResponse.json(
+        { message: 'Could not read text from this document. Please upload a valid file.' },
+        { status: 422 },
+      )
+    }
   }
 
   let url: string
@@ -138,16 +154,9 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
         })
       }
     } else {
-      // Document: store URL + extract text content into guidelines
+      // Document: store URL + the text extracted above into guidelines
       const newConfig: Prisma.JsonObject = { ...currentConfig, documentUrl: url, documentName: file.name }
-      try {
-        const docExt = DOC_EXT_BY_MIME[detectedMime] ?? ext
-        const textContent = await extractText(buffer, `doc.${docExt}`, 10000)
-        if (textContent) newConfig.guidelines = textContent
-      } catch (err) {
-        console.error('[brands/upload] text extraction failed:', err)
-        // Non-fatal: document is still saved, guidelines just won't be populated
-      }
+      if (guidelinesText) newConfig.guidelines = guidelinesText
       await prisma.brandProfile.update({
         where: { id: params.id, tenantId: session.user.tenantId },
         data:  { config: newConfig as Prisma.InputJsonValue },

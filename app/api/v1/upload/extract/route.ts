@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { extractText, extOf, isSupportedDoc } from '@/lib/extract-text'
+import { extractUploadSchema } from '@/lib/schemas/upload'
 
-const MAX_BYTES = 20 * 1024 * 1024 // 20 MB (matches CLAUDE.md upload policy)
-const MAX_CHARS = 4000             // matches the writer's reference-content limit
+const MAX_CHARS = 4000 // matches the writer's reference-content limit
 
 /**
  * Validate the file's actual bytes against its claimed extension — never trust
@@ -39,13 +39,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Invalid form data' }, { status: 400 })
   }
 
-  const file = formData.get('file')
-  if (typeof file === 'string' || !file) {
-    return NextResponse.json({ message: 'No file provided' }, { status: 400 })
+  const parsed = extractUploadSchema.safeParse({ file: formData.get('file') })
+  if (!parsed.success) {
+    return NextResponse.json({ message: parsed.error.issues[0]?.message ?? 'Invalid upload' }, { status: 400 })
   }
-  if (file.size > MAX_BYTES) {
-    return NextResponse.json({ message: 'File exceeds 20 MB limit' }, { status: 400 })
-  }
+  const { file } = parsed.data
+
   if (!isSupportedDoc(file.name)) {
     return NextResponse.json(
       { message: 'Unsupported file type. Use TXT, MD, CSV, PDF, or Word (.docx).' },

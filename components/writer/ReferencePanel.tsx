@@ -1,8 +1,9 @@
 'use client'
 
-import { useRef } from 'react'
-import { Link, FileText, X } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Link, FileText, X, Loader2 } from 'lucide-react'
 import Textarea from '@/components/ui/Textarea'
+import { DOC_ACCEPT } from '@/lib/extract-text'
 
 interface ReferencePanelProps {
   referenceUrl:     string
@@ -19,20 +20,32 @@ export default function ReferencePanel({
   onUrlChange, onContentChange, onFileLoad, onFileClear,
 }: ReferencePanelProps) {
   const fileRef = useRef<HTMLInputElement>(null)
+  const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState('')
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string
-      onFileLoad(file.name, text?.slice(0, 4000) ?? '')
+    setError('')
+    setLoading(true)
+    try {
+      const body = new FormData()
+      body.append('file', file)
+      const res  = await fetch('/api/v1/upload/extract', { method: 'POST', body })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.message || 'Could not read this file.')
+      onFileLoad(data.name as string, data.text as string)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not read this file.')
+      if (fileRef.current) fileRef.current.value = ''
+    } finally {
+      setLoading(false)
     }
-    reader.readAsText(file)
   }
 
   function handleClear() {
     onFileClear()
+    setError('')
     if (fileRef.current) fileRef.current.value = ''
   }
 
@@ -67,12 +80,15 @@ export default function ReferencePanel({
             </button>
           </div>
         ) : (
-          <button type="button" onClick={() => fileRef.current?.click()}
-            className="w-full px-3 py-2 text-xs border border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-brand-azure hover:text-brand-azure transition-colors text-left">
-            Click to upload a text file…
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={loading}
+            className="w-full px-3 py-2 text-xs border border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-brand-azure hover:text-brand-azure transition-colors text-left disabled:opacity-60 disabled:cursor-wait flex items-center gap-2">
+            {loading
+              ? (<><Loader2 size={12} className="animate-spin" />Reading file…</>)
+              : 'Upload a file (TXT, MD, CSV, PDF, Word)…'}
           </button>
         )}
-        <input ref={fileRef} type="file" accept=".txt,.md,.csv,.doc,.docx" className="hidden" onChange={handleFileChange} />
+        {error && <p className="text-[10px] text-red-500 mt-1">{error}</p>}
+        <input ref={fileRef} type="file" accept={DOC_ACCEPT} className="hidden" onChange={handleFileChange} />
       </div>
 
       {/* Paste content */}

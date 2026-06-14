@@ -50,6 +50,11 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Lint
+        # Non-blocking: `next lint` was removed in Next 16, so `npm run lint`
+        # currently exits 1 (it treats "lint" as a directory). Type-check and
+        # build remain hard gates. TODO: migrate to the ESLint flat config CLI
+        # (eslint 9 + eslint-config-next flat preset) and make this blocking again.
+        continue-on-error: true
         run: npm run lint
 
       - name: Build

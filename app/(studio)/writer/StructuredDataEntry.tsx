@@ -1,13 +1,15 @@
 'use client'
 
-import SavingsForm from './forms/SavingsForm'
-import EventForm   from './forms/EventForm'
-import ClientForm  from './forms/ClientForm'
+import SavingsForm     from './forms/SavingsForm'
+import EspaSavingsForm from './forms/EspaSavingsForm'
+import EventForm       from './forms/EventForm'
+import ClientForm      from './forms/ClientForm'
 
 const LABELS: Record<string, string> = {
-  'payroll-tax-savings': 'Savings Calculator',
-  'event-webinar':       'Event Details',
-  'client-success':      'Success Story Details',
+  'payroll-tax-savings':   'Savings Calculator',
+  'espa-employer-savings': 'ESPA Savings Calculator',
+  'event-webinar':         'Event Details',
+  'client-success':        'Success Story Details',
 }
 
 interface Props {
@@ -26,9 +28,10 @@ export default function StructuredDataEntry({ tier2Id, onChange }: Props) {
         <span className="text-[9px] text-brand-azure/60">structured mode</span>
       </div>
 
-      {tier2Id === 'payroll-tax-savings' && <SavingsForm onChange={onChange} />}
-      {tier2Id === 'event-webinar'       && <EventForm   onChange={onChange} />}
-      {tier2Id === 'client-success'      && <ClientForm  onChange={onChange} />}
+      {tier2Id === 'payroll-tax-savings'   && <SavingsForm     onChange={onChange} />}
+      {tier2Id === 'espa-employer-savings' && <EspaSavingsForm onChange={onChange} />}
+      {tier2Id === 'event-webinar'         && <EventForm       onChange={onChange} />}
+      {tier2Id === 'client-success'        && <ClientForm      onChange={onChange} />}
     </div>
   )
 }

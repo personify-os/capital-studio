@@ -15,7 +15,7 @@ export interface Tier2SubTopic {
 
 /** Returns 'structured' for subtopics with a dedicated data-entry form */
 export function getGenerationMode(tier2Id: string | null): 'freeform' | 'structured' {
-  const STRUCTURED = new Set(['payroll-tax-savings', 'event-webinar', 'client-success'])
+  const STRUCTURED = new Set(['payroll-tax-savings', 'espa-employer-savings', 'event-webinar', 'client-success'])
   return tier2Id && STRUCTURED.has(tier2Id) ? 'structured' : 'freeform'
 }
 
@@ -211,6 +211,7 @@ export const TOPIC_TIERS: Tier1Category[] = [
       },
       {
         id:                'espa-employer-savings',
+        generationMode:    'structured',
         label:             'Employer Savings ($505/yr)',
         copyAngles:        [
           'Lead with the number: an average of $505 per employee per year in NET FICA savings after admin fees — starting the very first payroll',

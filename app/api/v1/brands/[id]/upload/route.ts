@@ -3,11 +3,21 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { uploadBuffer, makeAssetKey } from '@/lib/storage'
+import { extractText } from '@/lib/extract-text'
+import { brandUploadSchema } from '@/lib/schemas/upload'
 import type { Prisma } from '@prisma/client'
 
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
-const ALLOWED_DOC_TYPES   = ['application/pdf', 'text/plain']
-const MAX_BYTES = 20 * 1024 * 1024 // 20 MB
+const ALLOWED_DOC_TYPES   = ['application/pdf', 'text/plain', 'text/markdown', 'text/csv', DOCX_MIME]
+// Map a detected/declared doc MIME to the extension extractText keys off of.
+const DOC_EXT_BY_MIME: Record<string, string> = {
+  'application/pdf': 'pdf',
+  'text/plain':      'txt',
+  'text/markdown':   'md',
+  'text/csv':        'csv',
+  [DOCX_MIME]:       'docx',
+}
 
 // Normalize MIME types — browsers may include charset or other params
 function normalizeMime(mime: string): string {
@@ -26,6 +36,8 @@ function detectMimeFromBytes(buf: Buffer): string | null {
   for (const { sig, mime } of MAGIC_BYTES) {
     if (sig.every((b, i) => buf[i] === b)) return mime
   }
+  // .docx is a ZIP container — local file header "PK\x03\x04".
+  if (buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04) return DOCX_MIME
   const str = buf.slice(0, 64).toString('utf8').trimStart()
   if (str.startsWith('<svg') || str.startsWith('<?xml') || str.startsWith('<!DOCTYPE svg')) return 'image/svg+xml'
   // Plain text: no null bytes in first 512 bytes
@@ -58,20 +70,19 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     return NextResponse.json({ message: 'Invalid form data' }, { status: 400 })
   }
 
-  const file     = formData.get('file')
-  const type     = formData.get('type') as string          // 'logo' | 'document'
-  const logoSlot = formData.get('logoSlot') as string | null // 'primary' | label for variant
-
-  if (typeof file === 'string' || !file) {
-    return NextResponse.json({ message: 'No file provided' }, { status: 400 })
+  const parsed = brandUploadSchema.safeParse({
+    file:     formData.get('file'),
+    type:     formData.get('type'),
+    logoSlot: formData.get('logoSlot'),
+  })
+  if (!parsed.success) {
+    return NextResponse.json({ message: parsed.error.issues[0]?.message ?? 'Invalid upload' }, { status: 400 })
   }
-  if (file.size > MAX_BYTES) {
-    return NextResponse.json({ message: 'File exceeds 20 MB limit' }, { status: 400 })
-  }
+  const { file, type, logoSlot } = parsed.data
 
   const isLogo     = type === 'logo'
   const isDocument = type === 'document'
-  const allowed    = isLogo ? ALLOWED_IMAGE_TYPES : isDocument ? ALLOWED_DOC_TYPES : []
+  const allowed    = isLogo ? ALLOWED_IMAGE_TYPES : ALLOWED_DOC_TYPES
 
   // Normalize the browser-supplied MIME type (strip charset/params)
   const normalizedMime = normalizeMime(file.type)
@@ -95,6 +106,23 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
   const detectedMime = detectMimeFromBytes(buffer)
   if (!detectedMime || !allowed.includes(detectedMime)) {
     return NextResponse.json({ message: 'File content does not match an allowed type' }, { status: 400 })
+  }
+
+  // For documents, extract text up front. A thrown error means the file is not a
+  // valid document of its claimed type (e.g. a non-DOCX ZIP) — reject before we
+  // persist anything. (Empty text, e.g. a scanned PDF, is allowed but unhelpful.)
+  let guidelinesText = ''
+  if (isDocument) {
+    try {
+      const docExt = DOC_EXT_BY_MIME[detectedMime] ?? ext
+      guidelinesText = await extractText(buffer, `doc.${docExt}`, 10000)
+    } catch (err) {
+      console.error('[brands/upload] text extraction failed:', err)
+      return NextResponse.json(
+        { message: 'Could not read text from this document. Please upload a valid file.' },
+        { status: 422 },
+      )
+    }
   }
 
   let url: string
@@ -126,23 +154,9 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
         })
       }
     } else {
-      // Document: store URL + extract text content into guidelines
+      // Document: store URL + the text extracted above into guidelines
       const newConfig: Prisma.JsonObject = { ...currentConfig, documentUrl: url, documentName: file.name }
-      if (detectedMime === 'text/plain') {
-        const textContent = buffer.toString('utf8').slice(0, 10000).trim()
-        if (textContent) newConfig.guidelines = textContent
-      } else if (detectedMime === 'application/pdf') {
-        try {
-          type PdfParseFn = (buf: Buffer) => Promise<{ text: string }>
-          const { default: pdfParse } = await import('pdf-parse') as unknown as { default: PdfParseFn }
-          const pdfData = await pdfParse(buffer)
-          const textContent = pdfData.text.replace(/\s+/g, ' ').slice(0, 10000).trim()
-          if (textContent) newConfig.guidelines = textContent
-        } catch (err) {
-          console.error('[brands/upload] PDF text extraction failed:', err)
-          // Non-fatal: document is still saved, guidelines just won't be populated
-        }
-      }
+      if (guidelinesText) newConfig.guidelines = guidelinesText
       await prisma.brandProfile.update({
         where: { id: params.id, tenantId: session.user.tenantId },
         data:  { config: newConfig as Prisma.InputJsonValue },

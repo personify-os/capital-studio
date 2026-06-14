@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Copy, Check, Calendar, Hash } from 'lucide-react'
+import { FileText, Copy, Check, Calendar, Hash, Pencil, Save, X } from 'lucide-react'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { type Asset, BRAND_DOT, getAssetBrand, PostStatusList } from './shared'
+import CaptionReferenceBadges from './CaptionReferenceBadges'
 
 interface CaptionResult { body: string; hashtags?: string[]; altText?: string }
 interface CaptionMeta {
@@ -17,9 +19,10 @@ interface CaptionMeta {
 }
 
 interface Props {
-  asset:  Asset
-  copied: string | null
-  onCopy: (id: string, text: string) => void
+  asset:    Asset
+  copied:   string | null
+  onCopy:   (id: string, text: string) => void
+  onUpdate?: (updated: Asset) => void
 }
 
 /** Normalise both old format (text/texts strings) and new format (result/results objects) */
@@ -48,7 +51,7 @@ function resultToFullText(r: CaptionResult): string {
   return r.hashtags && r.hashtags.length > 0 ? `${r.body}\n\n${r.hashtags.join(' ')}` : r.body
 }
 
-export default function CaptionRow({ asset, copied, onCopy }: Props) {
+export default function CaptionRow({ asset, copied, onCopy, onUpdate }: Props) {
   const router   = useRouter()
   const meta          = (asset.metadata ?? {}) as CaptionMeta
   const platform      = meta.platform as string | undefined
@@ -56,6 +59,29 @@ export default function CaptionRow({ asset, copied, onCopy }: Props) {
   const results       = extractResults(meta)
   const isSeries = results.length > 1
   const brandId  = getAssetBrand(asset)
+
+  const [editing, setEditing] = useState(false)
+  const [drafts,  setDrafts]  = useState<string[]>([])
+  const [saving,  setSaving]  = useState(false)
+
+  function startEdit() { setDrafts(results.map((r) => r.body)); setEditing(true) }
+
+  async function saveEdit() {
+    const newResults = results.map((r, i) => ({ ...r, body: drafts[i] ?? r.body }))
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/v1/assets/${asset.id}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ results: newResults }),
+      })
+      if (!res.ok) return
+      onUpdate?.({ ...asset, metadata: { ...meta, results: newResults, seriesCount: newResults.length } })
+      setEditing(false)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   function scheduleCaption(text: string) {
     const draft: Record<string, string> = { caption: text, assetId: asset.id }
@@ -90,53 +116,42 @@ export default function CaptionRow({ asset, copied, onCopy }: Props) {
             <p className="text-[10px] text-gray-400">{formatRelativeTime(asset.createdAt)}</p>
           </div>
         </div>
-        {results.length > 0 && (
-          <button
-            type="button"
-            onClick={() => onCopy(asset.id, allText)}
-            className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-brand-azure bg-gray-50 border border-gray-200 px-2 py-1 rounded transition-colors flex-shrink-0"
-          >
-            {copied === asset.id ? <><Check size={10} />Copied</> : <><Copy size={10} />{isSeries ? 'Copy all' : 'Copy'}</>}
-          </button>
-        )}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {editing ? (
+            <>
+              <button type="button" onClick={saveEdit} disabled={saving}
+                className="flex items-center gap-1 text-[10px] font-medium text-white bg-brand-azure hover:bg-brand-navy px-2 py-1 rounded transition-colors disabled:opacity-50">
+                <Save size={10} />{saving ? 'Saving…' : 'Save'}
+              </button>
+              <button type="button" onClick={() => setEditing(false)} disabled={saving}
+                className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 bg-gray-50 border border-gray-200 px-2 py-1 rounded transition-colors">
+                <X size={10} />Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              {onUpdate && results.length > 0 && (
+                <button type="button" onClick={startEdit} title="Edit caption"
+                  className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-brand-azure bg-gray-50 border border-gray-200 px-2 py-1 rounded transition-colors">
+                  <Pencil size={10} />Edit
+                </button>
+              )}
+              {results.length > 0 && (
+                <button type="button" onClick={() => onCopy(asset.id, allText)}
+                  className="flex items-center gap-1 text-[10px] font-medium text-gray-400 hover:text-brand-azure bg-gray-50 border border-gray-200 px-2 py-1 rounded transition-colors">
+                  {copied === asset.id ? <><Check size={10} />Copied</> : <><Copy size={10} />{isSeries ? 'Copy all' : 'Copy'}</>}
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {asset.scheduledPosts && asset.scheduledPosts.length > 0 && (
         <PostStatusList posts={asset.scheduledPosts} className="mb-3" />
       )}
 
-      {/* Reference context badges (legacy + new) */}
-      {(meta.referenceImageUrl || meta.referenceContent || meta.referenceUrl || meta.keywords?.length) && (
-        <div className="space-y-1.5 mb-3">
-          {meta.referenceImageUrl && (
-            <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-100">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={meta.referenceImageUrl} alt="Source" className="w-10 h-10 object-cover rounded flex-shrink-0 border border-gray-200" />
-              <p className="text-[10px] text-gray-400">Generated from image via Claude Vision</p>
-            </div>
-          )}
-          {meta.referenceContent && (
-            <div className="p-2 bg-gray-50 rounded-lg border border-gray-100">
-              <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Reference context</p>
-              <p className="text-[10px] text-gray-500 line-clamp-2 leading-relaxed">{meta.referenceContent}</p>
-            </div>
-          )}
-          {meta.referenceUrl && (
-            <div className="p-2 bg-gray-50 rounded-lg border border-gray-100 flex items-center gap-1.5">
-              <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide flex-shrink-0">URL</p>
-              <p className="text-[10px] text-brand-azure truncate">{meta.referenceUrl}</p>
-            </div>
-          )}
-          {meta.keywords && meta.keywords.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap p-2 bg-gray-50 rounded-lg border border-gray-100">
-              <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide mr-0.5">Keywords</p>
-              {meta.keywords.map((kw: string) => (
-                <span key={kw} className="text-[9px] bg-brand-navy/5 text-brand-navy/60 px-1.5 py-0.5 rounded font-medium">{kw}</span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      <CaptionReferenceBadges meta={meta} />
 
       <div className="space-y-2">
         {results.map((r, i) => (
@@ -144,7 +159,16 @@ export default function CaptionRow({ asset, copied, onCopy }: Props) {
             {isSeries && (
               <span className="text-[9px] font-semibold text-brand-azure uppercase tracking-widest block mb-1">Post {i + 1}</span>
             )}
-            <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{r.body}</p>
+            {editing ? (
+              <textarea
+                value={drafts[i] ?? r.body}
+                onChange={(e) => setDrafts((prev) => { const next = [...prev]; next[i] = e.target.value; return next })}
+                rows={Math.min(10, Math.max(3, (drafts[i] ?? r.body).split('\n').length + 1))}
+                className="w-full text-xs text-gray-700 leading-relaxed bg-white border border-brand-azure/30 rounded p-2 focus:outline-none focus:ring-2 focus:ring-brand-azure/30 resize-y"
+              />
+            ) : (
+              <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{r.body}</p>
+            )}
             {r.hashtags && r.hashtags.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-1.5">
                 <Hash size={9} className="text-gray-300 mt-0.5 flex-shrink-0" />
@@ -156,13 +180,15 @@ export default function CaptionRow({ asset, copied, onCopy }: Props) {
             {r.altText && (
               <p className="text-[9px] text-gray-400 italic mt-1 leading-snug">Alt: {r.altText}</p>
             )}
-            <button
-              type="button"
-              onClick={() => scheduleCaption(resultToFullText(r))}
-              className="absolute bottom-2 right-2 opacity-0 group-hover/item:opacity-100 transition-opacity flex items-center gap-1 bg-brand-navy text-white text-[9px] font-semibold px-2 py-1 rounded-full"
-            >
-              <Calendar size={9} /> Schedule
-            </button>
+            {!editing && (
+              <button
+                type="button"
+                onClick={() => scheduleCaption(resultToFullText(r))}
+                className="absolute bottom-2 right-2 opacity-0 group-hover/item:opacity-100 transition-opacity flex items-center gap-1 bg-brand-navy text-white text-[9px] font-semibold px-2 py-1 rounded-full"
+              >
+                <Calendar size={9} /> Schedule
+              </button>
+            )}
           </div>
         ))}
         {results.length === 0 && <p className="text-xs text-gray-400 italic">Caption text not available</p>}

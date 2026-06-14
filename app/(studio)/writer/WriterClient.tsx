@@ -63,8 +63,26 @@ export default function WriterClient() {
   }
 
   function sendToScheduler(text: string, platform: Platform) {
-    localStorage.setItem('schedulerDraft', JSON.stringify({ caption: text, platform }))
+    const draft: Record<string, string> = { caption: text, platform }
+    if (referenceImageUrl.trim()) draft.imageUrl = referenceImageUrl.trim()  // bundle the source image
+    localStorage.setItem('schedulerDraft', JSON.stringify(draft))
     router.push('/scheduler')
+  }
+
+  function sendToImages(text: string) {
+    localStorage.setItem('imagesDraft', JSON.stringify({ prompt: text, brandId }))
+    router.push('/images')
+  }
+
+  function sendToGraphics(text: string) {
+    const firstLine = text.split('\n').find((l) => l.trim())?.trim() ?? text.trim()
+    localStorage.setItem('graphicsDraft', JSON.stringify({
+      brandId,
+      headline: firstLine.slice(0, 100),
+      topic:    text,
+      contentPillar: contentPillar || undefined,
+    }))
+    router.push('/graphics')
   }
 
   function sendToVoiceover(text: string) {
@@ -191,6 +209,8 @@ export default function WriterClient() {
           onCopy={copy}
           onRegen={regenerateSingle}
           onSchedule={sendToScheduler}
+          onAddImage={sendToImages}
+          onAddGraphic={sendToGraphics}
           onVoiceOver={sendToVoiceover}
           onLikeness={sendToLikeness}
         />

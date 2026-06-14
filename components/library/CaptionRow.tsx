@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { FileText, Copy, Check, Calendar, Hash } from 'lucide-react'
 import { cn, formatRelativeTime } from '@/lib/utils'
-import { type Asset, BRAND_DOT, getAssetBrand } from './shared'
+import { type Asset, BRAND_DOT, getAssetBrand, PostStatusList } from './shared'
 
 interface CaptionResult { body: string; hashtags?: string[]; altText?: string }
 interface CaptionMeta {
@@ -58,7 +58,10 @@ export default function CaptionRow({ asset, copied, onCopy }: Props) {
   const brandId  = getAssetBrand(asset)
 
   function scheduleCaption(text: string) {
-    localStorage.setItem('schedulerDraft', JSON.stringify({ caption: text, platform }))
+    const draft: Record<string, string> = { caption: text, assetId: asset.id }
+    if (platform)              draft.platform = platform
+    if (meta.referenceImageUrl) draft.imageUrl = meta.referenceImageUrl  // bundle the caption's source image
+    localStorage.setItem('schedulerDraft', JSON.stringify(draft))
     router.push('/scheduler')
   }
 
@@ -97,6 +100,10 @@ export default function CaptionRow({ asset, copied, onCopy }: Props) {
           </button>
         )}
       </div>
+
+      {asset.scheduledPosts && asset.scheduledPosts.length > 0 && (
+        <PostStatusList posts={asset.scheduledPosts} className="mb-3" />
+      )}
 
       {/* Reference context badges (legacy + new) */}
       {(meta.referenceImageUrl || meta.referenceContent || meta.referenceUrl || meta.keywords?.length) && (

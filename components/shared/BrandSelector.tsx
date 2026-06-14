@@ -8,7 +8,7 @@ interface Props {
   onChange: (id: BrandId) => void
 }
 
-const BRAND_IDS: BrandId[] = ['lhcapital', 'simrp', 'personal']
+const BRAND_IDS: BrandId[] = ['lhcapital', 'simrp', 'espa', 'personal']
 
 export default function BrandSelector({ value, onChange }: Props) {
   return (

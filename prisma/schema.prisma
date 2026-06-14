@@ -23,6 +23,7 @@ enum Role {
 enum BrandType {
   LHC      // Legacy Heritage Capital
   SIMRP    // The SIMRP
+  ESPA     // ESPA by BizPower (Employer Sponsored Preventive Access)
   PERSONAL // User-defined personal brand
 }
 

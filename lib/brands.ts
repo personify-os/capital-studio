@@ -2,7 +2,7 @@
 // Single source of truth for the three brand identities used in Capital Studio.
 // The AI generation services consume these configs to inject brand context into prompts.
 
-export type BrandId = 'lhcapital' | 'simrp' | 'personal'
+export type BrandId = 'lhcapital' | 'simrp' | 'espa' | 'personal'
 
 export interface BrandColors {
   primary:    string // dominant brand color
@@ -179,6 +179,77 @@ export const BRAND_CONFIGS: Record<BrandId, BrandConfig> = {
         'call it "the SIMRP" or "the Self-Insured Medical Reimbursement Plan"',
         'explain that savings come from redirecting FICA/payroll taxes, not adding new costs',
         'emphasize zero impact on employee take-home pay',
+      ],
+    },
+  },
+
+  espa: {
+    id:        'espa',
+    label:     'ESPA by BizPower',
+    shortName: 'ESPA',
+    logoUrl:   '', // BizPower Benefits — set from Brand Vault
+    colors: {
+      primary:   '#2EA84F', // BizPower green
+      secondary: '#16243F', // deep navy
+      accent:    '#ED6A2C', // logo orange
+      dark:      '#16243F',
+      light:     '#EAF7EE', // pale green
+    },
+    fonts:    { heading: 'Inter', body: 'Inter' },
+    tagline:  'More Care. More Savings. Zero Net Cost.',
+    tone:     'Educational and benefits-forward, balancing two promises: better preventive health for employees AND real payroll-tax savings for employers. Warm, family-focused on the employee side; ROI-driven and compliance-confident on the employer side. Plain-language, never hypey.',
+    audience: 'Business owners, HR directors, CFOs, and benefits decision-makers at organizations with 10+ W-2 employees — including businesses, nonprofits, churches, schools, counties, cities, and municipalities.',
+    products: [
+      'ESPA — Employer Sponsored Preventive Access Plan (Section 125 + SIMRP + IRS 213(d))',
+      'Concierge virtual care: 24/7 telehealth, primary care, urgent care (powered by Amaze Health)',
+      'Mental health support: psychiatry, medication management, unlimited counseling',
+      'Rx program: 1,000+ common medications at $0 (powered by Rx Valet)',
+      'Comprehensive annual lab panel (75+ biomarkers) via Quest or Labcorp',
+      'Vision care, virtual Rx renewal, and virtual pet care',
+      '~$150/month employee allotment for voluntary benefits',
+      'Voluntary benefits: Accident, Cancer, Critical Illness, Hospital Indemnity, Disability, Life',
+      'Live Well USA: legal resources, credit monitoring, identity protection, wellness app, travel discounts',
+      'BizPower Benefits Employer Portal — onboarding, offboarding, and administration',
+    ],
+    knowledgeBase: [
+      'ESPA (Employer Sponsored Preventive Access) is a next-generation employee benefits plan from BizPower Benefits that integrates a compliant preventive health plan, a Self-Insured Medical Reimbursement Plan (SIMRP), and a Section 125 cafeteria plan.',
+      'ESPA delivers measurable payroll-tax savings to employers AND meaningful preventive health benefits to employees, with no reduction in take-home pay and no disruption to the existing major medical plan.',
+      'Employers save an average of $505.20 per employee per year in NET FICA tax savings (after admin fees). Savings begin on the first payroll after enrollment — no waiting, no back-end true-ups.',
+      'Built on Section 125 and IRS 213(d) frameworks; HIPAA, ERISA, ACA, and IRS compliant. This is not tax advice and all figures are estimates.',
+      'Each employee generates an average of ~$150/month to spend on voluntary supplemental benefits (Accident, Cancer, Critical Illness, Hospital Indemnity, Disability, Life).',
+      'Employees get unlimited 24/7 telehealth (urgent, primary, behavioral, women\'s health) with zero out-of-pocket cost, powered by Amaze Health.',
+      'Mental health support includes psychiatric evaluations, medication management, and unlimited counseling with no referrals or waitlists — for the employee, spouse, and dependents.',
+      'Rx program provides 1,000+ common medications at $0 (powered by Rx Valet); plus an annual 75+ biomarker lab panel via Quest Diagnostics or Labcorp.',
+      'Additional services: vision care (Visibly), virtual Rx renewal, virtual pet care, and a biometric facial-scan health dashboard (Amaze).',
+      'Live Well USA bundles legal resources, credit monitoring, identity protection, wholesale travel discounts, and a wellness app at no additional cost.',
+      'Eligibility: employees must be W-2 (1099 contractors are not eligible) and must have access to health coverage (employer plan, spouse/parent plan, or individual policy). ESPA pairs with existing coverage — it does not replace it.',
+      'Excluded: employees on Medicare or receiving a marketplace subsidy cannot participate. If an employee has no qualifying coverage, a qualifying option can be put in place.',
+      'Who qualifies: any organization with 10+ W-2 employees with access to health insurance — including businesses, nonprofits, churches, schools, counties, cities, and municipalities.',
+      'Implementation: census of employees → exact savings + per-employee allotment breakdown → enrollment (auto, in-person, or virtual) → payroll setup → savings begin next month with full benefits access.',
+      'Powered by best-in-class voluntary benefits: Critical Illness, Cancer, Disability, Hospital Indemnity, Accident, and Life.',
+      'BizPower Benefits: 501 Union St., 6th Floor, Nashville, TN 37219 | 101 E. 6th Street, Tuscumbia, AL 35674 | 629-275-3255 | BizPowerBenefits.com',
+    ],
+    keyMessages: [
+      'More Care. More Savings. Zero Net Cost. — ESPA enhances employee benefits without raising your benefits budget or reducing take-home pay.',
+      'Employers save an average of $505 per employee per year in net FICA taxes — and the savings start on the very next payroll.',
+      'Employees get robust preventive health — 24/7 telehealth, mental health, $0 Rx, labs, vision — plus ~$150/month for voluntary benefits, with no change to their paycheck.',
+      'ESPA works alongside your existing major medical plan — no disruption, no replacement, just enhancement.',
+      'HIPAA, ERISA, ACA, and IRS compliant — built on Section 125 and IRS 213(d) and administered through the BizPower Benefits portal.',
+      'Reduce absenteeism, boost retention, and strengthen your total compensation story — through proactive preventive care.',
+      'If you have 10+ W-2 employees with access to health insurance, you likely qualify. Run your numbers with a census.',
+    ],
+    visualStyle: `Bright, healthy, modern benefits aesthetic. BizPower green (#2EA84F) as the signature color over deep navy (#16243F) panels, with orange (#ED6A2C) accents for emphasis. Clean rounded cards, simple line/solid icons (stethoscope, shield, heart, phone, dollar), and friendly family/workplace photography. Infographic-friendly: large savings numbers ("$505/yr", "$150/mo"), before/after paycheck comparisons, and benefit grids. Overall feel: trustworthy healthcare meets smart financial strategy — approachable, energetic, and credible.`,
+    voiceRestrictions: {
+      neverSay: [
+        '"free" or "no cost" without explaining the program is funded through payroll-tax savings',
+        '"insurance" to describe ESPA itself — it is a preventive access plan built on a SIMRP and Section 125',
+        'specific savings figures as guarantees — always note they are estimates',
+      ],
+      alwaysDo: [
+        'call it "ESPA" or "the Employer Sponsored Preventive Access plan" (by BizPower Benefits)',
+        'pair the employer savings story with the employee preventive-health story',
+        'emphasize zero reduction in take-home pay and no disruption to existing major medical coverage',
+        'note ESPA requires 10+ W-2 employees with access to health coverage',
       ],
     },
   },

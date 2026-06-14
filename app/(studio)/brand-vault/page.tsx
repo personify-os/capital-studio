@@ -6,7 +6,7 @@ import { prisma } from '@/lib/db'
 
 interface RawBrand {
   id: string
-  type: 'LHC' | 'SIMRP' | 'PERSONAL'
+  type: 'LHC' | 'SIMRP' | 'ESPA' | 'PERSONAL'
   name: string
   logoUrl: string | null
   config: unknown

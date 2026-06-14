@@ -44,6 +44,7 @@ const config: Config = {
           // aliases used in components
           blue:        brand.azure,
           green:       '#37ca37', // Personal brand accent green
+          emerald:     '#2EA84F', // ESPA / BizPower brand green
         },
         'app-bg': brand.offwhite,
         charcoal: brand.charcoal,

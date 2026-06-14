@@ -11,7 +11,7 @@ const schema = z.object({
   talkingPhotoId:  z.string().min(1).optional(),
   voiceId:         z.string().min(1),
   aspectRatio:     z.enum(['16:9', '9:16', '1:1']).default('16:9'),
-  brandId:         z.enum(['lhcapital', 'simrp', 'personal']).optional(),
+  brandId:         z.enum(['lhcapital', 'simrp', 'espa', 'personal']).optional(),
 }).refine((d) => d.avatarId || d.talkingPhotoId, {
   message: 'Either avatarId or talkingPhotoId is required',
 })

@@ -18,6 +18,11 @@ async function main() {
 
   const hashed = await bcrypt.hash(password, 12)
 
+  // NOTE: never overwrite the password on update. Re-running the seed (locally
+  // or in any env) must not clobber the live login password with SEED_PASSWORD.
+  // The password is only set when the user is first created. To rotate it, set
+  // SEED_PASSWORD and pass ROTATE_PASSWORD=1.
+  const rotate = process.env.ROTATE_PASSWORD === '1'
   const user = await prisma.user.upsert({
     where:  { email },
     create: {
@@ -28,8 +33,8 @@ async function main() {
       role:     'ADMIN',
     },
     update: {
-      password: hashed,
       name,
+      ...(rotate ? { password: hashed } : {}),
     },
   })
 

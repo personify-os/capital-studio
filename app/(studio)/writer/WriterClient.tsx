@@ -7,6 +7,7 @@ import WriterResults from '@/components/writer/WriterResults'
 import { EMPTY_INTENT, getGenerationMode } from '@/lib/content-intent'
 import type { ContentIntent } from '@/lib/content-intent'
 import type { BrandId } from '@/lib/brands'
+import { useDefaultBrand } from '@/components/shared/DefaultBrandProvider'
 import {
   type ContentType, type Platform, type Tone, type SeriesCount, type ContentPillar,
   type CaptionResult, type CaptionResponse, type PlatformResult,
@@ -15,7 +16,7 @@ import {
 export default function WriterClient() {
   const router = useRouter()
   const [contentType,      setContentType]      = useState<ContentType>('caption')
-  const [brandId,          setBrandId]          = useState<BrandId>('lhcapital')
+  const [brandId,          setBrandId]          = useState<BrandId>(useDefaultBrand())
   const [intent,           setIntent]           = useState<ContentIntent>(EMPTY_INTENT)
   const [topic,            setTopic]            = useState('')
   const [platforms,        setPlatforms]        = useState<Platform[]>([])

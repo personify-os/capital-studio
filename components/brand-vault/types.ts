@@ -7,6 +7,7 @@ export interface BrandProfile {
   logoUrl:   string | null
   config:    any
   isDefault: boolean
+  sortOrder?: number
 }
 
 export type LogoVariant = { label: string; url: string }

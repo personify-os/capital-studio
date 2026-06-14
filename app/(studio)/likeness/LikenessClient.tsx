@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Video, Download, Calendar, CheckCircle, XCircle } from 'lucide-react'
 import LikenessControls from '@/components/likeness/LikenessControls'
 import type { BrandId } from '@/lib/brands'
+import { useDefaultBrand } from '@/components/shared/DefaultBrandProvider'
 import type { HeyGenAvatar, HeyGenVoice, AspectRatio } from '@/services/likeness'
 
 interface Job { assetId: string; videoId: string }
@@ -24,7 +25,7 @@ export default function LikenessClient() {
   const [voiceId,  setVoiceId]  = useState('')
   const [aspectRatio,    setAspectRatio]    = useState<AspectRatio>('16:9')
   const [script,         setScript]         = useState('')
-  const [brandId,        setBrandId]        = useState<BrandId>('lhcapital')
+  const [brandId,        setBrandId]        = useState<BrandId>(useDefaultBrand())
 
   // Generation state
   const [submitting,  setSubmitting]  = useState(false)

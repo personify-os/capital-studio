@@ -8,6 +8,7 @@ import VideosControls, { type VideoModel, type Duration, type AspectRatio } from
 import VideoThumb from '@/components/videos/VideoThumb'
 import { TOPIC_TIERS, PURPOSES, CTA_OPTIONS, buildIntentString } from '@/lib/content-intent'
 import type { BrandId } from '@/lib/brands'
+import { useDefaultBrand } from '@/components/shared/DefaultBrandProvider'
 import type { VideoGenerateInput } from '@/lib/schemas/generate'
 
 interface VideoAsset { id: string; url: string }
@@ -20,7 +21,7 @@ export default function VideosClient({ recentVideos: initial }: { recentVideos: 
   const [model,           setModel]           = useState<VideoModel>('kling-2.1')
   const [duration,        setDuration]        = useState<Duration>('5')
   const [aspectRatio,     setAspectRatio]     = useState<AspectRatio>('16:9')
-  const [brandId,         setBrandId]         = useState<BrandId>('lhcapital')
+  const [brandId,         setBrandId]         = useState<BrandId>(useDefaultBrand())
   const [recentVideos,    setRecentVideos]    = useState(initial)
   const [intentOpen,      setIntentOpen]      = useState(true)
   const [selectedTopics,  setSelectedTopics]  = useState<string[]>([])

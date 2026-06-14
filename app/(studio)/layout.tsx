@@ -2,11 +2,15 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { flags } from '@/lib/flags'
+import { getDefaultBrandId } from '@/lib/default-brand'
 import Sidebar from '@/components/layout/Sidebar'
+import { DefaultBrandProvider } from '@/components/shared/DefaultBrandProvider'
 
 export default async function StudioLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions)
   if (!session) redirect('/login')
+
+  const defaultBrand = await getDefaultBrandId(session.user.tenantId)
 
   const sidebarFlags = {
     videoGeneration: flags.videoGeneration,
@@ -22,7 +26,9 @@ export default async function StudioLayout({ children }: { children: React.React
     <div className="flex h-screen overflow-hidden bg-app-bg">
       <Sidebar flags={sidebarFlags} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto">
+          <DefaultBrandProvider value={defaultBrand}>{children}</DefaultBrandProvider>
+        </main>
       </div>
     </div>
   )

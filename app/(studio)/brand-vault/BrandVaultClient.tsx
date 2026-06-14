@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { BookOpen, Plus, CheckCircle, AlertCircle } from 'lucide-react'
+import { BookOpen, Plus, CheckCircle, AlertCircle, GripVertical, Circle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { BrandProfile, TYPE_LABELS } from '@/components/brand-vault/types'
 import { EditModal, AddBrandModal } from '@/components/brand-vault/BrandModals'
@@ -16,6 +16,40 @@ export default function BrandVaultClient({ brands: initial }: Props) {
   const [adding,       setAdding]       = useState(false)
   const [uploading,    setUploading]    = useState<string | null>(null)  // 'logo' | 'document' | logoSlot
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [dragId,       setDragId]       = useState<string | null>(null)
+
+  function handleDrop(targetId: string) {
+    if (!dragId || dragId === targetId) { setDragId(null); return }
+    setBrands((prev) => {
+      const from = prev.findIndex((b) => b.id === dragId)
+      const to   = prev.findIndex((b) => b.id === targetId)
+      if (from < 0 || to < 0) return prev
+      const next = [...prev]
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      // Persist the new order (best-effort; UI already reflects it)
+      fetch('/api/v1/brands/reorder', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ orderedIds: next.map((b) => b.id) }),
+      }).catch(() => {})
+      return next
+    })
+    setDragId(null)
+  }
+
+  async function handleSetDefault(id: string) {
+    try {
+      const res = await fetch(`/api/v1/brands/${id}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ isDefault: true }),
+      })
+      if (!res.ok) return
+      setBrands((prev) => prev.map((b) => ({ ...b, isDefault: b.id === id })))
+      setSelected((prev) => (prev ? { ...prev, isDefault: prev.id === id } : prev))
+    } catch { /* ignore */ }
+  }
 
   function handleSaved(updated: BrandProfile) {
     setBrands((prev) => prev.map((b) => b.id === updated.id ? { ...b, ...updated } : b))
@@ -79,29 +113,56 @@ export default function BrandVaultClient({ brands: initial }: Props) {
         <div className="w-64 flex-shrink-0 h-screen overflow-y-auto p-4 border-r border-gray-100 bg-white">
           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3 px-1">Brands</p>
           <div className="space-y-1">
-            {brands.map((b) => (
-              <button key={b.id} type="button" onClick={() => setSelected(b)}
-                className={cn(
-                  'w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-2.5 transition-colors',
-                  selected?.id === b.id ? 'bg-brand-navy text-white' : 'hover:bg-gray-50 text-gray-700',
-                )}>
-                <span className={cn('w-2 h-2 rounded-full flex-shrink-0', {
-                  'bg-brand-azure':   b.type === 'LHC',
-                  'bg-brand-light':   b.type === 'SIMRP',
-                  'bg-brand-emerald': b.type === 'ESPA',
-                  'bg-brand-green':   b.type === 'PERSONAL',
-                })} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{b.name}</p>
-                  <p className={cn('text-[10px]', selected?.id === b.id ? 'text-white/60' : 'text-gray-400')}>
-                    {TYPE_LABELS[b.type]}
-                  </p>
+            {brands.map((b) => {
+              const active = selected?.id === b.id
+              return (
+                <div
+                  key={b.id}
+                  draggable
+                  onDragStart={() => setDragId(b.id)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { e.preventDefault(); handleDrop(b.id) }}
+                  onDragEnd={() => setDragId(null)}
+                  onClick={() => setSelected(b)}
+                  className={cn(
+                    'group w-full text-left px-2 py-2.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer',
+                    active ? 'bg-brand-navy text-white' : 'hover:bg-gray-50 text-gray-700',
+                    dragId === b.id && 'opacity-50',
+                  )}
+                >
+                  <GripVertical size={13} className={cn('flex-shrink-0 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity', active ? 'text-white/50' : 'text-gray-300')} />
+                  <span className={cn('w-2 h-2 rounded-full flex-shrink-0', {
+                    'bg-brand-azure':   b.type === 'LHC',
+                    'bg-brand-light':   b.type === 'SIMRP',
+                    'bg-brand-emerald': b.type === 'ESPA',
+                    'bg-brand-green':   b.type === 'PERSONAL',
+                  })} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{b.name}</p>
+                    <p className={cn('text-[10px]', active ? 'text-white/60' : 'text-gray-400')}>
+                      {TYPE_LABELS[b.type]}
+                    </p>
+                  </div>
+                  {b.isDefault ? (
+                    <span title="Default brand" className="flex-shrink-0">
+                      <CheckCircle size={14} className={active ? 'text-white' : 'text-brand-azure'} />
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      title="Set as default"
+                      onClick={(e) => { e.stopPropagation(); handleSetDefault(b.id) }}
+                      className={cn(
+                        'flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity',
+                        active ? 'text-white/40 hover:text-white' : 'text-gray-300 hover:text-brand-azure',
+                      )}
+                    >
+                      <Circle size={14} />
+                    </button>
+                  )}
                 </div>
-                {b.isDefault && (
-                  <CheckCircle size={12} className={selected?.id === b.id ? 'text-white/60' : 'text-brand-azure'} />
-                )}
-              </button>
-            ))}
+              )
+            })}
           </div>
           <button type="button" onClick={() => setAdding(true)}
             className="flex items-center gap-2 w-full px-3 py-2.5 mt-4 rounded-lg border-2 border-dashed border-gray-200 text-gray-400 hover:border-brand-azure hover:text-brand-azure transition-colors text-xs font-medium">

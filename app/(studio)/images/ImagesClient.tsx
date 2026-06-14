@@ -9,6 +9,7 @@ import ImageCard from '@/components/images/ImageCard'
 import RecentCard from '@/components/images/RecentCard'
 import { TOPIC_TIERS, PURPOSES, CTA_OPTIONS, buildIntentString } from '@/lib/content-intent'
 import { BRAND_CONFIGS, type BrandId } from '@/lib/brands'
+import { useDefaultBrand } from '@/components/shared/DefaultBrandProvider'
 
 interface GeneratedAsset { id: string; url: string }
 interface GenerateResponse { assets: GeneratedAsset[] }
@@ -20,7 +21,7 @@ export default function ImagesClient({ recentImages: initial }: { recentImages: 
   const [model,           setModel]           = useState<ModelId>('flux-pro')
   const [aspect,          setAspect]          = useState<AspectRatio>('1:1')
   const [variations,      setVariations]      = useState(1)
-  const [brandId,         setBrandId]         = useState<BrandId>('lhcapital')
+  const [brandId,         setBrandId]         = useState<BrandId>(useDefaultBrand())
   const [enhancePrompt,   setEnhancePrompt]   = useState(false)
   const [includeLogo,     setIncludeLogo]     = useState(true)
   const [recentImages,    setRecentImages]    = useState(initial)

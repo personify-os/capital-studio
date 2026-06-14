@@ -8,6 +8,7 @@ import MotionControls, { type Duration, type AspectRatio } from '@/components/mo
 import MotionThumb from '@/components/motion/MotionThumb'
 import { TOPIC_TIERS, PURPOSES, CTA_OPTIONS, buildIntentString } from '@/lib/content-intent'
 import type { BrandId } from '@/lib/brands'
+import { useDefaultBrand } from '@/components/shared/DefaultBrandProvider'
 import type { MotionGenerateInput } from '@/lib/schemas/generate'
 
 interface MotionAsset { id: string; url: string }
@@ -21,7 +22,7 @@ export default function MotionClient({ recentVideos: initial }: { recentVideos: 
   const [prompt,          setPrompt]          = useState('')
   const [duration,        setDuration]        = useState<Duration>('5')
   const [aspectRatio,     setAspectRatio]     = useState<AspectRatio>('16:9')
-  const [brandId,         setBrandId]         = useState<BrandId>('lhcapital')
+  const [brandId,         setBrandId]         = useState<BrandId>(useDefaultBrand())
   const [recentVideos,    setRecentVideos]    = useState(initial)
   const [enhancing,       setEnhancing]       = useState(false)
   const [enhanceError,    setEnhanceError]    = useState<string | null>(null)

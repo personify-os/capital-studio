@@ -16,6 +16,7 @@ const patchSchema = z.object({
   keyMessages:   z.array(z.string().max(500)).max(30).optional(),
   knowledgeBase: z.array(z.string().max(600)).max(40).optional(),
   includeLogo:   z.boolean().optional(),
+  isDefault:     z.boolean().optional(),
   logoUrl:       z.string().url().optional().or(z.literal('')),
   logoVariants:  z.array(z.object({ label: z.string().max(50), url: z.string().url() })).max(10).optional(),
   colors:        z.object({
@@ -57,9 +58,9 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
   const currentConfig = (existing.config as Record<string, unknown>) ?? {}
   const updates: Record<string, unknown> = {}
 
-  const { logoUrl, ...configFields } = parsed.data
+  const { logoUrl, isDefault, ...configFields } = parsed.data
 
-  // Merge config fields
+  // Merge config fields (top-level columns are handled separately, not in config)
   const newConfig: Record<string, unknown> = { ...currentConfig }
   for (const [k, v] of Object.entries(configFields)) {
     if (v !== undefined) newConfig[k] = v
@@ -67,13 +68,29 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
 
   updates.config = newConfig
   if (logoUrl !== undefined) updates.logoUrl = logoUrl || null
+  if (isDefault !== undefined) updates.isDefault = isDefault
 
   let brand: Awaited<ReturnType<typeof prisma.brandProfile.update>>
   try {
-    brand = await prisma.brandProfile.update({
-      where: { id: params.id, tenantId: session.user.tenantId },
-      data:  updates,
-    })
+    if (isDefault === true) {
+      // One default per tenant: clear the others, set this one — atomically.
+      const [, updated] = await prisma.$transaction([
+        prisma.brandProfile.updateMany({
+          where: { tenantId: session.user.tenantId, id: { not: params.id } },
+          data:  { isDefault: false },
+        }),
+        prisma.brandProfile.update({
+          where: { id: params.id, tenantId: session.user.tenantId },
+          data:  updates,
+        }),
+      ])
+      brand = updated
+    } else {
+      brand = await prisma.brandProfile.update({
+        where: { id: params.id, tenantId: session.user.tenantId },
+        data:  updates,
+      })
+    }
   } catch (err) {
     console.error('[brands/PATCH] update error:', err)
     return NextResponse.json({ message: 'Failed to save changes.' }, { status: 500 })

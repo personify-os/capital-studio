@@ -10,6 +10,7 @@ import TemplateGallery from '@/components/graphics/TemplateGallery'
 import { GRAPHIC_TEMPLATES, type GraphicTemplate } from './templates'
 import { TOPIC_TIERS, PURPOSES, CTA_OPTIONS, buildIntentString } from '@/lib/content-intent'
 import type { BrandId } from '@/lib/brands'
+import { useDefaultBrand } from '@/components/shared/DefaultBrandProvider'
 import type { ContentPillar } from '@/components/writer/types'
 
 interface GenerateResponse { asset: { id: string; html: string } }
@@ -23,7 +24,7 @@ interface RecentGraphic {
 
 export default function GraphicsClient({ recentGraphics: initial }: { recentGraphics: RecentGraphic[] }) {
   const router = useRouter()
-  const [brandId,         setBrandId]         = useState<BrandId>('lhcapital')
+  const [brandId,         setBrandId]         = useState<BrandId>(useDefaultBrand())
   const [template,        setTemplate]        = useState<GraphicTemplate>(GRAPHIC_TEMPLATES[0])
   const [headline,        setHeadline]        = useState('')
   const [subtext,         setSubtext]         = useState('')

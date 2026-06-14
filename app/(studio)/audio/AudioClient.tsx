@@ -8,6 +8,7 @@ import AudioControls, { VOICES } from '@/components/audio/AudioControls'
 import AudioRow, { type RecentAudio } from '@/components/audio/AudioRow'
 import { TOPIC_TIERS, PURPOSES, CTA_OPTIONS, buildIntentString } from '@/lib/content-intent'
 import type { BrandId } from '@/lib/brands'
+import { useDefaultBrand } from '@/components/shared/DefaultBrandProvider'
 import type { ContentPillar } from '@/components/writer/types'
 
 import type { ScriptDuration } from '@/components/audio/types'
@@ -19,7 +20,7 @@ export default function AudioClient({ recentAudio: initial }: { recentAudio: Rec
   const router = useRouter()
   const [script,          setScript]          = useState('')
   const [voiceId,         setVoiceId]         = useState(VOICES[0].id)
-  const [brandId,         setBrandId]         = useState<BrandId>('lhcapital')
+  const [brandId,         setBrandId]         = useState<BrandId>(useDefaultBrand())
   const [recentAudio,     setRecentAudio]     = useState(initial)
   const [intentOpen,      setIntentOpen]      = useState(true)
   const [selectedTopics,  setSelectedTopics]  = useState<string[]>([])

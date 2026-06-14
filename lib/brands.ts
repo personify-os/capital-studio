@@ -187,7 +187,7 @@ export const BRAND_CONFIGS: Record<BrandId, BrandConfig> = {
     id:        'espa',
     label:     'ESPA by BizPower',
     shortName: 'ESPA',
-    logoUrl:   '', // BizPower Benefits — set from Brand Vault
+    logoUrl:   'https://pub-b7685ec541d6436eb5e9a91dca14ff2e.r2.dev/lhcapital/images/1781438124144-c8a315ab.jpg', // BizPower Benefits logo (R2)
     colors: {
       primary:   '#2EA84F', // BizPower green
       secondary: '#16243F', // deep navy

@@ -104,6 +104,12 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize, 
     }
   }
 
+  // Reflect an in-place caption edit in both the loaded pool and any active search results
+  function handleAssetUpdate(updated: Asset) {
+    setAllAssets((prev) => prev.map((a) => (a.id === updated.id ? updated : a)))
+    setSearchResults((prev) => (prev ? prev.map((a) => (a.id === updated.id ? updated : a)) : prev))
+  }
+
   // Active pool: server search results when searching, otherwise locally-loaded page
   const activePool = searchResults ?? allAssets
 
@@ -180,7 +186,7 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize, 
         </div>
       ) : isCaptionFilter ? (
         <div className="space-y-3 max-w-2xl">
-          {filtered.map((a) => <CaptionRow key={a.id} asset={a} copied={copied} onCopy={copyText} />)}
+          {filtered.map((a) => <CaptionRow key={a.id} asset={a} copied={copied} onCopy={copyText} onUpdate={handleAssetUpdate} />)}
         </div>
       ) : isAudioFilter ? (
         <div className="space-y-3 max-w-2xl">
@@ -204,7 +210,7 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize, 
                   </div>
                 ) : type === 'CAPTION' ? (
                   <div className="space-y-3 max-w-2xl">
-                    {group.map((a) => <CaptionRow key={a.id} asset={a} copied={copied} onCopy={copyText} />)}
+                    {group.map((a) => <CaptionRow key={a.id} asset={a} copied={copied} onCopy={copyText} onUpdate={handleAssetUpdate} />)}
                   </div>
                 ) : type === 'MOTION' || type === 'LIKENESS' ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

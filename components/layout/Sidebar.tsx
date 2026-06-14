@@ -6,6 +6,7 @@ import { useState } from 'react'
 import {
   LayoutDashboard, ImageIcon, PenSquare, Layers, Calendar, BookOpen,
   FolderOpen, Film, Mic, Clapperboard, Music, BarChart3, ChevronDown, User,
+  CalendarRange,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -51,6 +52,7 @@ export default function Sidebar({ flags }: Props) {
       items: [
         { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard'      },
         { href: '/writer',    icon: PenSquare,        label: 'Content Writer' },
+        { href: '/plan',      icon: CalendarRange,    label: 'Content Plan'   },
       ],
     },
     {

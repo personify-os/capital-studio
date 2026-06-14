@@ -18,7 +18,7 @@ export const imageGenerateSchema = z.object({
   ]),
   aspectRatio:   z.enum(['1:1', '16:9', '9:16', '4:5']),
   variations:    z.number().int().min(1).max(4),
-  brandId:       z.enum(['lhcapital', 'simrp', 'personal']).optional(),
+  brandId:       z.enum(['lhcapital', 'simrp', 'espa', 'personal']).optional(),
   enhancePrompt: z.boolean().optional(),
   includeLogo:   z.boolean().optional(),
 })
@@ -26,7 +26,7 @@ export const imageGenerateSchema = z.object({
 export const graphicGenerateSchema = z.object({
   templateId:     z.string(),
   templateFormat: z.string().max(800).optional(),
-  brandId:        z.enum(['lhcapital', 'simrp', 'personal']),
+  brandId:        z.enum(['lhcapital', 'simrp', 'espa', 'personal']),
   headline:       z.string().min(1).max(100),
   subtext:        z.string().max(200).optional(),
   cta:            z.string().max(60).optional(),
@@ -40,7 +40,7 @@ export const captionGenerateSchema = z.object({
   platform:           z.enum(['instagram', 'facebook', 'linkedin', 'x', 'youtube', 'tiktok', 'threads', 'substack', 'medium', 'bluesky']),
   tone:               z.enum(['professional', 'casual', 'inspirational', 'educational']),
   topic:              z.string().max(500).optional(),
-  brandId:            z.enum(['lhcapital', 'simrp', 'personal']).optional(),
+  brandId:            z.enum(['lhcapital', 'simrp', 'espa', 'personal']).optional(),
   keywords:           z.array(z.string()).optional(),
   includeHashtags:    z.boolean().optional(),
   seriesCount:        z.number().int().min(1).max(10).optional(),
@@ -63,7 +63,7 @@ export const videoGenerateSchema = z.object({
   model:       z.enum(['kling-3.0', 'kling-2.1', 'veo-3', 'minimax', 'hunyuan', 'wan']),
   duration:    z.enum(['5', '10']).default('5'),
   aspectRatio: z.enum(['16:9', '9:16', '1:1']).default('16:9'),
-  brandId:     z.enum(['lhcapital', 'simrp', 'personal']).optional(),
+  brandId:     z.enum(['lhcapital', 'simrp', 'espa', 'personal']).optional(),
   includeLogo: z.boolean().optional(),
 })
 
@@ -72,14 +72,14 @@ export const motionGenerateSchema = z.object({
   prompt:      z.string().min(1).max(500),
   duration:    z.enum(['5', '10']).default('5'),
   aspectRatio: z.enum(['16:9', '9:16', '1:1']).default('16:9'),
-  brandId:     z.enum(['lhcapital', 'simrp', 'personal']).optional(),
+  brandId:     z.enum(['lhcapital', 'simrp', 'espa', 'personal']).optional(),
   includeLogo: z.boolean().optional(),
 })
 
 export const audioGenerateSchema = z.object({
   text:    z.string().min(1).max(5000),
   voiceId: z.string().min(1),
-  brandId: z.enum(['lhcapital', 'simrp', 'personal']).optional(),
+  brandId: z.enum(['lhcapital', 'simrp', 'espa', 'personal']).optional(),
 })
 
 export type ImageGenerateInput   = z.infer<typeof imageGenerateSchema>
@@ -94,6 +94,6 @@ export const musicGenerateSchema = z.object({
   style:        z.string().max(100).optional(),
   instrumental: z.boolean().default(false),
   model:        z.enum(['chirp-v4', 'chirp-v3-5', 'chirp-v3']).default('chirp-v4'),
-  brandId:      z.enum(['lhcapital', 'simrp', 'personal']).optional(),
+  brandId:      z.enum(['lhcapital', 'simrp', 'espa', 'personal']).optional(),
 })
 export type MusicGenerateInput = z.infer<typeof musicGenerateSchema>

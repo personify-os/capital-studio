@@ -164,7 +164,7 @@ export function AddBrandModal({ onClose, onCreated }: { onClose: () => void; onC
           </Field>
           <Field label="Brand Type">
             <div className="flex flex-col gap-1.5">
-              {(['LHC', 'SIMRP', 'PERSONAL'] as BrandType[]).map((t) => (
+              {(['LHC', 'SIMRP', 'ESPA', 'PERSONAL'] as BrandType[]).map((t) => (
                 <button key={t} type="button" onClick={() => setType(t)}
                   className={cn(
                     'px-3 py-2 rounded-lg border-2 text-left text-xs font-medium transition-all',

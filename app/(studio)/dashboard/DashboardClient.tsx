@@ -33,7 +33,7 @@ export default function DashboardClient({ userName, recentAssets, counts }: Prop
           {totalAssets > 0 ? `Welcome back, ${userName}` : `Hey, ${userName}`}
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Create images, video, audio, and creative assets for LH Capital & The SIMRP.
+          Create images, video, audio, and creative assets for LH Capital, The SIMRP & ESPA.
         </p>
       </div>
 

@@ -86,9 +86,10 @@ export default function BrandVaultClient({ brands: initial }: Props) {
                   selected?.id === b.id ? 'bg-brand-navy text-white' : 'hover:bg-gray-50 text-gray-700',
                 )}>
                 <span className={cn('w-2 h-2 rounded-full flex-shrink-0', {
-                  'bg-brand-azure':  b.type === 'LHC',
-                  'bg-brand-light':  b.type === 'SIMRP',
-                  'bg-brand-green':  b.type === 'PERSONAL',
+                  'bg-brand-azure':   b.type === 'LHC',
+                  'bg-brand-light':   b.type === 'SIMRP',
+                  'bg-brand-emerald': b.type === 'ESPA',
+                  'bg-brand-green':   b.type === 'PERSONAL',
                 })} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{b.name}</p>

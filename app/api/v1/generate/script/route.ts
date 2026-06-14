@@ -12,7 +12,7 @@ import type { BrandId } from '@/lib/brands'
 const scriptSchema = z.object({
   topic:         z.string().min(1).max(500),
   duration:      z.enum(['30', '60', '90', '120']).default('60'),
-  brandId:       z.enum(['lhcapital', 'simrp', 'personal']).optional(),
+  brandId:       z.enum(['lhcapital', 'simrp', 'espa', 'personal']).optional(),
   contentPillar: z.enum(['awareness', 'education', 'case-study', 'compliance', 'promotional']).optional(),
 })
 

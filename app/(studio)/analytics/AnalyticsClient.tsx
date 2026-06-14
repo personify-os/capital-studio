@@ -14,6 +14,7 @@ const RANGE_OPTIONS = [
 const BRAND_DISPLAY = [
   { id: 'lhcapital', label: 'LH Capital', bgClass: 'bg-brand-azure' },
   { id: 'simrp',     label: 'The SIMRP',  bgClass: 'bg-brand-light' },
+  { id: 'espa',      label: 'ESPA',       bgClass: 'bg-brand-emerald' },
   { id: 'personal',  label: 'Personal',   bgClass: 'bg-brand-green' },
 ]
 

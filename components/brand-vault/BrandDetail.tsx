@@ -110,7 +110,7 @@ export function IntelligenceModal({ type, brandId, initial, onClose, onSaved }: 
 
 // ─── Built-in Knowledge (display mode) ───────────────────────────────────────
 
-const BRAND_TYPE_TO_ID = { LHC: 'lhcapital', SIMRP: 'simrp', PERSONAL: 'personal' } as const
+const BRAND_TYPE_TO_ID = { LHC: 'lhcapital', SIMRP: 'simrp', ESPA: 'espa', PERSONAL: 'personal' } as const
 
 interface BuiltInProps {
   type:          BrandType

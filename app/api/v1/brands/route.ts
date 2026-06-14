@@ -6,7 +6,7 @@ import { z } from 'zod'
 
 const createSchema = z.object({
   name: z.string().min(1).max(100),
-  type: z.enum(['LHC', 'SIMRP', 'PERSONAL']),
+  type: z.enum(['LHC', 'SIMRP', 'ESPA', 'PERSONAL']),
 })
 
 export async function POST(req: Request) {

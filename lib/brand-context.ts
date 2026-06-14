@@ -16,6 +16,7 @@ import { BrandType } from '@prisma/client'
 const BRAND_TYPE_MAP: Record<BrandId, BrandType> = {
   lhcapital: BrandType.LHC,
   simrp:     BrandType.SIMRP,
+  espa:      BrandType.ESPA,
   personal:  BrandType.PERSONAL,
 }
 

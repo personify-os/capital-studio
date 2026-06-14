@@ -11,7 +11,7 @@ import type { BrandId } from '@/lib/brands'
 const enhanceSchema = z.object({
   prompt:  z.string().min(1).max(1000),
   type:    z.enum(['video', 'image']),
-  brandId: z.enum(['lhcapital', 'simrp', 'personal']).optional(),
+  brandId: z.enum(['lhcapital', 'simrp', 'espa', 'personal']).optional(),
 })
 
 const TYPE_INSTRUCTIONS: Record<string, string> = {

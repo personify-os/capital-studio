@@ -9,7 +9,7 @@ import CaptionRow from '@/components/library/CaptionRow'
 import AudioRow from '@/components/library/AudioRow'
 
 type FilterValue = 'ALL' | 'IMAGE' | 'GRAPHIC' | 'VIDEO' | 'MOTION' | 'LIKENESS' | 'VOICEOVER' | 'CAPTION' | 'MUSIC'
-type BrandFilter = 'ALL' | 'lhcapital' | 'simrp' | 'personal'
+type BrandFilter = 'ALL' | 'lhcapital' | 'simrp' | 'espa' | 'personal'
 
 const TYPE_FILTERS: { value: FilterValue; label: string }[] = [
   { value: 'ALL',       label: 'All' },
@@ -27,6 +27,7 @@ const BRAND_FILTERS: { value: BrandFilter; label: string; dot: string }[] = [
   { value: 'ALL',       label: 'All brands', dot: '' },
   { value: 'lhcapital', label: 'LH Capital', dot: 'bg-brand-azure' },
   { value: 'simrp',     label: 'The SIMRP',  dot: 'bg-brand-light' },
+  { value: 'espa',      label: 'ESPA',       dot: 'bg-brand-emerald' },
   { value: 'personal',  label: 'Personal',   dot: 'bg-brand-green' },
 ]
 

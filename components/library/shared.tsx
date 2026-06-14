@@ -91,6 +91,7 @@ export function PostStatusList({ posts, className }: { posts?: ScheduledPostSumm
 export const BRAND_DOT: Record<string, string> = {
   lhcapital: 'bg-brand-azure',
   simrp:     'bg-brand-light',
+  espa:      'bg-brand-emerald',
   personal:  'bg-brand-green',
 }
 

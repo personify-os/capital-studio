@@ -172,6 +172,80 @@ export const TOPIC_TIERS: Tier1Category[] = [
   },
 
   {
+    id:    'espa-program',
+    label: 'ESPA / Preventive Access',
+    icon:  '🩺',
+    subtopics: [
+      {
+        id:                'how-espa-works',
+        label:             'How ESPA Works',
+        copyAngles:        [
+          'Explain ESPA as three things working together: a preventive health plan, a SIMRP, and a Section 125 cafeteria plan — employers save on FICA while employees gain real benefits',
+          'Lead with the dual win: the employer cuts payroll taxes AND the employee gets more care, with no reduction in take-home pay',
+          'Clarify that ESPA enhances (never replaces) the existing major medical plan — no disruption to current coverage',
+        ],
+        suggestedHashtags: ['#ESPA', '#BizPowerBenefits', '#EmployeeBenefits', '#PreventiveCare', '#Section125'],
+        bestPlatforms:     ['linkedin', 'facebook', 'instagram'],
+      },
+      {
+        id:                'espa-preventive-health',
+        label:             'Preventive Health & Telehealth',
+        copyAngles:        [
+          'Showcase the everyday value: 24/7 telehealth, mental health, $0 prescriptions, annual lab panels, vision, even virtual pet care — zero out-of-pocket',
+          'Frame preventive access as the benefit employees actually notice and use, for the whole family',
+          'Connect proactive care to fewer sick days, lower stress, and reduced major-medical claims over time',
+        ],
+        suggestedHashtags: ['#PreventiveHealth', '#Telehealth', '#ESPA', '#EmployeeWellness', '#MentalHealthSupport'],
+        bestPlatforms:     ['instagram', 'facebook', 'linkedin'],
+      },
+      {
+        id:                'espa-voluntary-benefits',
+        label:             'Voluntary Benefits ($150/mo)',
+        copyAngles:        [
+          'Explain the ~$150/month allotment employees can put toward Accident, Cancer, Critical Illness, Hospital Indemnity, Disability, and Life',
+          'Position voluntary benefits as family financial protection funded by tax savings — not out of the paycheck',
+          'Use a real example: turning the monthly allotment into a whole/term life policy at no change to take-home pay',
+        ],
+        suggestedHashtags: ['#VoluntaryBenefits', '#ESPA', '#LifeInsurance', '#FinancialProtection', '#EmployeeBenefits'],
+        bestPlatforms:     ['facebook', 'instagram', 'linkedin'],
+      },
+      {
+        id:                'espa-employer-savings',
+        label:             'Employer Savings ($505/yr)',
+        copyAngles:        [
+          'Lead with the number: an average of $505 per employee per year in NET FICA savings after admin fees — starting the very first payroll',
+          'Show the mechanism: ESPA reduces the taxable wage base, so the employer’s Social Security + Medicare match shrinks — no waiting until tax season',
+          'Frame it as no net cost: program fees and voluntary premiums are funded by the tax savings themselves',
+        ],
+        suggestedHashtags: ['#PayrollTaxSavings', '#ESPA', '#FICA', '#EmployerROI', '#BizPowerBenefits'],
+        bestPlatforms:     ['linkedin', 'facebook', 'x'],
+      },
+      {
+        id:                'espa-compliance',
+        label:             'Compliance & Structure',
+        copyAngles:        [
+          'Reassure decision-makers: ESPA is HIPAA, ERISA, ACA, and IRS compliant, built on Section 125 and IRS 213(d)',
+          'Explain the structure plainly — a SIMRP paired with a Section 125 cafeteria plan and a preventive health plan',
+          'Pre-empt the "too good to be true" objection with the compliance framework and decades-old tax codes',
+        ],
+        suggestedHashtags: ['#Compliance', '#Section125', '#IRS213d', '#ESPA', '#ERISA'],
+        bestPlatforms:     ['linkedin', 'facebook', 'youtube'],
+      },
+      {
+        id:                'espa-eligibility',
+        label:             'Who Qualifies',
+        copyAngles:        [
+          'Spell out eligibility: 10+ W-2 employees with access to health coverage — businesses, nonprofits, churches, schools, counties, and cities all qualify',
+          'Clarify exclusions simply: 1099 contractors, Medicare, and marketplace-subsidy employees are not eligible (a qualifying option can be added if needed)',
+          'Invite the next step: run a quick census to see exact per-employee savings and allotment',
+        ],
+        suggestedHashtags: ['#ESPA', '#SmallBusiness', '#Nonprofit', '#EmployeeBenefits', '#BizPowerBenefits'],
+        bestPlatforms:     ['linkedin', 'facebook', 'instagram'],
+      },
+    ],
+  },
+
+  {
     id:    'employer-roi',
     label: 'Employer ROI',
     icon:  '📈',
@@ -614,6 +688,29 @@ export const QUICK_STARTS: QuickStart[] = [
     tier2Id:   'payroll-tax-savings',
     purposeId: 'promotion',
     ctaId:     'book-a-call',
+  },
+  {
+    label:     'Explain ESPA',
+    icon:      '🩺',
+    tier1Id:   'espa-program',
+    tier2Id:   'how-espa-works',
+    purposeId: 'education',
+    ctaId:     'book-a-call',
+  },
+  {
+    label:     'ESPA employer savings',
+    icon:      '💵',
+    tier1Id:   'espa-program',
+    tier2Id:   'espa-employer-savings',
+    purposeId: 'promotion',
+    ctaId:     'book-a-call',
+  },
+  {
+    label:     'ESPA preventive health',
+    icon:      '❤️‍🩹',
+    tier1Id:   'espa-program',
+    tier2Id:   'espa-preventive-health',
+    purposeId: 'value-add',
   },
   {
     label:     'Bust a myth',

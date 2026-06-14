@@ -6,7 +6,9 @@ nixpacksVersion = "1"
 nodeVersion = "20"
 
 [deploy]
-startCommand = "next start -p ${PORT:-3004}"
+# Apply any pending Prisma migrations before the server starts, so schema
+# changes ship automatically on deploy (Railway does not run migrations otherwise).
+startCommand = "npx prisma migrate deploy && next start -p ${PORT:-3004}"
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"

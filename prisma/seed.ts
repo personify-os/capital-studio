@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { BRAND_CONFIGS } from '../lib/brands'
 
 const prisma = new PrismaClient()
 
@@ -50,6 +51,9 @@ async function main() {
     'Contact: BizPower Benefits — 629-275-3255 — BizPowerBenefits.com — Nashville, TN & Tuscumbia, AL.',
   ].join('\n\n')
 
+  // Populate the Brand Vault profile from the static ESPA config so colors,
+  // voice/audience, products, etc. all show (and are editable) in the UI.
+  const e = BRAND_CONFIGS.espa
   const espa = await prisma.brandProfile.upsert({
     where:  { id: 'brand-espa-default' },
     create: {
@@ -58,7 +62,17 @@ async function main() {
       type:      'ESPA',
       name:      'ESPA by BizPower',
       isDefault: true,
-      config:    { guidelines: espaGuidelines },
+      logoUrl:   e.logoUrl || null,
+      config:    {
+        tagline:     e.tagline,
+        tone:        e.tone,
+        audience:    e.audience,
+        products:    e.products,
+        keyMessages: e.keyMessages,
+        visualStyle: e.visualStyle,
+        colors:      { ...e.colors } as Record<string, string>,
+        guidelines:  espaGuidelines,
+      },
     },
     update: {}, // idempotent — don't clobber edits the team has made in Brand Vault
   })

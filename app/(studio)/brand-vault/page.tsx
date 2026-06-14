@@ -11,6 +11,7 @@ interface RawBrand {
   logoUrl: string | null
   config: unknown
   isDefault: boolean
+  sortOrder: number
 }
 
 export default async function BrandVaultPage() {
@@ -21,8 +22,8 @@ export default async function BrandVaultPage() {
   try {
     brands = (await prisma.brandProfile.findMany({
       where:   { tenantId: session.user.tenantId },
-      orderBy: { createdAt: 'asc' },
-      select:  { id: true, type: true, name: true, logoUrl: true, config: true, isDefault: true },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      select:  { id: true, type: true, name: true, logoUrl: true, config: true, isDefault: true, sortOrder: true },
     })) as RawBrand[]
   } catch (err) { console.error('[brand-vault/page]', err) }
 

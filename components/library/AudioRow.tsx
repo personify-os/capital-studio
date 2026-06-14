@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { Download, Copy, Check, Mic, Music, Calendar } from 'lucide-react'
 import { cn, formatRelativeTime } from '@/lib/utils'
-import { type Asset, BRAND_DOT, getAssetBrand } from './shared'
+import { type Asset, BRAND_DOT, getAssetBrand, PostStatusList } from './shared'
 
 interface Props {
   asset:  Asset
@@ -23,7 +23,7 @@ export default function AudioRow({ asset, copied, onCopy }: Props) {
 
   function sendToScheduler() {
     if (!asset.s3Url) return
-    localStorage.setItem('schedulerDraft', JSON.stringify({ caption: label }))
+    localStorage.setItem('schedulerDraft', JSON.stringify({ caption: label, assetId: asset.id }))
     router.push('/scheduler')
   }
 
@@ -74,6 +74,9 @@ export default function AudioRow({ asset, copied, onCopy }: Props) {
           )}
         </div>
       </div>
+      {asset.scheduledPosts && asset.scheduledPosts.length > 0 && (
+        <PostStatusList posts={asset.scheduledPosts} className="mb-2" />
+      )}
       {asset.s3Url
         ? <audio src={asset.s3Url} controls className="w-full" style={{ height: '32px' }} />
         : <p className="text-[10px] text-gray-400 italic">Audio unavailable</p>

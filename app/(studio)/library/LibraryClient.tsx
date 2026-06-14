@@ -37,14 +37,19 @@ const MEDIA_LABELS: Record<string, string> = {
 }
 
 interface Props {
-  assets:    Asset[]
-  total:     number
-  pageSize:  number
+  assets:        Asset[]
+  total:         number
+  pageSize:      number
+  initialFilter?: string
 }
 
-export default function LibraryClient({ assets: initialAssets, total, pageSize }: Props) {
+const FILTER_VALUES: FilterValue[] = ['ALL', 'IMAGE', 'GRAPHIC', 'VIDEO', 'MOTION', 'LIKENESS', 'VOICEOVER', 'CAPTION', 'MUSIC']
+
+export default function LibraryClient({ assets: initialAssets, total, pageSize, initialFilter }: Props) {
   const [allAssets,     setAllAssets]     = useState<Asset[]>(initialAssets)
-  const [filter,        setFilter]        = useState<FilterValue>('ALL')
+  const [filter,        setFilter]        = useState<FilterValue>(
+    (initialFilter && FILTER_VALUES.includes(initialFilter as FilterValue)) ? (initialFilter as FilterValue) : 'ALL',
+  )
   const [brandFilter,   setBrandFilter]   = useState<BrandFilter>('ALL')
   const [search,        setSearch]        = useState('')
   const [searchResults, setSearchResults] = useState<Asset[] | null>(null)

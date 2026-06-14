@@ -1,6 +1,7 @@
 'use client'
 
-import { Copy, Check, PenSquare } from 'lucide-react'
+import Link from 'next/link'
+import { Copy, Check, PenSquare, CheckCircle2, ArrowRight } from 'lucide-react'
 import CaptionCard from '@/components/writer/CaptionCard'
 import { type Platform, type CaptionResult, type PlatformResult, PLATFORM_LABEL } from '@/components/writer/types'
 
@@ -12,6 +13,8 @@ interface Props {
   onCopy:        (text: string, key: string | number) => void
   onRegen:       (platform: Platform, idx: number) => void
   onSchedule:    (text: string, platform: Platform) => void
+  onAddImage?:   (text: string) => void
+  onAddGraphic?: (text: string) => void
   onVoiceOver?:  (text: string) => void
   onLikeness?:   (text: string) => void
 }
@@ -20,7 +23,7 @@ function resultToFullText(r: CaptionResult): string {
   return r.hashtags.length > 0 ? `${r.body}\n\n${r.hashtags.join(' ')}` : r.body
 }
 
-export default function WriterResults({ loading, results, copied, regenerating, onCopy, onRegen, onSchedule, onVoiceOver, onLikeness }: Props) {
+export default function WriterResults({ loading, results, copied, regenerating, onCopy, onRegen, onSchedule, onAddImage, onAddGraphic, onVoiceOver, onLikeness }: Props) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -44,6 +47,16 @@ export default function WriterResults({ loading, results, copied, regenerating, 
 
   return (
     <div className="space-y-8 max-w-2xl">
+      {/* Captions are auto-saved as they're generated — surface that so users don't have to schedule to keep them */}
+      <div className="flex items-center justify-between gap-3 bg-green-50 border border-green-200 rounded-card px-3 py-2">
+        <p className="flex items-center gap-1.5 text-xs font-medium text-green-700">
+          <CheckCircle2 size={13} /> Saved to your Library — schedule it now or come back later.
+        </p>
+        <Link href="/library?type=CAPTION" className="flex items-center gap-1 text-xs font-semibold text-green-700 hover:underline whitespace-nowrap">
+          View Library <ArrowRight size={12} />
+        </Link>
+      </div>
+
       {results.map(({ platform, results: captionResults }) => {
         const isSeries = captionResults.length > 1
         return (
@@ -85,6 +98,8 @@ export default function WriterResults({ loading, results, copied, regenerating, 
                   onCopy={onCopy}
                   onRegen={() => onRegen(platform, i)}
                   onSchedule={() => onSchedule(resultToFullText(result), platform)}
+                  onAddImage={onAddImage ? () => onAddImage(resultToFullText(result)) : undefined}
+                  onAddGraphic={onAddGraphic ? () => onAddGraphic(resultToFullText(result)) : undefined}
                   onVoiceOver={onVoiceOver ? () => onVoiceOver(resultToFullText(result)) : undefined}
                   onLikeness={onLikeness ? () => onLikeness(resultToFullText(result)) : undefined}
                 />

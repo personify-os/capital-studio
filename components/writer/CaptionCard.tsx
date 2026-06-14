@@ -1,6 +1,6 @@
 'use client'
 
-import { Copy, Check, RefreshCw, Calendar, ImageIcon, Mic, User } from 'lucide-react'
+import { Copy, Check, RefreshCw, Calendar, ImageIcon, Mic, User, Layers } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { type Platform, type CaptionResult, PLATFORM_CHAR_LIMIT } from './types'
 
@@ -14,12 +14,14 @@ interface CaptionCardProps {
   onCopy:        (text: string, key: string) => void
   onRegen:       () => void
   onSchedule:    () => void
+  onAddImage?:   () => void
+  onAddGraphic?: () => void
   onVoiceOver?:  () => void
   onLikeness?:   () => void
 }
 
 export default function CaptionCard({
-  result, platform, captionIdx, isSeries, copied, isRegen, onCopy, onRegen, onSchedule, onVoiceOver, onLikeness,
+  result, platform, captionIdx, isSeries, copied, isRegen, onCopy, onRegen, onSchedule, onAddImage, onAddGraphic, onVoiceOver, onLikeness,
 }: CaptionCardProps) {
   const fullText  = result.hashtags.length > 0
     ? `${result.body}\n\n${result.hashtags.join(' ')}`
@@ -100,6 +102,26 @@ export default function CaptionCard({
         >
           <Calendar size={10} />Schedule
         </button>
+        {onAddImage && (
+          <button
+            type="button"
+            onClick={onAddImage}
+            className="flex items-center gap-1 text-[10px] font-medium text-brand-azure hover:text-brand-navy bg-brand-azure/5 border border-brand-azure/20 px-2 py-1 rounded transition-colors"
+            title="Create a paired image for this caption in Image Studio"
+          >
+            <ImageIcon size={10} />Add Image
+          </button>
+        )}
+        {onAddGraphic && (
+          <button
+            type="button"
+            onClick={onAddGraphic}
+            className="flex items-center gap-1 text-[10px] font-medium text-brand-navy hover:text-black bg-brand-navy/5 border border-brand-navy/20 px-2 py-1 rounded transition-colors"
+            title="Create a paired graphic for this caption in Graphics Studio"
+          >
+            <Layers size={10} />Add Graphic
+          </button>
+        )}
         {onVoiceOver && (
           <button
             type="button"

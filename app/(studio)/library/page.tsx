@@ -4,7 +4,8 @@ import { prisma } from '@/lib/db'
 import Topbar from '@/components/layout/Topbar'
 import LibraryClient from './LibraryClient'
 
-const SCHEDULED_POSTS_SELECT = {
+const scheduledPostsSelect = (tenantId: string) => ({
+  where:   { tenantId }, // defense-in-depth tenant scoping
   orderBy: { scheduledFor: 'desc' as const },
   select:  {
     status:        true,
@@ -12,7 +13,7 @@ const SCHEDULED_POSTS_SELECT = {
     publishedAt:   true,
     socialAccount: { select: { platform: true } },
   },
-}
+})
 
 export default async function LibraryPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const session = await getServerSession(authOptions)
@@ -31,7 +32,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
       take:    PAGE_SIZE,
       select:  {
         id: true, type: true, brandId: true, s3Url: true, htmlContent: true, metadata: true, createdAt: true,
-        scheduledPosts: SCHEDULED_POSTS_SELECT,
+        scheduledPosts: scheduledPostsSelect(tenantId),
       },
     })
   }

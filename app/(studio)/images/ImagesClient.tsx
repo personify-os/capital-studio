@@ -8,7 +8,7 @@ import ImagesControls, { type ModelId, type AspectRatio } from '@/components/ima
 import ImageCard from '@/components/images/ImageCard'
 import RecentCard from '@/components/images/RecentCard'
 import { TOPIC_TIERS, PURPOSES, CTA_OPTIONS, buildIntentString } from '@/lib/content-intent'
-import type { BrandId } from '@/lib/brands'
+import { BRAND_CONFIGS, type BrandId } from '@/lib/brands'
 
 interface GeneratedAsset { id: string; url: string }
 interface GenerateResponse { assets: GeneratedAsset[] }
@@ -38,7 +38,8 @@ export default function ImagesClient({ recentImages: initial }: { recentImages: 
       localStorage.removeItem('imagesDraft')
       const draft = JSON.parse(raw) as { prompt?: string; brandId?: string }
       if (draft.prompt)  setPrompt(draft.prompt)
-      if (draft.brandId) setBrandId(draft.brandId as BrandId)
+      // Validate brandId against known brands before trusting localStorage
+      if (draft.brandId && draft.brandId in BRAND_CONFIGS) setBrandId(draft.brandId as BrandId)
     } catch { /* ignore malformed draft */ }
   }, [])
 

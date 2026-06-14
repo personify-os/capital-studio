@@ -95,6 +95,7 @@ export async function GET(req: Request) {
         select:  {
           id: true, type: true, brandId: true, s3Url: true, htmlContent: true, metadata: true, createdAt: true,
           scheduledPosts: {
+            where:   { tenantId: session.user.tenantId }, // defense-in-depth tenant scoping
             orderBy: { scheduledFor: 'desc' },
             select:  {
               status:       true,

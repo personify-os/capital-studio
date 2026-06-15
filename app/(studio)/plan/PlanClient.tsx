@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Link from 'next/link'
-import { UploadCloud, Loader2, Sparkles, FileSpreadsheet, ArrowRight, AlertCircle, CheckCircle2, X } from 'lucide-react'
+import { UploadCloud, Loader2, Sparkles, FileSpreadsheet, ArrowRight, AlertCircle, CheckCircle2, X, CalendarPlus } from 'lucide-react'
 import BrandSelector from '@/components/shared/BrandSelector'
 import { useDefaultBrand } from '@/components/shared/DefaultBrandProvider'
 import type { BrandId } from '@/lib/brands'
@@ -20,7 +20,27 @@ export default function PlanClient() {
   const [results,    setResults]    = useState<PlanResult[] | null>(null)
   const [error,      setError]      = useState('')
   const [dragOver,   setDragOver]   = useState(false)
+  const [startDate,  setStartDate]  = useState(() => new Date().toISOString().slice(0, 10))
+  const [scheduling, setScheduling] = useState(false)
+  const [scheduleMsg, setScheduleMsg] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  async function scheduleDrafts() {
+    if (!results) return
+    const items = results.filter((r) => r.ok && r.body).map((r) => ({ assetId: r.assetId ?? undefined, day: r.day ?? undefined, platform: r.platform, body: r.body! }))
+    if (!items.length) return
+    setScheduling(true); setScheduleMsg(null)
+    try {
+      const res  = await fetch('/api/v1/plan/schedule', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startDate, items }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) { setScheduleMsg(json.message ?? 'Failed to schedule drafts.'); return }
+      const miss = json.missingPlatforms?.length ? ` (skipped ${json.skipped} — no connected account for ${json.missingPlatforms.join(', ')})` : ''
+      setScheduleMsg(`Created ${json.created} draft post${json.created === 1 ? '' : 's'}${miss}.`)
+    } catch { setScheduleMsg('Failed to schedule drafts.') } finally { setScheduling(false) }
+  }
 
   async function handleFile(file: File) {
     setError(''); setResults(null); setRows(null); setParsing(true); setFileName(file.name)
@@ -123,6 +143,26 @@ export default function PlanClient() {
               <Link href="/library?type=CAPTION" className="flex items-center gap-1 text-xs font-semibold text-green-700 hover:underline whitespace-nowrap">View Library <ArrowRight size={12} /></Link>
             </div>
           </div>
+
+          {/* Schedule as drafts */}
+          <div className="flex flex-wrap items-center gap-3 bg-white rounded-card shadow-card px-3 py-2.5">
+            <CalendarPlus size={15} className="text-brand-azure flex-shrink-0" />
+            <span className="text-xs text-gray-600">Schedule these as drafts starting</span>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+              className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-azure/30" />
+            <button type="button" onClick={scheduleDrafts} disabled={scheduling}
+              className="flex items-center gap-1.5 text-xs font-semibold text-white bg-brand-azure hover:bg-brand-navy px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60">
+              {scheduling ? <><Loader2 size={12} className="animate-spin" />Scheduling…</> : 'Schedule drafts'}
+            </button>
+            {scheduleMsg && (
+              <span className="flex items-center gap-2 text-xs text-gray-600">
+                {scheduleMsg}
+                <Link href="/scheduler" className="font-semibold text-brand-azure hover:underline whitespace-nowrap">Open Scheduler <ArrowRight size={11} className="inline" /></Link>
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] text-gray-400 -mt-1">Drafts are dated by each row’s Day number and won’t publish until you review and schedule them.</p>
+
           {results.map((r) => <PlanResultCard key={r.idx} result={r} brandId={brandId} />)}
         </div>
       )}

@@ -2,11 +2,11 @@
 
 import { useState, useRef } from 'react'
 import Link from 'next/link'
-import { UploadCloud, Loader2, Sparkles, FileSpreadsheet, ArrowRight, AlertCircle, CheckCircle2, X, CalendarPlus } from 'lucide-react'
+import { UploadCloud, Loader2, Sparkles, FileSpreadsheet, ArrowRight, AlertCircle, CheckCircle2, X, CalendarPlus, ImageIcon } from 'lucide-react'
 import BrandSelector from '@/components/shared/BrandSelector'
 import { useDefaultBrand } from '@/components/shared/DefaultBrandProvider'
 import type { BrandId } from '@/lib/brands'
-import PlanResultCard, { type PlanResult } from './PlanResultCard'
+import PlanResultCard, { type PlanResult, type ImageState } from './PlanResultCard'
 import type { PlanRow } from '@/lib/plan-parse'
 
 const ACCEPT = '.xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv'
@@ -23,7 +23,36 @@ export default function PlanClient() {
   const [startDate,  setStartDate]  = useState(() => new Date().toISOString().slice(0, 10))
   const [scheduling, setScheduling] = useState(false)
   const [scheduleMsg, setScheduleMsg] = useState<string | null>(null)
+  const [images,     setImages]     = useState<Record<number, ImageState>>({})
+  const [batchImg,   setBatchImg]   = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  async function genImage(result: PlanResult) {
+    if (!result.ok) return
+    setImages((p) => ({ ...p, [result.idx]: { state: 'loading' } }))
+    const prompt = [result.theme, result.body].filter(Boolean).join(' — ').slice(0, 500)
+    try {
+      const res  = await fetch('/api/v1/generate/image', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, model: 'flux-pro', aspectRatio: '1:1', variations: 1, brandId }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok || !json.assets?.[0]?.url) { setImages((p) => ({ ...p, [result.idx]: { state: 'error' } })); return }
+      setImages((p) => ({ ...p, [result.idx]: { state: 'idle', url: json.assets[0].url as string } }))
+    } catch { setImages((p) => ({ ...p, [result.idx]: { state: 'error' } })) }
+  }
+
+  // Generate images for every post that doesn't have one yet. Concurrency 2 keeps
+  // us comfortably under the per-user generate rate limit (10/min).
+  async function genAllImages() {
+    if (!results) return
+    setBatchImg(true)
+    const pending = results.filter((r) => r.ok && !images[r.idx]?.url)
+    let cursor = 0
+    const worker = async () => { while (cursor < pending.length) await genImage(pending[cursor++]) }
+    await Promise.all(Array.from({ length: Math.min(2, pending.length) }, worker))
+    setBatchImg(false)
+  }
 
   async function scheduleDrafts() {
     if (!results) return
@@ -67,7 +96,7 @@ export default function PlanClient() {
     } catch { setError('Generation failed.') } finally { setGenerating(false) }
   }
 
-  function reset() { setRows(null); setResults(null); setFileName(''); setError('') }
+  function reset() { setRows(null); setResults(null); setFileName(''); setError(''); setImages({}); setScheduleMsg(null) }
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -139,6 +168,10 @@ export default function PlanClient() {
               <CheckCircle2 size={13} /> Generated {results.filter((r) => r.ok).length} of {results.length} — all saved to your Library.
             </p>
             <div className="flex items-center gap-3">
+              <button type="button" onClick={genAllImages} disabled={batchImg}
+                className="flex items-center gap-1 text-xs font-semibold text-brand-azure hover:underline disabled:opacity-60 whitespace-nowrap">
+                {batchImg ? <><Loader2 size={11} className="animate-spin" />Generating images…</> : <><ImageIcon size={11} />Generate all images</>}
+              </button>
               <button type="button" onClick={reset} className="text-xs font-semibold text-gray-500 hover:text-gray-700">New plan</button>
               <Link href="/library?type=CAPTION" className="flex items-center gap-1 text-xs font-semibold text-green-700 hover:underline whitespace-nowrap">View Library <ArrowRight size={12} /></Link>
             </div>
@@ -163,7 +196,7 @@ export default function PlanClient() {
           </div>
           <p className="text-[11px] text-gray-400 -mt-1">Drafts are dated by each row’s Day number and won’t publish until you review and schedule them.</p>
 
-          {results.map((r) => <PlanResultCard key={r.idx} result={r} brandId={brandId} />)}
+          {results.map((r) => <PlanResultCard key={r.idx} result={r} image={images[r.idx]} onGenerateImage={() => genImage(r)} />)}
         </div>
       )}
     </div>

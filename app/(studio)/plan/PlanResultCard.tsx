@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { ImageIcon, Loader2, Copy, Check, AlertCircle } from 'lucide-react'
-import type { BrandId } from '@/lib/brands'
 
 export interface PlanResult {
   ok:        boolean
@@ -17,30 +16,23 @@ export interface PlanResult {
   error?:    string
 }
 
-export default function PlanResultCard({ result, brandId }: { result: PlanResult; brandId: BrandId }) {
-  const [imgUrl,   setImgUrl]   = useState<string | null>(null)
-  const [imgState, setImgState] = useState<'idle' | 'loading' | 'error'>('idle')
-  const [copied,   setCopied]   = useState(false)
+export type ImageState = { url?: string; state: 'idle' | 'loading' | 'error' }
+
+interface Props {
+  result:          PlanResult
+  image?:          ImageState
+  onGenerateImage: () => void
+}
+
+export default function PlanResultCard({ result, image, onGenerateImage }: Props) {
+  const [copied, setCopied] = useState(false)
+  const imgUrl   = image?.url ?? null
+  const imgState = image?.state ?? 'idle'
 
   const fullText = result.hashtags?.length ? `${result.body}\n\n${result.hashtags.join(' ')}` : (result.body ?? '')
 
   function copy() {
     navigator.clipboard.writeText(fullText).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
-  }
-
-  async function generateImage() {
-    setImgState('loading')
-    const prompt = [result.theme, result.body].filter(Boolean).join(' — ').slice(0, 500)
-    try {
-      const res = await fetch('/api/v1/generate/image', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, model: 'flux-pro', aspectRatio: '1:1', variations: 1, brandId }),
-      })
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok || !json.assets?.[0]?.url) { setImgState('error'); return }
-      setImgUrl(json.assets[0].url as string)
-      setImgState('idle')
-    } catch { setImgState('error') }
   }
 
   if (!result.ok) {
@@ -76,7 +68,7 @@ export default function PlanResultCard({ result, brandId }: { result: PlanResult
           // eslint-disable-next-line @next/next/no-img-element
           <img src={imgUrl} alt="" className="w-32 h-32 object-cover rounded-lg border border-gray-200" />
         ) : (
-          <button type="button" onClick={generateImage} disabled={imgState === 'loading'}
+          <button type="button" onClick={onGenerateImage} disabled={imgState === 'loading'}
             className="flex items-center gap-1.5 text-[10px] font-medium text-brand-azure hover:text-brand-navy bg-brand-azure/5 border border-brand-azure/20 px-2.5 py-1.5 rounded transition-colors disabled:opacity-60">
             {imgState === 'loading' ? <><Loader2 size={11} className="animate-spin" />Generating image…</> : <><ImageIcon size={11} />Generate image</>}
           </button>

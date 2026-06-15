@@ -41,7 +41,7 @@
     "prisma": "^7.8.0",
     "react": "^18",
     "react-dom": "^18",
-    "tailwind-merge": "^3.3.0",
+    "tailwind-merge": "^3.6.0",
     "ws": "^8.20.0",
     "zod": "^4.4.3"
   },

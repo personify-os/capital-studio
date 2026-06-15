@@ -1,20 +1,11 @@
-import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { prisma } from '../lib/db' // shared client (configured with the Neon adapter for Prisma 7)
 import { BRAND_CONFIGS } from '../lib/brands'
-
-const prisma = new PrismaClient()
 
 async function main() {
   const email    = 'info@lhccapital.org'
   const password = process.env.SEED_PASSWORD ?? '$imrp2LHC'
   const name     = 'LH Capital'
-
-  // Ensure tenant exists
-  const tenant = await prisma.tenant.upsert({
-    where:  { id: 'lhcapital' },
-    create: { id: 'lhcapital', name: 'LH Capital', slug: 'lhcapital' },
-    update: {},
-  })
 
   const hashed = await bcrypt.hash(password, 12)
 
@@ -23,22 +14,27 @@ async function main() {
   // The password is only set when the user is first created. To rotate it, set
   // SEED_PASSWORD and pass ROTATE_PASSWORD=1.
   const rotate = process.env.ROTATE_PASSWORD === '1'
-  const user = await prisma.user.upsert({
-    where:  { email },
-    create: {
-      email,
-      name,
-      password: hashed,
-      tenantId: tenant.id,
-      role:     'ADMIN',
-    },
-    update: {
-      name,
-      ...(rotate ? { password: hashed } : {}),
-    },
-  })
 
-  console.log(`✓ User ready: ${user.email} (tenant: ${tenant.id})`)
+  // CRITICAL: if the admin user already exists, reuse THEIR tenant. Hardcoding a
+  // tenant id here once created a second, stray tenant on an existing DB and
+  // orphaned the seeded brand (it didn't show for the real user). Only create
+  // the default tenant on a truly fresh database.
+  const existingUser = await prisma.user.findUnique({ where: { email }, select: { tenantId: true } })
+  let tenantId: string
+  if (existingUser) {
+    tenantId = existingUser.tenantId
+    await prisma.user.update({ where: { email }, data: { name, ...(rotate ? { password: hashed } : {}) } })
+  } else {
+    const tenant = await prisma.tenant.upsert({
+      where:  { id: 'lhcapital' },
+      create: { id: 'lhcapital', name: 'LH Capital', slug: 'lhcapital' },
+      update: {},
+    })
+    tenantId = tenant.id
+    await prisma.user.create({ data: { email, name, password: hashed, tenantId, role: 'ADMIN' } })
+  }
+
+  console.log(`✓ User ready: ${email} (tenant: ${tenantId})`)
 
   // Default ESPA (BizPower Benefits) brand profile so it appears, populated,
   // in the Brand Vault. The rich brand voice lives in lib/brands.ts; this seeds
@@ -63,7 +59,7 @@ async function main() {
     where:  { id: 'brand-espa-default' },
     create: {
       id:        'brand-espa-default',
-      tenantId:  tenant.id,
+      tenantId,
       type:      'ESPA',
       name:      'ESPA by BizPower',
       isDefault: true,

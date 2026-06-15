@@ -401,6 +401,12 @@ export function buildPlatformSystemPrompt(
     `BRAND CONTEXT`,
     `═══════════════════════════════`,
     brandCtx,
+    ``,
+    `IMPORTANT: Write for the brand/program in the BRAND CONTEXT above. Use ITS`,
+    `program name, products, terminology, and hashtags. The platform examples`,
+    `below are style/format illustrations only — if they reference a different`,
+    `program (e.g. "SIMRP") or its hashtags, treat that as format guidance, not`,
+    `content to copy; substitute the active brand's own program and tags.`,
   ]
 
   if (ctx) {

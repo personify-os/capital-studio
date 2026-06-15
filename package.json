@@ -10,6 +10,7 @@
     "build": "prisma generate && next build",
     "start": "next start -p 3004",
     "lint": "eslint .",
+    "test": "vitest run",
     "db:generate": "dotenv -e .env.local -- prisma generate",
     "db:migrate": "dotenv -e .env.local -- prisma migrate dev",
     "db:push": "dotenv -e .env.local -- prisma db push",
@@ -64,6 +65,7 @@
     "sharp": "^0.34.5",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.22.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.8"
   }
 }

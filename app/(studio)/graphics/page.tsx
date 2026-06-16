@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import Topbar from '@/components/layout/Topbar'
 import GraphicsClient from './GraphicsClient'
 
@@ -17,12 +17,12 @@ export default async function GraphicsPage() {
 
   let recent: RawGraphic[] = []
   try {
-    recent = (await prisma.asset.findMany({
+    recent = (await withTenant(session.user.tenantId, (tx) => tx.asset.findMany({
       where:   { tenantId: session.user.tenantId, type: 'GRAPHIC', status: 'READY' },
       orderBy: { createdAt: 'desc' },
       take:    12,
       select:  { id: true, htmlContent: true, metadata: true, createdAt: true },
-    })) as RawGraphic[]
+    }))) as RawGraphic[]
   } catch (err) { console.error('[graphics/page]', err) }
 
   return (

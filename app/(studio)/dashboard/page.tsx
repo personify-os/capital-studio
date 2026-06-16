@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import Topbar from '@/components/layout/Topbar'
 import DashboardClient from './DashboardClient'
 
@@ -21,19 +21,19 @@ export default async function DashboardPage() {
   let assetCounts:  { type: string; _count: { _all: number } }[] = []
 
   try {
-    const [rawResult, groupResult] = await Promise.all([
-      prisma.asset.findMany({
+    const [rawResult, groupResult] = await withTenant(session.user.tenantId, (tx) => Promise.all([
+      tx.asset.findMany({
         where:   { tenantId: session.user.tenantId, status: 'READY' },
         orderBy: { createdAt: 'desc' },
         take:    8,
         select:  { id: true, type: true, s3Url: true, htmlContent: true, metadata: true, createdAt: true },
       }),
-      prisma.asset.groupBy({
+      tx.asset.groupBy({
         by:    ['type'],
         where: { tenantId: session.user.tenantId, status: 'READY' },
         _count: { _all: true },
       }),
-    ])
+    ]))
     recentRaw    = rawResult   as RawAsset[]
     assetCounts  = groupResult as { type: string; _count: { _all: number } }[]
   } catch (err) { console.error('[dashboard/page]', err) }

@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { Prisma } from '@prisma/client'
+import { withTenant } from '@/lib/db'
 import Topbar from '@/components/layout/Topbar'
 import LibraryClient from './LibraryClient'
 
@@ -25,8 +26,8 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
   let total = 0
   const PAGE_SIZE = 48
 
-  async function fetchAssets(tenantId: string) {
-    return prisma.asset.findMany({
+  function fetchAssets(tx: Prisma.TransactionClient, tenantId: string) {
+    return tx.asset.findMany({
       where:   { tenantId, status: 'READY' },
       orderBy: { createdAt: 'desc' },
       take:    PAGE_SIZE,
@@ -38,10 +39,10 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
   }
 
   try {
-    ;[assets, total] = await Promise.all([
-      fetchAssets(session.user.tenantId),
-      prisma.asset.count({ where: { tenantId: session.user.tenantId, status: 'READY' } }),
-    ])
+    ;[assets, total] = await withTenant(session.user.tenantId, (tx) => Promise.all([
+      fetchAssets(tx, session.user.tenantId),
+      tx.asset.count({ where: { tenantId: session.user.tenantId, status: 'READY' } }),
+    ]))
   } catch (err) { console.error('[library/page]', err) }
 
   return (

@@ -14,9 +14,10 @@ healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 
-# Every 15 minutes (was every minute). The per-minute cron queried the DB 1,440×/day,
-# which — with Neon autosuspend — kept the compute awake 24/7. Scheduled posts now
-# publish within ~15 min of their time, letting the DB idle and suspend between runs.
+# Every 30 minutes (was every minute). The per-minute cron queried the DB 1,440×/day,
+# which kept the Neon compute awake 24/7. With a 30-min gap the DB scales to zero
+# (5-min idle threshold) between runs, minimizing compute. Scheduled posts publish
+# within ~30 min of their time.
 [cron.publish]
-schedule = "*/15 * * * *"
+schedule = "*/30 * * * *"
 command = "curl -s -X POST https://studio.lhccapital.org/api/v1/cron/publish -H \"Authorization: Bearer $CRON_SECRET\""

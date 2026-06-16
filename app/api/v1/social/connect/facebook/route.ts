@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import { getFacebookPages, exchangeForLongLivedToken } from '@/services/social'
 import { encryptToken } from '@/lib/crypto'
 import { z } from 'zod'
@@ -39,21 +39,21 @@ export async function POST(req: Request) {
     // Upsert Facebook Page account
     const encryptedPageToken = encryptToken(page.access_token)
     const tokenExpiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) // 60 days
-    await prisma.socialAccount.upsert({
+    await withTenant(session.user.tenantId, (tx) => tx.socialAccount.upsert({
       where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'FACEBOOK', accountId: page.id } },
       create: { tenantId: session.user.tenantId, platform: 'FACEBOOK', accountName: page.name, accountId: page.id, accessToken: encryptedPageToken, expiresAt: tokenExpiresAt },
       update: { accountName: page.name, accessToken: encryptedPageToken, expiresAt: tokenExpiresAt },
-    })
+    }))
     created.push(`Facebook: ${page.name}`)
 
     // Upsert Instagram Business Account if linked
     if (page.instagram_business_account?.id) {
       const igId = page.instagram_business_account.id
-      await prisma.socialAccount.upsert({
+      await withTenant(session.user.tenantId, (tx) => tx.socialAccount.upsert({
         where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'INSTAGRAM', accountId: igId } },
         create: { tenantId: session.user.tenantId, platform: 'INSTAGRAM', accountName: `${page.name} (Instagram)`, accountId: igId, accessToken: encryptedPageToken, expiresAt: tokenExpiresAt },
         update: { accountName: `${page.name} (Instagram)`, accessToken: encryptedPageToken, expiresAt: tokenExpiresAt },
-      })
+      }))
       created.push(`Instagram: ${page.name}`)
     }
   }

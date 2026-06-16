@@ -1,7 +1,7 @@
 import { NextResponse }    from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions }      from '@/lib/auth'
-import { prisma }           from '@/lib/db'
+import { withTenant }           from '@/lib/db'
 import { encryptToken }     from '@/lib/crypto'
 
 const THREADS_GRAPH = 'https://graph.threads.net'
@@ -58,11 +58,11 @@ export async function GET(req: Request) {
   const encryptedToken = encryptToken(longToken)
   const tokenExpiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) // long-lived token: 60 days
   try {
-    await prisma.socialAccount.upsert({
+    await withTenant(session.user.tenantId, (tx) => tx.socialAccount.upsert({
       where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'THREADS', accountId: userId } },
       create: { tenantId: session.user.tenantId, platform: 'THREADS', accountName: username, accountId: userId, accessToken: encryptedToken, expiresAt: tokenExpiresAt },
       update: { accountName: username, accessToken: encryptedToken, expiresAt: tokenExpiresAt },
-    })
+    }))
   } catch (err) {
     console.error('[social/connect/threads/callback]', err)
     return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/scheduler?error=threads_save`)

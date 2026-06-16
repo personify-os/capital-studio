@@ -1,7 +1,7 @@
 import { NextResponse }     from 'next/server'
 import { getServerSession }  from 'next-auth'
 import { authOptions }       from '@/lib/auth'
-import { prisma }            from '@/lib/db'
+import { withTenant }            from '@/lib/db'
 import { getBlueskyProfile } from '@/services/social'
 import { encryptToken }      from '@/lib/crypto'
 import { z }                 from 'zod'
@@ -28,11 +28,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: err.message ?? 'Invalid credentials' }, { status: 400 })
   }
 
-  await prisma.socialAccount.upsert({
+  await withTenant(session.user.tenantId, (tx) => tx.socialAccount.upsert({
     where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'BLUESKY', accountId: profile.id } },
     create: { tenantId: session.user.tenantId, platform: 'BLUESKY', accountName: profile.name, accountId: profile.id, accessToken: encryptToken(appPassword) },
     update: { accountName: profile.name, accessToken: encryptToken(appPassword) },
-  })
+  }))
 
   return NextResponse.json({ connected: profile.name })
 }

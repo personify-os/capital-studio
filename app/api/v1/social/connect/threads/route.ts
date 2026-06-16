@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import { encryptToken } from '@/lib/crypto'
 import { threadsConnectSchema } from '@/lib/schemas/social'
 
@@ -26,11 +26,11 @@ export async function POST(req: Request) {
   const username = me.username ? `@${me.username}` : `Threads (${userId})`
 
   const tokenExpiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) // 60 days
-  await prisma.socialAccount.upsert({
+  await withTenant(session.user.tenantId, (tx) => tx.socialAccount.upsert({
     where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'THREADS', accountId: userId } },
     create: { tenantId: session.user.tenantId, platform: 'THREADS', accountName: username, accountId: userId, accessToken: encryptToken(token.trim()), expiresAt: tokenExpiresAt },
     update: { accountName: username, accessToken: encryptToken(token.trim()), expiresAt: tokenExpiresAt },
-  })
+  }))
 
   return NextResponse.json({ connected: username })
 }

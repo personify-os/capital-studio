@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { prisma, withTenant } from '@/lib/db'
 import { z } from 'zod'
 
 const createSchema = z.object({
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
   let brand: Awaited<ReturnType<typeof prisma.brandProfile.create>>
   try {
-    brand = await prisma.brandProfile.create({
+    brand = await withTenant(session.user.tenantId, (tx) => tx.brandProfile.create({
       data: {
         tenantId:  session.user.tenantId,
         type:      parsed.data.type,
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
         isDefault: false,
         config:    {},
       },
-    })
+    }))
   } catch (err) {
     console.error('[brands/POST]', err)
     return NextResponse.json({ message: 'Failed to create brand.' }, { status: 500 })

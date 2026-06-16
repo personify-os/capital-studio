@@ -1,7 +1,7 @@
 import { NextResponse }     from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions }      from '@/lib/auth'
-import { prisma }           from '@/lib/db'
+import { withTenant }           from '@/lib/db'
 import { encryptToken }     from '@/lib/crypto'
 import { getYouTubeChannel } from '@/services/social'
 
@@ -46,11 +46,11 @@ export async function GET(req: Request) {
 
   const combined = `${tokens.access_token}|||${tokens.refresh_token}`
 
-  await prisma.socialAccount.upsert({
+  await withTenant(session.user.tenantId, (tx) => tx.socialAccount.upsert({
     where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'YOUTUBE', accountId: channel.id } },
     create: { tenantId: session.user.tenantId, platform: 'YOUTUBE', accountName: channel.name, accountId: channel.id, accessToken: encryptToken(combined) },
     update: { accountName: channel.name, accessToken: encryptToken(combined) },
-  })
+  }))
 
   return NextResponse.redirect(new URL('/scheduler?connected=youtube', process.env.NEXTAUTH_URL!))
 }

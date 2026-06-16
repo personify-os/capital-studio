@@ -1,7 +1,7 @@
 import { NextResponse }      from 'next/server'
 import { getServerSession }   from 'next-auth'
 import { authOptions }        from '@/lib/auth'
-import { prisma }             from '@/lib/db'
+import { withTenant }             from '@/lib/db'
 import { getSubstackProfile } from '@/services/social'
 import { encryptToken }       from '@/lib/crypto'
 import { substackConnectSchema } from '@/lib/schemas/social'
@@ -28,11 +28,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: err.message ?? 'Invalid session' }, { status: 400 })
   }
 
-  await prisma.socialAccount.upsert({
+  await withTenant(session.user.tenantId, (tx) => tx.socialAccount.upsert({
     where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'SUBSTACK', accountId: slug } },
     create: { tenantId: session.user.tenantId, platform: 'SUBSTACK', accountName: profile.name, accountId: slug, accessToken: encryptToken(cookie.trim()) },
     update: { accountName: profile.name, accessToken: encryptToken(cookie.trim()) },
-  })
+  }))
 
   return NextResponse.json({ connected: profile.name })
 }

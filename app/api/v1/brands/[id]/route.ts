@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { prisma, withTenant } from '@/lib/db'
 import { z } from 'zod'
 
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{3,8}$/)
@@ -46,9 +46,9 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
   // Verify ownership
   let existing: { config: unknown } | null
   try {
-    existing = await prisma.brandProfile.findFirst({
+    existing = await withTenant(session.user.tenantId, (tx) => tx.brandProfile.findFirst({
       where: { id: params.id, tenantId: session.user.tenantId },
-    })
+    }))
   } catch (err) {
     console.error('[brands/PATCH] findFirst error:', err)
     return NextResponse.json({ message: 'Database error.' }, { status: 500 })
@@ -74,22 +74,21 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
   try {
     if (isDefault === true) {
       // One default per tenant: clear the others, set this one — atomically.
-      const [, updated] = await prisma.$transaction([
-        prisma.brandProfile.updateMany({
+      brand = await withTenant(session.user.tenantId, async (tx) => {
+        await tx.brandProfile.updateMany({
           where: { tenantId: session.user.tenantId, id: { not: params.id } },
           data:  { isDefault: false },
-        }),
-        prisma.brandProfile.update({
+        })
+        return tx.brandProfile.update({
           where: { id: params.id, tenantId: session.user.tenantId },
           data:  updates,
-        }),
-      ])
-      brand = updated
+        })
+      })
     } else {
-      brand = await prisma.brandProfile.update({
+      brand = await withTenant(session.user.tenantId, (tx) => tx.brandProfile.update({
         where: { id: params.id, tenantId: session.user.tenantId },
         data:  updates,
-      })
+      }))
     }
   } catch (err) {
     console.error('[brands/PATCH] update error:', err)

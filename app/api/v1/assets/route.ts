@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 
@@ -29,7 +29,7 @@ type PostSummary = {
 // Used to attach posting status to each library asset.
 async function postsByAssetId(tenantId: string, assetIds: string[]): Promise<Record<string, PostSummary[]>> {
   if (assetIds.length === 0) return {}
-  const posts = await prisma.scheduledPost.findMany({
+  const posts = await withTenant(tenantId, (tx) => tx.scheduledPost.findMany({
     where:   { tenantId, assetId: { in: assetIds } },
     orderBy: { scheduledFor: 'desc' },
     select:  {
@@ -39,7 +39,7 @@ async function postsByAssetId(tenantId: string, assetIds: string[]): Promise<Rec
       publishedAt:  true,
       socialAccount: { select: { platform: true } },
     },
-  })
+  }))
   const grouped: Record<string, PostSummary[]> = {}
   for (const p of posts) {
     if (!p.assetId) continue
@@ -69,7 +69,7 @@ export async function GET(req: Request) {
     if (search && search.trim()) {
       const q     = `%${search.trim()}%`
       const typeFilter = type ? Prisma.sql`AND type = ${type}::"AssetType"` : Prisma.sql``
-      const rows: AssetRow[] = await prisma.$queryRaw(Prisma.sql`
+      const rows = await withTenant(session.user.tenantId, (tx) => tx.$queryRaw<AssetRow[]>(Prisma.sql`
         SELECT id, type, "brandId", "s3Url", "htmlContent", metadata, "createdAt"::text AS "createdAt"
         FROM "Asset"
         WHERE "tenantId" = ${session.user.tenantId}
@@ -78,7 +78,7 @@ export async function GET(req: Request) {
           AND CAST(metadata AS TEXT) ILIKE ${q}
         ORDER BY "createdAt" DESC
         LIMIT 100
-      `)
+      `))
       const grouped = await postsByAssetId(session.user.tenantId, rows.map((r) => r.id))
       const assets  = rows.map((r) => ({ ...r, scheduledPosts: grouped[r.id] ?? [] }))
       return NextResponse.json({ assets, pagination: { total: rows.length, page: 1, limit: 100, pages: 1 } })
@@ -86,8 +86,8 @@ export async function GET(req: Request) {
 
     // Normal paginated fetch
     const where = { tenantId: session.user.tenantId, status: 'READY' as const, ...(type ? { type } : {}) }
-    const [assets, total] = await Promise.all([
-      prisma.asset.findMany({
+    const [assets, total] = await withTenant(session.user.tenantId, (tx) => Promise.all([
+      tx.asset.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip,
@@ -106,8 +106,8 @@ export async function GET(req: Request) {
           },
         },
       }),
-      prisma.asset.count({ where }),
-    ])
+      tx.asset.count({ where }),
+    ]))
 
     return NextResponse.json({
       assets: assets.map((a) => ({

@@ -1,7 +1,7 @@
 import { NextResponse }     from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions }      from '@/lib/auth'
-import { prisma }           from '@/lib/db'
+import { withTenant }           from '@/lib/db'
 import { encryptToken }     from '@/lib/crypto'
 import { getTikTokProfile } from '@/services/social'
 
@@ -48,11 +48,11 @@ export async function GET(req: Request) {
   // Track refresh token expiry (365 days); access token auto-refreshed on each publish
   const tokenExpiresAt = new Date(Date.now() + (tokens.refresh_expires_in ?? 365 * 24 * 60 * 60) * 1000)
 
-  await prisma.socialAccount.upsert({
+  await withTenant(session.user.tenantId, (tx) => tx.socialAccount.upsert({
     where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'TIKTOK', accountId: profile.id } },
     create: { tenantId: session.user.tenantId, platform: 'TIKTOK', accountName: profile.name, accountId: profile.id, accessToken: encryptToken(combined), expiresAt: tokenExpiresAt },
     update: { accountName: profile.name, accessToken: encryptToken(combined), expiresAt: tokenExpiresAt },
-  })
+  }))
 
   return NextResponse.redirect(new URL('/scheduler?connected=tiktok', process.env.NEXTAUTH_URL!))
 }

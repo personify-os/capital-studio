@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import { musicGenerateSchema } from '@/lib/schemas/generate'
 import { generateMusic } from '@/services/music'
 import { uploadFromUrl, makeAssetKey } from '@/lib/storage'
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
   let asset: { id: string; s3Url: string | null }
   try {
     permanentUrl = await uploadFromUrl(track.url, key, 'audio/mpeg')
-    asset        = await prisma.asset.create({
+    asset        = await withTenant(session.user.tenantId, (tx) => tx.asset.create({
       data: {
         tenantId,
         userId:   session.user.id,
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
         },
       },
       select: { id: true, s3Url: true },
-    })
+    }))
   } catch (err) {
     console.error('[generate/music] post-generation error:', err)
     return NextResponse.json({ message: 'Failed to save music track.' }, { status: 500 })

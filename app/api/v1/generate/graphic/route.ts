@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import { graphicGenerateSchema } from '@/lib/schemas/generate'
 import { generateGraphicHtml } from '@/services/graphics'
 import { resolveBrandConfig } from '@/lib/brand-context'
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   }
 
   const brandId = (parsed.data.brandId ?? 'lhcapital') as BrandId
-  const resolvedBrand = await resolveBrandConfig(brandId, session.user.tenantId)
+  const resolvedBrand = await withTenant(session.user.tenantId, (tx) => resolveBrandConfig(tx, brandId, session.user.tenantId))
   const brand = typeof parsed.data.includeLogo === 'boolean'
     ? { ...resolvedBrand, includeLogo: parsed.data.includeLogo }
     : resolvedBrand
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
 
   let asset: { id: string; htmlContent: string | null }
   try {
-    asset = await prisma.asset.create({
+    asset = await withTenant(session.user.tenantId, (tx) => tx.asset.create({
       data: {
         tenantId:    session.user.tenantId,
         userId:      session.user.id,
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
         },
       },
       select: { id: true, htmlContent: true },
-    })
+    }))
   } catch (err) {
     console.error('[generate/graphic] DB save error:', err)
     return NextResponse.json({ message: 'Failed to save graphic.' }, { status: 500 })

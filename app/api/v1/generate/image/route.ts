@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import { imageGenerateSchema } from '@/lib/schemas/generate'
 import { generateImages, enhanceImagePrompt } from '@/services/image'
 import { resolveBrandConfig } from '@/lib/brand-context'
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
   const input = parsed.data
   const brandId = (input.brandId ?? 'lhcapital') as BrandId
-  const resolvedBrand = await resolveBrandConfig(brandId, session.user.tenantId)
+  const resolvedBrand = await withTenant(session.user.tenantId, (tx) => resolveBrandConfig(tx, brandId, session.user.tenantId))
   const brand = typeof input.includeLogo === 'boolean'
     ? { ...resolvedBrand, includeLogo: input.includeLogo }
     : resolvedBrand
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
         const key          = makeAssetKey(session.user.tenantId, 'images')
         const permanentUrl = await uploadFromUrl(tempUrl, key)
 
-        return prisma.asset.create({
+        return withTenant(session.user.tenantId, (tx) => tx.asset.create({
           data: {
             tenantId: session.user.tenantId,
             userId:   session.user.id,
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
             },
           },
           select: { id: true, s3Url: true },
-        })
+        }))
       }),
     )
   } catch (err) {

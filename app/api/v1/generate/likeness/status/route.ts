@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import { getLikenessStatus } from '@/services/likeness'
 import { uploadFromUrl, makeAssetKey } from '@/lib/storage'
 
@@ -17,9 +17,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ message: 'Invalid videoId' }, { status: 400 })
   }
 
-  const asset = await prisma.asset.findFirst({
+  const asset = await withTenant(session.user.tenantId, (tx) => tx.asset.findFirst({
     where: { id: assetId, tenantId: session.user.tenantId },
-  })
+  }))
   if (!asset) return NextResponse.json({ message: 'Not found' }, { status: 404 })
 
   // Already complete — return immediately without calling HeyGen
@@ -33,15 +33,15 @@ export async function GET(req: Request) {
     if (result.status === 'completed' && result.videoUrl) {
       const key = makeAssetKey(session.user.tenantId, 'videos', 'mp4')
       const url = await uploadFromUrl(result.videoUrl, key, 'video/mp4')
-      await prisma.asset.update({
+      await withTenant(session.user.tenantId, (tx) => tx.asset.update({
         where: { id: assetId, tenantId: session.user.tenantId },
         data:  { status: 'READY', s3Url: url, s3Key: key },
-      })
+      }))
       return NextResponse.json({ status: 'completed', url })
     }
 
     if (result.status === 'failed') {
-      await prisma.asset.update({ where: { id: assetId, tenantId: session.user.tenantId }, data: { status: 'FAILED' } })
+      await withTenant(session.user.tenantId, (tx) => tx.asset.update({ where: { id: assetId, tenantId: session.user.tenantId }, data: { status: 'FAILED' } }))
       return NextResponse.json({ status: 'failed', error: result.error ?? 'HeyGen generation failed' })
     }
 

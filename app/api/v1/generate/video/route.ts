@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import { videoGenerateSchema } from '@/lib/schemas/generate'
 import { generateVideo } from '@/services/video'
 import { enhanceImagePrompt } from '@/services/image'
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   }
 
   const brandId = (parsed.data.brandId ?? 'lhcapital') as BrandId
-  const resolvedBrand = await resolveBrandConfig(brandId, session.user.tenantId)
+  const resolvedBrand = await withTenant(session.user.tenantId, (tx) => resolveBrandConfig(tx, brandId, session.user.tenantId))
   const brand = typeof parsed.data.includeLogo === 'boolean'
     ? { ...resolvedBrand, includeLogo: parsed.data.includeLogo }
     : resolvedBrand
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
   let asset: { id: string; s3Url: string | null }
   try {
     permanentUrl = await uploadFromUrl(videoUrl, key, 'video/mp4')
-    asset        = await prisma.asset.create({
+    asset        = await withTenant(session.user.tenantId, (tx) => tx.asset.create({
       data: {
         tenantId: session.user.tenantId,
         userId:   session.user.id,
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
         },
       },
       select: { id: true, s3Url: true },
-    })
+    }))
   } catch (err) {
     console.error('[generate/video] post-generation error:', err)
     return NextResponse.json({ message: 'Failed to save video.' }, { status: 500 })

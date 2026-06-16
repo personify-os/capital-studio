@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { withTenant } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { buildBrandPromptContext } from '@/lib/brands'
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
   }
 
   const { prompt, type, brandId } = parsed.data
-  const brand        = await resolveBrandConfig((brandId ?? 'lhcapital') as BrandId, session.user.tenantId)
+  const brand        = await withTenant(session.user.tenantId, (tx) => resolveBrandConfig(tx, (brandId ?? 'lhcapital') as BrandId, session.user.tenantId))
   const brandCtx     = buildBrandPromptContext(brand, 'visual')
   const systemPrompt = buildEnhanceSystemPrompt(brandCtx)
   const instr        = TYPE_INSTRUCTIONS[type]

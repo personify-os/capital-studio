@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { flags } from '@/lib/flags'
 import { getDefaultBrandId } from '@/lib/default-brand'
+import { withTenant } from '@/lib/db'
 import Sidebar from '@/components/layout/Sidebar'
 import { DefaultBrandProvider } from '@/components/shared/DefaultBrandProvider'
 
@@ -10,7 +11,7 @@ export default async function StudioLayout({ children }: { children: React.React
   const session = await getServerSession(authOptions)
   if (!session) redirect('/login')
 
-  const defaultBrand = await getDefaultBrandId(session.user.tenantId)
+  const defaultBrand = await withTenant(session.user.tenantId, (tx) => getDefaultBrandId(tx, session.user.tenantId))
 
   const sidebarFlags = {
     videoGeneration: flags.videoGeneration,

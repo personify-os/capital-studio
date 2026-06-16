@@ -8,6 +8,14 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
+    groups:
+      # Bundle low-risk minor + patch bumps into one weekly PR to cut noise.
+      # Major bumps still arrive as individual PRs so each breaking change is
+      # reviewed on its own.
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       # next-auth@4 requires a breaking major upgrade to v5 — tracked separately
       - dependency-name: "next-auth"

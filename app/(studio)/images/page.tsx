@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import Topbar from '@/components/layout/Topbar'
 import ImagesClient from './ImagesClient'
 
@@ -17,12 +17,12 @@ export default async function ImagesPage() {
 
   let recent: RawImage[] = []
   try {
-    recent = (await prisma.asset.findMany({
+    recent = (await withTenant(session.user.tenantId, (tx) => tx.asset.findMany({
       where:   { tenantId: session.user.tenantId, type: 'IMAGE', status: 'READY' },
       orderBy: { createdAt: 'desc' },
       take:    20,
       select:  { id: true, s3Url: true, metadata: true, createdAt: true },
-    })) as RawImage[]
+    }))) as RawImage[]
   } catch (err) { console.error('[images/page]', err) }
 
   return (

@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import Topbar from '@/components/layout/Topbar'
 import MusicClient from './MusicClient'
 
@@ -15,12 +15,12 @@ export default async function MusicPage() {
 
   let tracks: RawTrack[] = []
   try {
-    tracks = (await prisma.asset.findMany({
+    tracks = (await withTenant(session.user.tenantId, (tx) => tx.asset.findMany({
       where:   { tenantId: session.user.tenantId, type: 'MUSIC', status: 'READY' },
       orderBy: { createdAt: 'desc' },
       take:    20,
       select:  { id: true, s3Url: true, metadata: true, createdAt: true },
-    })) as RawTrack[]
+    }))) as RawTrack[]
   } catch (err) { console.error('[music/page]', err) }
 
   return (

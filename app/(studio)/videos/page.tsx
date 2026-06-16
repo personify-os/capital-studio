@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { flags } from '@/lib/flags'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import Topbar from '@/components/layout/Topbar'
 import VideosClient from './VideosClient'
 
@@ -17,12 +17,12 @@ export default async function VideosPage() {
 
   let recent: RawVideo[] = []
   try {
-    recent = (await prisma.asset.findMany({
+    recent = (await withTenant(session.user.tenantId, (tx) => tx.asset.findMany({
       where:   { tenantId: session.user.tenantId, type: 'VIDEO', status: 'READY' },
       orderBy: { createdAt: 'desc' },
       take:    12,
       select:  { id: true, s3Url: true, metadata: true, createdAt: true },
-    })) as RawVideo[]
+    }))) as RawVideo[]
   } catch (err) { console.error('[videos/page]', err) }
 
   return (

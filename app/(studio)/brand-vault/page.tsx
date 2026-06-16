@@ -2,7 +2,7 @@ import Topbar from '@/components/layout/Topbar'
 import BrandVaultClient from './BrandVaultClient'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 
 interface RawBrand {
   id: string
@@ -20,11 +20,11 @@ export default async function BrandVaultPage() {
 
   let brands: RawBrand[] = []
   try {
-    brands = (await prisma.brandProfile.findMany({
+    brands = (await withTenant(session.user.tenantId, (tx) => tx.brandProfile.findMany({
       where:   { tenantId: session.user.tenantId },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
       select:  { id: true, type: true, name: true, logoUrl: true, config: true, isDefault: true, sortOrder: true },
-    })) as RawBrand[]
+    }))) as RawBrand[]
   } catch (err) { console.error('[brand-vault/page]', err) }
 
   return (

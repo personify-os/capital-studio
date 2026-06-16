@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { flags } from '@/lib/flags'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import Topbar from '@/components/layout/Topbar'
 import MotionClient from './MotionClient'
 
@@ -17,12 +17,12 @@ export default async function MotionPage() {
 
   let motionVideos: RawVideo[] = []
   try {
-    motionVideos = (await prisma.asset.findMany({
+    motionVideos = (await withTenant(session.user.tenantId, (tx) => tx.asset.findMany({
       where:   { tenantId: session.user.tenantId, type: 'MOTION', status: 'READY' },
       orderBy: { createdAt: 'desc' },
       take:    12,
       select:  { id: true, s3Url: true, metadata: true, createdAt: true },
-    })) as RawVideo[]
+    }))) as RawVideo[]
   } catch (err) { console.error('[motion/page]', err) }
 
   return (

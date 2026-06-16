@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { prisma, withTenant } from '@/lib/db' // prisma used only for query result types below
 import Topbar from '@/components/layout/Topbar'
 import SchedulerClient from './SchedulerClient'
 
@@ -13,24 +13,24 @@ export default async function SchedulerPage() {
   let assets:   { id: string; type: string; s3Url: string | null; metadata: unknown }[] = []
 
   try {
-    ;[accounts, posts, assets] = await Promise.all([
-      prisma.socialAccount.findMany({
+    ;[accounts, posts, assets] = await withTenant(session.user.tenantId, (tx) => Promise.all([
+      tx.socialAccount.findMany({
         where:   { tenantId: session.user.tenantId },
         orderBy: { createdAt: 'asc' },
       }),
-      prisma.scheduledPost.findMany({
+      tx.scheduledPost.findMany({
         where:   { tenantId: session.user.tenantId },
         orderBy: { scheduledFor: 'asc' },
         take:    100,
         include: { socialAccount: { select: { id: true, platform: true, accountName: true } } },
       }),
-      prisma.asset.findMany({
+      tx.asset.findMany({
         where:   { tenantId: session.user.tenantId, status: 'READY', type: { in: ['IMAGE', 'VIDEO'] } },
         orderBy: { createdAt: 'desc' },
         take:    30,
         select:  { id: true, type: true, s3Url: true, metadata: true },
       }),
-    ])
+    ]))
   } catch (err) { console.error('[scheduler/page]', err) }
 
   return (

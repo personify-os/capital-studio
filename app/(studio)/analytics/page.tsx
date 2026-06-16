@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import Topbar from '@/components/layout/Topbar'
 import AnalyticsClient from './AnalyticsClient'
 
@@ -22,12 +22,12 @@ export default async function AnalyticsPage() {
   const cutoff = new Date()
   cutoff.setFullYear(cutoff.getFullYear() - 1)
   try {
-    assets = (await prisma.asset.findMany({
+    assets = (await withTenant(session.user.tenantId, (tx) => tx.asset.findMany({
       where:   { tenantId: session.user.tenantId, createdAt: { gte: cutoff } },
       orderBy: { createdAt: 'desc' },
       take:    2000,
       select:  { id: true, type: true, brandId: true, metadata: true, createdAt: true },
-    })) as RawAsset[]
+    }))) as RawAsset[]
   } catch (err) {
     console.error('[analytics/page]', err)
   }

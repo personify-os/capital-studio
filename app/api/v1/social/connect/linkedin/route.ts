@@ -1,7 +1,7 @@
 import { NextResponse }     from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions }      from '@/lib/auth'
-import { prisma }           from '@/lib/db'
+import { withTenant }           from '@/lib/db'
 import { encryptToken }     from '@/lib/crypto'
 import { z }                from 'zod'
 
@@ -25,11 +25,11 @@ export async function POST(req: Request) {
 
   const tokenExpiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) // 60 days
   try {
-    await prisma.socialAccount.upsert({
+    await withTenant(session.user.tenantId, (tx) => tx.socialAccount.upsert({
       where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'LINKEDIN', accountId: id } },
       create: { tenantId: session.user.tenantId, platform: 'LINKEDIN', accountName: 'LinkedIn Account', accountId: id, accessToken: encryptToken(accessToken), expiresAt: tokenExpiresAt },
       update: { accountName: 'LinkedIn Account', accessToken: encryptToken(accessToken), expiresAt: tokenExpiresAt },
-    })
+    }))
   } catch (err) {
     console.error('[social/connect/linkedin]', err)
     return NextResponse.json({ message: 'Failed to save LinkedIn account.' }, { status: 500 })

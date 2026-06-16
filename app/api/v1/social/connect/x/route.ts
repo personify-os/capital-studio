@@ -1,7 +1,7 @@
 import { NextResponse }    from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions }      from '@/lib/auth'
-import { prisma }           from '@/lib/db'
+import { withTenant }           from '@/lib/db'
 
 export async function POST(_req: Request) {
   const session = await getServerSession(authOptions)
@@ -18,11 +18,11 @@ export async function POST(_req: Request) {
   const handle  = process.env.TWITTER_HANDLE ?? '@lhc_capital'
 
   try {
-    await prisma.socialAccount.upsert({
+    await withTenant(session.user.tenantId, (tx) => tx.socialAccount.upsert({
       where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'X', accountId: userId } },
       create: { tenantId: session.user.tenantId, platform: 'X', accountName: handle, accountId: userId, accessToken: 'oauth1' },
       update: { accountName: handle, accessToken: 'oauth1' },
-    })
+    }))
   } catch (err) {
     console.error('[social/connect/x]', err)
     return NextResponse.json({ message: 'Failed to save X account.' }, { status: 500 })

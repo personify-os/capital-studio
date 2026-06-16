@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import { uploadBuffer, makeAssetKey } from '@/lib/storage'
 import { extractText } from '@/lib/extract-text'
 import { brandUploadSchema } from '@/lib/schemas/upload'
@@ -53,10 +53,10 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
 
   let existing: { config: unknown; logoUrl: string | null } | null
   try {
-    existing = await prisma.brandProfile.findFirst({
+    existing = await withTenant(session.user.tenantId, (tx) => tx.brandProfile.findFirst({
       where:  { id: params.id, tenantId: session.user.tenantId },
       select: { config: true, logoUrl: true },
-    })
+    }))
   } catch (err) {
     console.error('[brands/upload] DB lookup failed:', err)
     return NextResponse.json({ message: 'Database error.' }, { status: 500 })
@@ -140,27 +140,27 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
       const slot = logoSlot ?? 'primary'
       if (slot === 'primary' || !slot) {
         // Primary logo — top-level logoUrl column
-        await prisma.brandProfile.update({
+        await withTenant(session.user.tenantId, (tx) => tx.brandProfile.update({
           where: { id: params.id, tenantId: session.user.tenantId },
           data:  { logoUrl: url },
-        })
+        }))
       } else {
         // Logo variant — stored in config.logoVariants
         const existingVariants = (currentConfig.logoVariants as { label: string; url: string }[] | undefined) ?? []
         const updatedVariants  = [...existingVariants.filter((v) => v.label !== slot), { label: slot, url }]
-        await prisma.brandProfile.update({
+        await withTenant(session.user.tenantId, (tx) => tx.brandProfile.update({
           where: { id: params.id, tenantId: session.user.tenantId },
           data:  { config: { ...currentConfig, logoVariants: updatedVariants } as Prisma.InputJsonValue },
-        })
+        }))
       }
     } else {
       // Document: store URL + the text extracted above into guidelines
       const newConfig: Prisma.JsonObject = { ...currentConfig, documentUrl: url, documentName: file.name }
       if (guidelinesText) newConfig.guidelines = guidelinesText
-      await prisma.brandProfile.update({
+      await withTenant(session.user.tenantId, (tx) => tx.brandProfile.update({
         where: { id: params.id, tenantId: session.user.tenantId },
         data:  { config: newConfig as Prisma.InputJsonValue },
-      })
+      }))
     }
   } catch (err) {
     console.error('[brands/upload] DB update failed:', err)

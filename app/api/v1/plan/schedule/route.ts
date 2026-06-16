@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import { z } from 'zod'
 
 const bodySchema = z.object({
@@ -29,10 +29,10 @@ export async function POST(req: Request) {
   if (isNaN(base.getTime())) return NextResponse.json({ message: 'Invalid start date' }, { status: 400 })
 
   // Map each connected platform → an account id (first one wins).
-  const accounts = await prisma.socialAccount.findMany({
+  const accounts = await withTenant(session.user.tenantId, (tx) => tx.socialAccount.findMany({
     where:  { tenantId: session.user.tenantId },
     select: { id: true, platform: true },
-  })
+  }))
   const accountByPlatform = new Map<string, string>()
   for (const a of accounts) if (!accountByPlatform.has(a.platform)) accountByPlatform.set(a.platform, a.id)
 
@@ -53,17 +53,19 @@ export async function POST(req: Request) {
   let created = 0
   if (toCreate.length) {
     try {
-      const res = await prisma.$transaction(
-        toCreate.map((d) => prisma.scheduledPost.create({
-          data: {
-            tenantId:        session.user.tenantId,
-            socialAccountId: d.socialAccountId,
-            caption:         d.caption,
-            assetId:         d.assetId,
-            scheduledFor:    d.scheduledFor,
-            status:          'DRAFT',
-          },
-        })),
+      const res = await withTenant(session.user.tenantId, (tx) =>
+        Promise.all(
+          toCreate.map((d) => tx.scheduledPost.create({
+            data: {
+              tenantId:        session.user.tenantId,
+              socialAccountId: d.socialAccountId,
+              caption:         d.caption,
+              assetId:         d.assetId,
+              scheduledFor:    d.scheduledFor,
+              status:          'DRAFT',
+            },
+          })),
+        ),
       )
       created = res.length
     } catch (err) {

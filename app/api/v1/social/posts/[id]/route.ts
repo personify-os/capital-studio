@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 
 export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -9,9 +9,9 @@ export async function DELETE(_req: Request, props: { params: Promise<{ id: strin
   if (!session) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
 
   try {
-    await prisma.scheduledPost.deleteMany({
+    await withTenant(session.user.tenantId, (tx) => tx.scheduledPost.deleteMany({
       where: { id: params.id, tenantId: session.user.tenantId },
-    })
+    }))
   } catch (err) {
     console.error('[posts/DELETE]', err)
     return NextResponse.json({ message: 'Failed to delete post.' }, { status: 500 })

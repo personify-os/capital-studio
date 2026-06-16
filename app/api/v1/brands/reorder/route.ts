@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import { z } from 'zod'
 
 const reorderSchema = z.object({
@@ -19,22 +19,24 @@ export async function POST(req: Request) {
   const { orderedIds } = parsed.data
 
   // Only reorder profiles that actually belong to this tenant.
-  const owned = await prisma.brandProfile.findMany({
+  const owned = await withTenant(session.user.tenantId, (tx) => tx.brandProfile.findMany({
     where:  { tenantId: session.user.tenantId, id: { in: orderedIds } },
     select: { id: true },
-  })
+  }))
   const ownedIds = new Set(owned.map((b) => b.id))
 
   try {
-    await prisma.$transaction(
-      orderedIds
-        .filter((id) => ownedIds.has(id))
-        .map((id, index) =>
-          prisma.brandProfile.update({
-            where: { id, tenantId: session.user.tenantId },
-            data:  { sortOrder: index },
-          }),
-        ),
+    await withTenant(session.user.tenantId, (tx) =>
+      Promise.all(
+        orderedIds
+          .filter((id) => ownedIds.has(id))
+          .map((id, index) =>
+            tx.brandProfile.update({
+              where: { id, tenantId: session.user.tenantId },
+              data:  { sortOrder: index },
+            }),
+          ),
+      ),
     )
   } catch (err) {
     console.error('[brands/reorder] error:', err)

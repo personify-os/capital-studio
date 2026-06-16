@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { prisma, withTenant } from '@/lib/db'
 import { z } from 'zod'
 
 const createSchema = z.object({
@@ -18,12 +18,12 @@ export async function GET() {
   if (!session) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
 
   try {
-    const posts = await prisma.scheduledPost.findMany({
+    const posts = await withTenant(session.user.tenantId, (tx) => tx.scheduledPost.findMany({
       where:   { tenantId: session.user.tenantId },
       orderBy: { scheduledFor: 'asc' },
       include: { socialAccount: { select: { id: true, platform: true, accountName: true } } },
       take:    100,
-    })
+    }))
     return NextResponse.json({ posts })
   } catch (err) {
     console.error('[posts/GET]', err)
@@ -42,9 +42,9 @@ export async function POST(req: Request) {
   const { socialAccountIds, caption, instagramCaption, imageUrl, assetId, scheduledFor } = parsed.data
 
   // Verify all accounts belong to this tenant
-  const accounts = await prisma.socialAccount.findMany({
+  const accounts = await withTenant(session.user.tenantId, (tx) => tx.socialAccount.findMany({
     where: { id: { in: socialAccountIds }, tenantId: session.user.tenantId },
-  })
+  }))
   if (accounts.length !== socialAccountIds.length) {
     return NextResponse.json({ message: 'Invalid accounts' }, { status: 400 })
   }
@@ -54,9 +54,9 @@ export async function POST(req: Request) {
   const extraInstagramPosts: { accountId: string; igCaption: string }[] = []
 
   if (facebookAccounts.length > 0) {
-    const igAccounts = await prisma.socialAccount.findMany({
+    const igAccounts = await withTenant(session.user.tenantId, (tx) => tx.socialAccount.findMany({
       where: { tenantId: session.user.tenantId, platform: 'INSTAGRAM' },
-    })
+    }))
 
     for (const fb of facebookAccounts) {
       // Match by naming convention: "Page Name" → "Page Name (Instagram)"
@@ -95,12 +95,14 @@ export async function POST(req: Request) {
 
   let posts: Awaited<ReturnType<typeof prisma.scheduledPost.findMany>>
   try {
-    posts = await prisma.$transaction(
-      allPostData.map((data) =>
-        prisma.scheduledPost.create({
-          data,
-          include: { socialAccount: { select: { id: true, platform: true, accountName: true } } },
-        }),
+    posts = await withTenant(session.user.tenantId, (tx) =>
+      Promise.all(
+        allPostData.map((data) =>
+          tx.scheduledPost.create({
+            data,
+            include: { socialAccount: { select: { id: true, platform: true, accountName: true } } },
+          }),
+        ),
       ),
     )
   } catch (err) {

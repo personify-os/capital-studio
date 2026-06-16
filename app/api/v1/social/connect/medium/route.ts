@@ -1,7 +1,7 @@
 import { NextResponse }    from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions }      from '@/lib/auth'
-import { prisma }           from '@/lib/db'
+import { withTenant }           from '@/lib/db'
 import { getMediumProfile } from '@/services/social'
 import { encryptToken }     from '@/lib/crypto'
 import { z }                from 'zod'
@@ -31,11 +31,11 @@ export async function POST(req: Request) {
   // Store uid:sid combined so publishToMedium can split them
   const combined = `${uid}:${sid}`
 
-  await prisma.socialAccount.upsert({
+  await withTenant(session.user.tenantId, (tx) => tx.socialAccount.upsert({
     where:  { tenantId_platform_accountId: { tenantId: session.user.tenantId, platform: 'MEDIUM', accountId: profile.id } },
     create: { tenantId: session.user.tenantId, platform: 'MEDIUM', accountName: profile.name, accountId: profile.id, accessToken: encryptToken(combined) },
     update: { accountName: profile.name, accessToken: encryptToken(combined) },
-  })
+  }))
 
   return NextResponse.json({ connected: profile.name })
 }

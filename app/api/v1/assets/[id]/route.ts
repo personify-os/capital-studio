@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import { z } from 'zod'
 
 const patchSchema = z.object({
@@ -21,10 +21,10 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
   const parsed = patchSchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ message: 'Invalid input' }, { status: 400 })
 
-  const asset = await prisma.asset.findFirst({
+  const asset = await withTenant(session.user.tenantId, (tx) => tx.asset.findFirst({
     where:  { id, tenantId: session.user.tenantId },
     select: { id: true, type: true, metadata: true },
-  })
+  }))
   if (!asset) return NextResponse.json({ message: 'Not found' }, { status: 404 })
   if (asset.type !== 'CAPTION') return NextResponse.json({ message: 'Only captions can be edited' }, { status: 400 })
 
@@ -37,7 +37,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
   const meta = { ...((asset.metadata as Record<string, unknown>) ?? {}), results, seriesCount: results.length }
 
   try {
-    await prisma.asset.update({ where: { id, tenantId: session.user.tenantId }, data: { metadata: meta } })
+    await withTenant(session.user.tenantId, (tx) => tx.asset.update({ where: { id, tenantId: session.user.tenantId }, data: { metadata: meta } }))
   } catch (err) {
     console.error('[assets/PATCH] update failed:', err)
     return NextResponse.json({ message: 'Failed to save edit.' }, { status: 500 })

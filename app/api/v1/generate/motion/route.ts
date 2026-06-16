@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import { motionGenerateSchema } from '@/lib/schemas/generate'
 import { generateMotionVideo } from '@/services/video'
 import { resolveBrandConfig } from '@/lib/brand-context'
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   const { imageUrl, prompt, duration, aspectRatio, brandId, includeLogo } = parsed.data
 
   // Enrich motion prompt with brand visual style
-  const resolvedBrand = await resolveBrandConfig((brandId ?? 'lhcapital') as BrandId, session.user.tenantId)
+  const resolvedBrand = await withTenant(session.user.tenantId, (tx) => resolveBrandConfig(tx, (brandId ?? 'lhcapital') as BrandId, session.user.tenantId))
   const brand         = typeof includeLogo === 'boolean' ? { ...resolvedBrand, includeLogo } : resolvedBrand
   const brandCtx      = buildBrandPromptContext(brand, 'visual')
   const enrichedPrompt = `${prompt}\n\nBrand visual style: ${brandCtx}`
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
   let asset: { id: string; s3Url: string | null }
   try {
     permanentUrl = await uploadFromUrl(videoUrl, key, 'video/mp4')
-    asset        = await prisma.asset.create({
+    asset        = await withTenant(session.user.tenantId, (tx) => tx.asset.create({
       data: {
         tenantId: session.user.tenantId,
         userId:   session.user.id,
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
         },
       },
       select: { id: true, s3Url: true },
-    })
+    }))
   } catch (err) {
     console.error('[generate/motion] post-generation error:', err)
     return NextResponse.json({ message: 'Failed to save motion video.' }, { status: 500 })

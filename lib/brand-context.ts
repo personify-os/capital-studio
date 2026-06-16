@@ -9,9 +9,8 @@
  * Brand Vault `guidelines` is prepended as the first knowledge-base entry.
  */
 
-import { prisma } from '@/lib/db'
 import { getBrandConfig, type BrandConfig, type BrandId, type LogoVariant } from '@/lib/brands'
-import { BrandType } from '@prisma/client'
+import { BrandType, type Prisma } from '@prisma/client'
 
 const BRAND_TYPE_MAP: Record<BrandId, BrandType> = {
   lhcapital: BrandType.LHC,
@@ -20,7 +19,10 @@ const BRAND_TYPE_MAP: Record<BrandId, BrandType> = {
   personal:  BrandType.PERSONAL,
 }
 
+// `tx` is the tenant-scoped client from withTenant() so the brand-profile read
+// participates in RLS. Callers MUST run this inside withTenant(tenantId, …).
 export async function resolveBrandConfig(
+  tx:       Prisma.TransactionClient,
   brandId:  BrandId,
   tenantId: string,
 ): Promise<BrandConfig> {
@@ -29,7 +31,7 @@ export async function resolveBrandConfig(
 
   let profile: { config: unknown; logoUrl: string | null } | null = null
   try {
-    profile = await prisma.brandProfile.findFirst({
+    profile = await tx.brandProfile.findFirst({
       where:   { tenantId, type },
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
       select:  { config: true, logoUrl: true },

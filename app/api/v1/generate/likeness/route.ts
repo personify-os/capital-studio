@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import { generateLikenessVideo } from '@/services/likeness'
 import { z } from 'zod'
 
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   try {
     const videoId = await generateLikenessVideo({ script, avatarId, talkingPhotoId, voiceId, aspectRatio })
 
-    const asset = await prisma.asset.create({
+    const asset = await withTenant(session.user.tenantId, (tx) => tx.asset.create({
       data: {
         tenantId: session.user.tenantId,
         userId:   session.user.id,
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
           voiceId, aspectRatio, cost: 0.10,
         },
       },
-    })
+    }))
 
     return NextResponse.json({ assetId: asset.id, videoId })
   } catch (err) {

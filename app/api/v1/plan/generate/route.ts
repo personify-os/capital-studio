@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import { z } from 'zod'
 import Anthropic from '@anthropic-ai/sdk'
 import { buildBrandPromptContext, type BrandId } from '@/lib/brands'
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ message: 'Invalid input' }, { status: 400 })
   const { brandId, rows } = parsed.data
 
-  const brand    = await resolveBrandConfig(brandId as BrandId, session.user.tenantId)
+  const brand    = await withTenant(session.user.tenantId, (tx) => resolveBrandConfig(tx, brandId as BrandId, session.user.tenantId))
   const brandCtx = buildBrandPromptContext(brand, 'copy')
   const client   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
 
       let assetId: string | null = null
       try {
-        const asset = await prisma.asset.create({
+        const asset = await withTenant(session.user.tenantId, (tx) => tx.asset.create({
           data: {
             tenantId: session.user.tenantId, userId: session.user.id, brandId,
             type: 'CAPTION', status: 'READY',
@@ -107,7 +107,7 @@ export async function POST(req: Request) {
               seriesCount: 1, results: [result],
             },
           },
-        })
+        }))
         assetId = asset.id
       } catch (err) { console.error('[plan/generate] save failed:', err) }
 

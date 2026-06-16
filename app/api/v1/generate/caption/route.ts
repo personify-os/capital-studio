@@ -10,7 +10,7 @@ import type { ContentIntent } from '@/lib/content-intent'
 import Anthropic from '@anthropic-ai/sdk'
 import { withRetry, isTransient } from '@/lib/retry'
 import type { BrandId } from '@/lib/brands'
-import { prisma } from '@/lib/db'
+import { withTenant } from '@/lib/db'
 import { estimateCost } from '@/lib/cost'
 
 export async function POST(req: Request) {
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     )
   }
 
-  const brand      = await resolveBrandConfig((brandId ?? 'lhcapital') as BrandId, session.user.tenantId)
+  const brand      = await withTenant(session.user.tenantId, (tx) => resolveBrandConfig(tx, (brandId ?? 'lhcapital') as BrandId, session.user.tenantId))
   const brandCtx   = buildBrandPromptContext(brand, 'copy')
   const count      = seriesCount ?? 1
   const isMultiple = count > 1
@@ -202,7 +202,7 @@ export async function POST(req: Request) {
     }
 
     try {
-      await prisma.asset.create({
+      await withTenant(session.user.tenantId, (tx) => tx.asset.create({
         data: {
           tenantId: session.user.tenantId,
           userId:   session.user.id,
@@ -211,7 +211,7 @@ export async function POST(req: Request) {
           status:   'READY',
           metadata: { ...assetMeta, seriesCount: count, results },
         },
-      })
+      }))
     } catch (err) {
       console.error('[caption] asset save failed:', err)
     }
@@ -232,7 +232,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    await prisma.asset.create({
+    await withTenant(session.user.tenantId, (tx) => tx.asset.create({
       data: {
         tenantId: session.user.tenantId,
         userId:   session.user.id,
@@ -241,7 +241,7 @@ export async function POST(req: Request) {
         status:   'READY',
         metadata: { ...assetMeta, seriesCount: 1, result },
       },
-    })
+    }))
   } catch (err) {
     console.error('[caption] asset save failed:', err)
   }

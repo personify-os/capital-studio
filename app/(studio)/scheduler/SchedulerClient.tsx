@@ -13,6 +13,8 @@ import {
 } from '@/components/scheduler/ConnectModals'
 import SchedulerComposer from '@/components/scheduler/SchedulerComposer'
 import SchedulerFeed from '@/components/scheduler/SchedulerFeed'
+import PostPreviewModal from '@/components/scheduler/PostPreviewModal'
+import { usePostBulkActions } from '@/hooks/usePostBulkActions'
 
 export default function SchedulerClient({ initialAccounts, initialPosts, libraryAssets }: Props) {
   const [accounts,     setAccounts]     = useState(initialAccounts)
@@ -35,6 +37,9 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
   const [scheduling,    setScheduling]    = useState(false)
   const [scheduleError, setScheduleError] = useState('')
   const [pickerOpen,    setPickerOpen]    = useState(false)
+  const [previewPost,   setPreviewPost]   = useState<ScheduledPost | null>(null)
+
+  const bulk = usePostBulkActions({ posts, setPosts, setBanner: setOauthBanner })
 
   const hasFacebook = selectedAccts.some((id) => accounts.find((a) => a.id === id)?.platform === 'FACEBOOK')
 
@@ -182,11 +187,22 @@ export default function SchedulerClient({ initialAccounts, initialPosts, library
 
       <SchedulerFeed
         posts={posts}
-        tab={tab}          onTabChange={setTab}
+        tab={tab}          onTabChange={(t) => { setTab(t); bulk.clearSelection() }}
         view={view}        onViewChange={setView}
         onDelete={handleDelete}
         onPublish={handlePublish}
+        onPreview={setPreviewPost}
+        selectedIds={bulk.selectedIds}
+        onToggleSelect={bulk.toggleSelect}
+        onSelectMany={bulk.selectMany}
+        onClearSelection={bulk.clearSelection}
+        onBulkDelete={bulk.bulkDelete}
+        onBulkDraft={bulk.bulkDraft}
+        onBulkPublish={bulk.bulkPublish}
+        bulkBusy={bulk.bulkBusy}
       />
+
+      {previewPost && <PostPreviewModal post={previewPost} onClose={() => setPreviewPost(null)} />}
     </div>
   )
 }

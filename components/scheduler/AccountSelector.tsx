@@ -45,7 +45,10 @@ export default function AccountSelector({ accounts, selectedAccts, onToggle, onO
               return (
                 <div key={a.id} className="group relative">
                   <div className="w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-red-200 bg-red-50">
-                    <Icon size={12} className="flex-shrink-0 text-red-400" />
+                    <span className="relative flex-shrink-0" title="Disconnected · token expired">
+                      <Icon size={12} className="text-red-400" />
+                      <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-red-500 ring-1 ring-white" />
+                    </span>
                     <div className="text-left min-w-0 flex-1">
                       <div className="text-[11px] font-semibold leading-none text-red-600 truncate">{a.accountName}</div>
                       <button type="button"
@@ -76,7 +79,10 @@ export default function AccountSelector({ accounts, selectedAccts, onToggle, onO
                       : expiry === 'soon' ? 'border-amber-300 bg-amber-50 hover:border-amber-400'
                       : 'border-gray-200 bg-white hover:border-brand-light',
                   )}>
-                  <Icon size={12} className={cn('flex-shrink-0', sel ? 'text-brand-azure' : PLATFORM_COLOR[a.platform])} />
+                  <span className="relative flex-shrink-0" title={expiry === 'soon' ? 'Connected · token expiring soon' : 'Connected'}>
+                    <Icon size={12} className={cn(sel ? 'text-brand-azure' : PLATFORM_COLOR[a.platform])} />
+                    <span className={cn('absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ring-1 ring-white', expiry === 'soon' ? 'bg-amber-400' : 'bg-green-500')} />
+                  </span>
                   <div className="text-left min-w-0 flex-1">
                     <div className={cn('text-[11px] font-semibold leading-none truncate', sel ? 'text-brand-azure' : 'text-gray-800')}>{a.accountName}</div>
                     <div className={cn('text-[9px] leading-none mt-0.5', expiry === 'soon' ? 'text-amber-500' : 'text-gray-400')}>

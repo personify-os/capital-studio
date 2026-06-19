@@ -14,7 +14,7 @@ export default function BrandSelector({ value, onChange }: Props) {
   return (
     <div>
       <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">Brand</p>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {BRAND_IDS.map((id) => {
           const config = BRAND_CONFIGS[id]
           const active = value === id

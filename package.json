@@ -41,7 +41,7 @@
     "posthog-js": "^1.390.2",
     "prisma": "^7.8.0",
     "react": "^18",
-    "react-dom": "^18",
+    "react-dom": "^19",
     "tailwind-merge": "^3.6.0",
     "ws": "^8.20.0",
     "zod": "^4.4.3"
@@ -56,7 +56,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/react-dom": "^19",
     "@types/ws": "^8.18.1",
     "autoprefixer": "^10.5.0",
     "dotenv-cli": "^11.0.0",

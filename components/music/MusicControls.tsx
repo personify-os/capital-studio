@@ -71,7 +71,7 @@ export default function MusicControls({
               onClick={() => onTabChange(t)}
               className={cn(
                 'flex-1 py-1.5 rounded-md text-xs font-semibold transition-all capitalize',
-                tab === t ? 'bg-white text-brand-azure shadow-sm' : 'text-gray-500 hover:text-brand-navy',
+                tab === t ? 'bg-white text-brand-azure shadow-xs' : 'text-gray-500 hover:text-brand-navy',
               )}
             >
               {t === 'create' ? 'Create' : 'Custom'}

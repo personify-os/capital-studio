@@ -43,11 +43,11 @@ export default function SchedulerFeed({ posts, tab, onTabChange, view, onViewCha
         <div className="ml-auto flex items-center gap-3 pb-3">
           <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-0.5">
             <button type="button" onClick={() => onViewChange('list')}
-              className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors', view === 'list' ? 'bg-white text-brand-navy shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
+              className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors', view === 'list' ? 'bg-white text-brand-navy shadow-xs' : 'text-gray-500 hover:text-gray-700')}>
               <LayoutList size={13} /> List
             </button>
             <button type="button" onClick={() => onViewChange('calendar')}
-              className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors', view === 'calendar' ? 'bg-white text-brand-navy shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
+              className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors', view === 'calendar' ? 'bg-white text-brand-navy shadow-xs' : 'text-gray-500 hover:text-gray-700')}>
               <CalendarDays size={13} /> Calendar
             </button>
           </div>

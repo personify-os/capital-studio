@@ -1,6 +1,6 @@
 'use client'
 
-import { Calendar, LayoutList, CalendarDays, CheckCircle2 } from 'lucide-react'
+import { Calendar, LayoutList, CalendarDays, CheckCircle2, Trash2, FileText, Send, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import PostCard from '@/components/scheduler/PostCard'
 import CalendarView from '@/components/scheduler/CalendarView'
@@ -14,11 +14,41 @@ interface Props {
   onViewChange: (v: 'list' | 'calendar') => void
   onDelete:     (id: string) => void
   onPublish:    (id: string) => void
+  onPreview:    (post: ScheduledPost) => void
+  selectedIds:      string[]
+  onToggleSelect:   (id: string) => void
+  onSelectMany:     (ids: string[]) => void
+  onClearSelection: () => void
+  onBulkDelete:     () => void
+  onBulkDraft:      () => void
+  onBulkPublish:    () => void
+  bulkBusy:         boolean
 }
 
-export default function SchedulerFeed({ posts, tab, onTabChange, view, onViewChange, onDelete, onPublish }: Props) {
+export default function SchedulerFeed({
+  posts, tab, onTabChange, view, onViewChange, onDelete, onPublish, onPreview,
+  selectedIds, onToggleSelect, onSelectMany, onClearSelection, onBulkDelete, onBulkDraft, onBulkPublish, bulkBusy,
+}: Props) {
   const upcoming  = posts.filter((p) => p.status === 'SCHEDULED' || p.status === 'DRAFT' || p.status === 'FAILED')
   const published = posts.filter((p) => p.status === 'PUBLISHED')
+  const list      = tab === 'upcoming' ? upcoming : published
+  const selectedSet = new Set(selectedIds)
+  const allSelected = list.length > 0 && list.every((p) => selectedSet.has(p.id))
+
+  const renderGrid = (items: ScheduledPost[]) => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+      {items.map((p) => (
+        <PostCard
+          key={p.id} post={p}
+          onDelete={() => onDelete(p.id)}
+          onPublish={() => onPublish(p.id)}
+          onPreview={() => onPreview(p)}
+          selected={selectedSet.has(p.id)}
+          onToggleSelect={() => onToggleSelect(p.id)}
+        />
+      ))}
+    </div>
+  )
 
   return (
     <div className="flex-1 p-6 min-w-0">
@@ -54,7 +84,36 @@ export default function SchedulerFeed({ posts, tab, onTabChange, view, onViewCha
         </div>
       </div>
 
-      {view === 'calendar' && <CalendarView posts={tab === 'upcoming' ? upcoming : published} />}
+      {/* Bulk action bar */}
+      {view === 'list' && selectedIds.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 mb-4 bg-brand-navy text-white rounded-card px-4 py-2.5 shadow-card">
+          <span className="text-xs font-semibold">{selectedIds.length} selected</span>
+          <button type="button" onClick={() => onSelectMany(list.map((p) => p.id))} disabled={allSelected}
+            className="text-[11px] font-medium text-white/80 hover:text-white disabled:opacity-40">Select all {list.length}</button>
+          <button type="button" onClick={onClearSelection} className="text-[11px] font-medium text-white/80 hover:text-white">Clear</button>
+          <div className="ml-auto flex items-center gap-2">
+            {tab === 'upcoming' && (
+              <>
+                <button type="button" onClick={onBulkPublish} disabled={bulkBusy}
+                  className="flex items-center gap-1.5 text-[11px] font-semibold bg-white/15 hover:bg-white/25 px-2.5 py-1.5 rounded-lg disabled:opacity-50">
+                  <Send size={12} /> Publish
+                </button>
+                <button type="button" onClick={onBulkDraft} disabled={bulkBusy}
+                  className="flex items-center gap-1.5 text-[11px] font-semibold bg-white/15 hover:bg-white/25 px-2.5 py-1.5 rounded-lg disabled:opacity-50">
+                  <FileText size={12} /> Mark Draft
+                </button>
+              </>
+            )}
+            <button type="button" onClick={onBulkDelete} disabled={bulkBusy}
+              className="flex items-center gap-1.5 text-[11px] font-semibold bg-red-500/80 hover:bg-red-500 px-2.5 py-1.5 rounded-lg disabled:opacity-50">
+              <Trash2 size={12} /> Delete
+            </button>
+            <button type="button" onClick={onClearSelection} className="text-white/70 hover:text-white"><X size={14} /></button>
+          </div>
+        </div>
+      )}
+
+      {view === 'calendar' && <CalendarView posts={list} />}
 
       {view === 'list' && tab === 'upcoming' && (
         upcoming.length === 0 ? (
@@ -65,11 +124,7 @@ export default function SchedulerFeed({ posts, tab, onTabChange, view, onViewCha
             <p className="font-semibold text-brand-navy mb-1">No posts scheduled</p>
             <p className="text-sm text-gray-400">Write a caption on the left and schedule your first post.</p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-            {upcoming.map((p) => <PostCard key={p.id} post={p} onDelete={() => onDelete(p.id)} onPublish={() => onPublish(p.id)} />)}
-          </div>
-        )
+        ) : renderGrid(upcoming)
       )}
 
       {view === 'list' && tab === 'published' && (
@@ -81,11 +136,7 @@ export default function SchedulerFeed({ posts, tab, onTabChange, view, onViewCha
             <p className="font-semibold text-brand-navy mb-1">No published posts yet</p>
             <p className="text-sm text-gray-400">Published posts will appear here.</p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-            {published.map((p) => <PostCard key={p.id} post={p} onDelete={() => onDelete(p.id)} onPublish={() => onPublish(p.id)} />)}
-          </div>
-        )
+        ) : renderGrid(published)
       )}
     </div>
   )

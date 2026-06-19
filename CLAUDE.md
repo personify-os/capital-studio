@@ -84,11 +84,11 @@ Three brand identities — all config lives in `lib/brands.ts`:
 
 | Layer               | Technology                          |
 |---------------------|-------------------------------------|
-| Framework           | Next.js 14 (App Router)             |
+| Framework           | Next.js 16 (App Router)             |
 | Language            | TypeScript (strict)                 |
 | Styling             | Tailwind CSS + brand tokens         |
 | Auth                | NextAuth v4 (Credentials only)      |
-| Database            | Neon PostgreSQL + Prisma 6          |
+| Database            | Neon PostgreSQL + Prisma 7 (Neon adapter) |
 | Storage             | Cloudflare R2 (S3-compatible SDK)   |
 | AI — Text           | Anthropic Claude (haiku)            |
 | AI — Image          | fal.ai (Flux, Ideogram, Recraft)    |

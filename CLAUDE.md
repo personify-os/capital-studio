@@ -217,19 +217,17 @@ Controlled via `FLAG_*` env vars — see `lib/flags.ts`.
 **Phase 1 — complete** (`prisma/migrations/20260523000000_add_rls_tenant_isolation`)
 RLS is enabled on all 5 multi-tenant tables: `Asset`, `ScheduledPost`, `SocialAccount`, `BrandProfile`, `User`. Each has a `tenant_isolation` policy using `current_setting('app.tenant_id', true)`. The Prisma app role (database owner) bypasses RLS by default, so existing queries are unaffected. Non-owner direct DB connections are now blocked.
 
-**Phase 2 — pending** (full enforcement). **Validated approach (do NOT use `FORCE ROW LEVEL SECURITY`):**
+**Phase 2 — complete** (full enforcement via dedicated non-owner role; PRs #41–#44). **Do NOT use `FORCE ROW LEVEL SECURITY`** — the originally-documented "FORCE RLS on the owner role" plan is unsafe: it breaks login (reads `User` by email *before* any tenant is known in `lib/auth.ts` → 0 rows) and the cron publisher (`services/publisher.ts` queries across tenants by design → 0 rows). Enforcement is instead done with a non-owner DB role, to which RLS already applies from Phase 1 (no FORCE needed).
 
-The originally-documented "FORCE RLS on the owner role" plan is unsafe — it breaks two paths:
-- **Login** reads `User` by email *before* any tenant is known (`lib/auth.ts`), so a forced policy returns 0 rows → nobody can log in.
-- **The cron publisher** (`services/publisher.ts`) queries `ScheduledPost`/`SocialAccount` **across tenants** by design → forced RLS returns 0 rows → nothing publishes.
+**What's live:**
+- **Role `app_user`** (`LOGIN`, `NOBYPASSRLS`) exists on prod Neon (project `sweet-frost-92223114`) with `GRANT USAGE`+CRUD on `public` tables/sequences + `ALTER DEFAULT PRIVILEGES` so future tables/sequences are auto-granted. It is **not** a member of `neondb_owner`.
+- **`lib/db.ts`** exposes two clients: `prisma` (owner, `DATABASE_URL`) for **auth + cron + seed + migrate**, and `prismaApp` (`APP_DATABASE_URL`, falls back to `DATABASE_URL` when unset). `withTenant(tenantId, (tx) => …)` runs on `prismaApp` and sets `app.tenant_id` transaction-locally.
+- **All tenant-scoped query sites** (API routes, 11 `(studio)` server pages, `lib/brand-context.ts`, `lib/default-brand.ts`) run through `withTenant`. Only auth, the cron publisher, seed/migrate, and the `health/db` liveness check use the owner `prisma` client (plus type-only `typeof prisma` refs).
+- **Cutover:** `APP_DATABASE_URL` (the `app_user` connection string — same host/db/params as `DATABASE_URL`, only credentials differ) is set in `.env.local` and **must be set in Railway** for enforcement in prod. **To revert instantly, delete `APP_DATABASE_URL`** → `prismaApp` falls back to the owner connection, no enforcement. It is **all-or-nothing**: a query site that bypasses `withTenant` returns 0 rows once the flip is on.
 
-Instead, enforce via a **dedicated non-owner DB role** (RLS already applies to non-owners from Phase 1 — no FORCE needed). **Validated on a Neon branch** (non-owner `app_user`: in-tenant SELECT scoped correctly, no-tenant → 0 rows, cross-tenant SELECT/INSERT blocked by the policy's WITH CHECK). Plan:
-1. Create role `app_user` (`LOGIN`, `NOBYPASSRLS`) on Neon; `GRANT USAGE`+CRUD on `public` tables/sequences + `ALTER DEFAULT PRIVILEGES` for future tables.
-2. `lib/db.ts`: keep the owner client (`prisma`, `DATABASE_URL`) for **auth + cron + seed + migrate**; add an app client (`prismaApp`, `APP_DATABASE_URL`, **falling back to `DATABASE_URL` when unset** so nothing breaks pre-cutover). `withTenant()` runs on `prismaApp`.
-3. Migrate **all 79 tenant-scoped query sites** (≈30 API routes, 11 `(studio)` server pages, `lib/brand-context.ts`, `lib/default-brand.ts`) to `withTenant(tenantId, (tx) => tx.…)`. Keep the existing `where: { tenantId }` (belt-and-suspenders). Auth (`lib/auth.ts`) and the publisher stay on `prisma`.
-4. **Cutover (reversible):** once 100% migrated, set `APP_DATABASE_URL` (the `app_user` connection string) in Railway + `.env.local`. Remove it to instantly revert to owner/no-enforcement. It is **all-or-nothing** — a missed site returns 0 rows once the flip is on, so validate every authed route (login-script smoke test against a Neon branch) before flipping prod.
+Validated end-to-end on a throwaway Neon branch and against prod through the real `prismaApp`/`withTenant` path: connected as `app_user`, in-tenant counts correct, no-tenant/wrong-tenant → 0, in-tenant CRUD allowed, cross-tenant INSERT blocked by the policy's WITH CHECK, owner client still bypasses (auth/cron safe).
 
-**Rule:** All new API routes MUST use `withTenant()`. Existing routes are grandfathered but should be migrated.
+**Rule:** All API routes — new and existing — MUST use `withTenant()` for tenant-scoped queries. The owner `prisma` client is reserved for the four exceptions above.
 
 ---
 

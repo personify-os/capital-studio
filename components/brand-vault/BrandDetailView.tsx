@@ -40,7 +40,7 @@ export default function BrandDetailView({ brand, uploading, onEdit, onUpload, on
           <div className="flex flex-wrap gap-3">
             {Object.entries(config.colors).map(([name, hex]) => (
               <div key={name} className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg border border-gray-200 shadow-sm" style={{ backgroundColor: hex as string }} />
+                <div className="w-8 h-8 rounded-lg border border-gray-200 shadow-xs" style={{ backgroundColor: hex as string }} />
                 <div>
                   <p className="text-xs font-medium text-brand-navy capitalize">{name}</p>
                   <p className="text-[10px] text-gray-400 font-mono">{hex as string}</p>

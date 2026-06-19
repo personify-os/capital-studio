@@ -45,7 +45,7 @@ export default function AssetCard({ asset, copied, onCopy }: Props) {
   return (
     <div className="group relative rounded-card overflow-hidden bg-gray-100 aspect-square shadow-card">
       <BrandDot asset={asset} />
-      <PostStatusBadge posts={asset.scheduledPosts} className="absolute top-1.5 right-1.5 z-20 shadow-sm" />
+      <PostStatusBadge posts={asset.scheduledPosts} className="absolute top-1.5 right-1.5 z-20 shadow-xs" />
 
       {asset.type === 'IMAGE' && asset.s3Url ? (
         // eslint-disable-next-line @next/next/no-img-element

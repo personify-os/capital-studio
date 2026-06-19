@@ -24,6 +24,15 @@ and schedules posts to 9 social platforms.
 - Hex values may appear ONLY in `tailwind.config.ts` and `lib/brands.ts`
 - Exception: hex values inside AI prompt strings in `lib/graphic-templates.ts` and `lib/brands.ts` are allowed
 - Third-party platform colors (Facebook blue, Instagram pink, etc.) live in `lib/platform-colors.ts`
+- Exception: the `@layer base` shims in `app/globals.css` (Tailwind v4 framework-default overrides — see below) may use a hex. The only hardcoded one is the neutral border default (`#e5e7eb` / gray-200); the focus-ring shim references the live brand token via `var(--color-brand-azure)`.
+
+### Tailwind v4
+- We run Tailwind **v4** (`@tailwindcss/postcss`), config via `@import "tailwindcss"` + `@config "../tailwind.config.ts"` in `app/globals.css`. The JS `tailwind.config.ts` is retained — all brand tokens live there, not in CSS `@theme`.
+- **Intentional framework-default overrides** (`@layer base` shims in `globals.css`), because v4's bare defaults differ from v3 and are easy footguns:
+  - `border-color` → restored to gray-200 (v4 default is `currentColor`).
+  - `--tw-ring-color` → set to brand azure (v4 default is `currentColor`; on-brand vs v3's generic blue-500).
+- **Adopted v4 defaults (do NOT shim back):** bare `ring` focus width is **1px** (v3 was 3px). Don't scatter `ring-3` to fight this — if focus visibility ever needs strengthening, do it once via a `:focus-visible` rule.
+- **Scale rename:** v4 shifted the small end of the shadow/radius scales. The small shadow that was `shadow-sm` in v3 is `shadow-xs` in v4 — use the correct v4 name, don't shim. Custom tokens (`shadow-card`, `rounded-card`, etc.) are unaffected.
 
 ### Multi-Tenancy
 - Every DB query involving user/tenant data MUST include `where: { tenantId: session.user.tenantId }`

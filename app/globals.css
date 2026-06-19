@@ -1,8 +1,26 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Tailwind v4 reads tokens (brand palette, app-bg, charcoal, shadows, radii)
+   from the existing JS config rather than rewriting them into CSS @theme. */
+@config "../tailwind.config.ts";
 
 @layer base {
+  /* v4 changed the default border color from gray-200 to currentColor.
+     Restore the v3 default so existing `border` usages don't visually shift. */
+  *,
+  ::after,
+  ::before {
+    border-color: #e5e7eb;
+  }
+
+  /* v4 changed the default ring color to currentColor. Set the default focus
+     ring to brand azure (more on-brand than v3's generic blue-500). Prefers the
+     live brand token if exposed; falls back to the hex. Any `ring-<color>`
+     utility overrides this locally. */
+  * {
+    --tw-ring-color: var(--color-brand-azure, #0475ae);
+  }
+
   :root {
     --sidebar-width: 240px;
   }

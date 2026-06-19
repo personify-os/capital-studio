@@ -99,10 +99,14 @@ export async function POST(req: Request) {
       try {
         const asset = await withTenant(session.user.tenantId, (tx) => tx.asset.create({
           data: {
-            tenantId: session.user.tenantId, userId: session.user.id, brandId,
+            tenantId: session.user.tenantId, userId: session.user.id,
             type: 'CAPTION', status: 'READY',
+            // brandId is the BrandId tag (e.g. 'espa'), kept in metadata like every
+            // other generate route. The top-level Asset.brandId column is a FK to
+            // BrandProfile.id, so it must stay null here (setting it to the tag string
+            // violated Asset_brandId_fkey and silently dropped every caption).
             metadata: {
-              model: MODEL, platform, cost: estimateCost(MODEL), source: 'plan',
+              model: MODEL, platform, cost: estimateCost(MODEL), source: 'plan', brandId,
               planDay: row.day ?? null, audience: row.audience ?? null, theme: row.theme ?? null,
               seriesCount: 1, results: [result],
             },

@@ -51,12 +51,43 @@ async function writeLyrics(description: string): Promise<string> {
   }
 }
 
-// ─── Suno (third-party reseller) ────────────────────────────────────────────
-// No official Suno API exists; this is a placeholder for a reseller adapter
-// (apiframe / EvoLink / etc.) wired once a provider + SUNO_API_KEY are chosen.
-async function generateWithSuno(_input: MusicGenerateInput): Promise<MusicResult> {
-  if (!process.env.SUNO_API_KEY) {
-    throw new Error('Suno is not configured yet — choose a Suno API provider and set SUNO_API_KEY. Use MiniMax in the meantime.')
+// ─── Suno via Apiframe (third-party reseller) ───────────────────────────────
+// No official Suno API exists; Apiframe resells it. Submit → poll a job until
+// the audio URL appears. Set SUNO_API_KEY to the Apiframe key. Defensive field
+// parsing since reseller response shapes drift.
+const APIFRAME_BASE = 'https://api.apiframe.ai/v2'
+
+async function generateWithSuno(input: MusicGenerateInput): Promise<MusicResult> {
+  const apiKey = process.env.SUNO_API_KEY
+  if (!apiKey) {
+    throw new Error('Suno is not configured yet — set SUNO_API_KEY (Apiframe). Use MiniMax in the meantime.')
   }
-  throw new Error('Suno provider adapter is not implemented yet.')
+  const headers = { 'Content-Type': 'application/json', 'X-API-Key': apiKey }
+  const prompt  = (input.style ? `${input.description}. Style: ${input.style}` : input.description).slice(0, 1000)
+
+  // Submit (custom_mode false → Suno writes its own lyrics from the prompt)
+  const subRes = await withRetry(() => fetch(`${APIFRAME_BASE}/music/generate`, {
+    method: 'POST', headers,
+    body: JSON.stringify({ model: 'suno', prompt, sunoParams: { custom_mode: false, instrumental: input.instrumental, model_version: 'V5' } }),
+  }), { retryOn: isTransient })
+  if (!subRes.ok) throw new Error(`Suno submit failed (${subRes.status}): ${(await subRes.text().catch(() => '')).slice(0, 200)}`)
+  const sub = await subRes.json() as any
+  const jobId = sub.jobId ?? sub.job_id ?? sub.id ?? sub.task_id ?? sub.data?.jobId ?? sub.data?.id
+  if (!jobId) throw new Error('Suno submit returned no job id')
+
+  // Poll until an audio URL appears (Suno is typically 30–90s)
+  const deadline = Date.now() + 180_000
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 4000))
+    const jr = await fetch(`${APIFRAME_BASE}/jobs/${jobId}`, { headers })
+    if (!jr.ok) continue
+    const j = await jr.json() as any
+    const status = String(j.status ?? j.result?.status ?? '').toLowerCase()
+    if (status.includes('fail') || status.includes('error')) throw new Error(`Suno generation failed: ${j.error ?? status}`)
+    const tracks = j.result?.tracks ?? j.tracks ?? j.data?.tracks ?? []
+    const track  = Array.isArray(tracks) ? tracks[0] : tracks
+    const url    = track?.audioUrl ?? track?.audio_url ?? track?.url ?? track?.audio
+    if (url) return { url, title: track?.title, duration: track?.duration }
+  }
+  throw new Error('Suno generation timed out')
 }

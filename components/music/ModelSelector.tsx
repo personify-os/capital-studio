@@ -4,7 +4,7 @@ export type MusicProvider = 'minimax' | 'suno'
 
 const PROVIDERS: { id: MusicProvider; badge?: string; name: string; note: string; disabled?: boolean }[] = [
   { id: 'minimax', badge: 'Recommended', name: 'MiniMax Music v2', note: 'High-quality vocals or instrumental, on fal' },
-  { id: 'suno',    badge: 'Needs setup',  name: 'Suno',            note: 'Requires a Suno API key — coming soon', disabled: true },
+  { id: 'suno',    badge: 'Premium',      name: 'Suno',            note: 'Top-tier quality via Apiframe — ~60–90s' },
 ]
 
 export default function ModelSelector({ model, onChange }: { model: MusicProvider; onChange: (m: MusicProvider) => void }) {

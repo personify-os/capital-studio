@@ -24,6 +24,7 @@ const ALLOWED_SOURCE_HOSTS = new Set([
   'v3.fal.media',
   'heygen.com',   // HeyGen Likeness Video CDN
   'heygen.ai',    // HeyGen Likeness Video CDN (alternate)
+  'apiframe.ai',  // Apiframe (Suno music) audio CDN — e.g. cdn2.apiframe.ai
 ])
 
 function assertTrustedUrl(raw: string): void {

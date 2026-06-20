@@ -8,25 +8,12 @@ import { useDefaultBrand } from '@/components/shared/DefaultBrandProvider'
 import type { BrandId } from '@/lib/brands'
 import PlanResultCard, { type PlanResult, type ImageState } from './PlanResultCard'
 import type { PlanRow } from '@/lib/plan-parse'
+import {
+  CAPTION_MODELS, IMAGE_STYLES, DEFAULT_CAPTION_MODEL, DEFAULT_IMAGE_STYLE,
+  type CaptionModelId, type ImageStyleId, type ContentDefaults,
+} from '@/lib/content-plan-options'
 
 const ACCEPT = '.xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv'
-
-// Each post's image. "Claude Design" uses a text-capable design model (Recraft)
-// and renders the post's hook as a real headline — designed jpg/png cards, not
-// garbled diffusion text. "Photo" stays text-free for a photographic look.
-type CaptionModelId = 'claude-haiku-4-5-20251001' | 'claude-sonnet-4-6' | 'claude-opus-4-8'
-const CAPTION_MODELS: { id: CaptionModelId; label: string }[] = [
-  { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku · fast' },
-  { id: 'claude-sonnet-4-6',         label: 'Claude Sonnet · balanced' },
-  { id: 'claude-opus-4-8',           label: 'Claude Opus · best' },
-]
-
-type ImageStyleId = 'claude-design' | 'ideogram' | 'photo'
-const IMAGE_STYLES: Record<ImageStyleId, { model: string; label: string; mode: 'design' | 'photo' }> = {
-  'claude-design': { model: 'recraft-v3',  label: 'Claude Design', mode: 'design' },
-  'ideogram':      { model: 'ideogram-v3', label: 'Ideogram',      mode: 'design' },
-  'photo':         { model: 'flux-pro',    label: 'Photo',         mode: 'photo'  },
-}
 
 export default function PlanClient() {
   const [brandId,    setBrandId]    = useState<BrandId>(useDefaultBrand())
@@ -42,26 +29,22 @@ export default function PlanClient() {
   const [scheduleMsg, setScheduleMsg] = useState<string | null>(null)
   const [images,     setImages]     = useState<Record<number, ImageState>>({})
   const [batchImg,   setBatchImg]   = useState(false)
-  const [imageStyle, setImageStyle] = useState<ImageStyleId>('claude-design')
-  const [captionModel, setCaptionModel] = useState<CaptionModelId>('claude-haiku-4-5-20251001')
+  const [imageStyle,    setImageStyle]    = useState<ImageStyleId>(DEFAULT_IMAGE_STYLE)
+  const [captionModel,  setCaptionModel]  = useState<CaptionModelId>(DEFAULT_CAPTION_MODEL)
+  const [brandDefaults, setBrandDefaults] = useState<Record<string, ContentDefaults>>({})
   const fileRef = useRef<HTMLInputElement>(null)
 
-  // Per-brand defaults — each brand remembers its caption model + image style.
+  // Per-brand defaults are set once per account in Brand Vault. Load them, then
+  // apply the selected brand's defaults whenever the brand changes (or on load).
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(`planDefaults:${brandId}`)
-      if (!raw) return
-      const d = JSON.parse(raw) as { captionModel?: CaptionModelId; imageStyle?: ImageStyleId }
-      if (d.captionModel && CAPTION_MODELS.some((m) => m.id === d.captionModel)) setCaptionModel(d.captionModel)
-      if (d.imageStyle && d.imageStyle in IMAGE_STYLES) setImageStyle(d.imageStyle)
-    } catch { /* ignore malformed */ }
-  }, [brandId])
+    fetch('/api/v1/brands').then((r) => r.json()).then((j) => { if (j?.defaults) setBrandDefaults(j.defaults) }).catch(() => {})
+  }, [])
 
-  function persistDefaults(next: { captionModel?: CaptionModelId; imageStyle?: ImageStyleId }) {
-    try { localStorage.setItem(`planDefaults:${brandId}`, JSON.stringify({ captionModel, imageStyle, ...next })) } catch { /* ignore */ }
-  }
-  const changeCaptionModel = (m: CaptionModelId) => { setCaptionModel(m); persistDefaults({ captionModel: m }) }
-  const changeImageStyle   = (s: ImageStyleId)   => { setImageStyle(s);   persistDefaults({ imageStyle: s }) }
+  useEffect(() => {
+    const d = brandDefaults[brandId]
+    if (d?.captionModel) setCaptionModel(d.captionModel)
+    if (d?.imageStyle)   setImageStyle(d.imageStyle)
+  }, [brandId, brandDefaults])
 
   async function genImage(result: PlanResult) {
     if (!result.ok) return
@@ -151,7 +134,7 @@ export default function PlanClient() {
         <BrandSelector value={brandId} onChange={setBrandId} />
         <label className="flex items-center gap-2">
           <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Caption model</span>
-          <select value={captionModel} onChange={(e) => changeCaptionModel(e.target.value as CaptionModelId)}
+          <select value={captionModel} onChange={(e) => setCaptionModel(e.target.value as CaptionModelId)}
             className="text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-azure/30">
             {CAPTION_MODELS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
           </select>
@@ -224,7 +207,7 @@ export default function PlanClient() {
               {results.every((r) => r.assetId) ? <CheckCircle2 size={13} /> : <AlertCircle size={13} />} Generated {results.filter((r) => r.ok).length} of {results.length} — {results.every((r) => r.assetId) ? 'all' : `${results.filter((r) => r.assetId).length} of ${results.length}`} saved to your Library.
             </p>
             <div className="flex items-center gap-3">
-              <select value={imageStyle} onChange={(e) => changeImageStyle(e.target.value as ImageStyleId)} title="Image style / model"
+              <select value={imageStyle} onChange={(e) => setImageStyle(e.target.value as ImageStyleId)} title="Image style / model"
                 className="text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-azure/30">
                 {(Object.keys(IMAGE_STYLES) as ImageStyleId[]).map((k) => (
                   <option key={k} value={k}>{IMAGE_STYLES[k].label}</option>

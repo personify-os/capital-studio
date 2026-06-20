@@ -6,6 +6,7 @@ import { type BrandProfile, type BrandConfig, TYPE_LABELS, TYPE_COLORS } from '@
 import { Section, BuiltInKnowledge } from '@/components/brand-vault/BrandDetail'
 import GuidelinesSection from '@/components/brand-vault/GuidelinesSection'
 import LogoSection from '@/components/brand-vault/LogoSection'
+import ContentDefaultsSection from '@/components/brand-vault/ContentDefaultsSection'
 
 interface Props {
   brand:        BrandProfile
@@ -100,6 +101,8 @@ export default function BrandDetailView({ brand, uploading, onEdit, onUpload, on
           onBrandUpdate({ ...brand, config: { ...((brand.config as object) ?? {}), ...patch } } as BrandProfile)
         }}
       />
+
+      <ContentDefaultsSection brand={brand} onBrandUpdate={onBrandUpdate} />
 
       <GuidelinesSection config={config} uploading={uploading} onUpload={onUpload} />
 

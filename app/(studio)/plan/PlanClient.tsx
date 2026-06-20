@@ -14,6 +14,13 @@ const ACCEPT = '.xlsx,.csv,application/vnd.openxmlformats-officedocument.spreads
 // Each post's image. "Claude Design" uses a text-capable design model (Recraft)
 // and renders the post's hook as a real headline — designed jpg/png cards, not
 // garbled diffusion text. "Photo" stays text-free for a photographic look.
+type CaptionModelId = 'claude-haiku-4-5-20251001' | 'claude-sonnet-4-6' | 'claude-opus-4-8'
+const CAPTION_MODELS: { id: CaptionModelId; label: string }[] = [
+  { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku · fast' },
+  { id: 'claude-sonnet-4-6',         label: 'Claude Sonnet · balanced' },
+  { id: 'claude-opus-4-8',           label: 'Claude Opus · best' },
+]
+
 type ImageStyleId = 'claude-design' | 'ideogram' | 'photo'
 const IMAGE_STYLES: Record<ImageStyleId, { model: string; label: string; mode: 'design' | 'photo' }> = {
   'claude-design': { model: 'recraft-v3',  label: 'Claude Design', mode: 'design' },
@@ -36,6 +43,7 @@ export default function PlanClient() {
   const [images,     setImages]     = useState<Record<number, ImageState>>({})
   const [batchImg,   setBatchImg]   = useState(false)
   const [imageStyle, setImageStyle] = useState<ImageStyleId>('claude-design')
+  const [captionModel, setCaptionModel] = useState<CaptionModelId>('claude-haiku-4-5-20251001')
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function genImage(result: PlanResult) {
@@ -110,7 +118,7 @@ export default function PlanClient() {
     try {
       const res  = await fetch('/api/v1/plan/generate', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brandId, rows }),
+        body: JSON.stringify({ brandId, model: captionModel, rows }),
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) { setError(json.message ?? 'Generation failed.'); return }
@@ -122,7 +130,16 @@ export default function PlanClient() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <BrandSelector value={brandId} onChange={setBrandId} />
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <BrandSelector value={brandId} onChange={setBrandId} />
+        <label className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Caption model</span>
+          <select value={captionModel} onChange={(e) => setCaptionModel(e.target.value as CaptionModelId)}
+            className="text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-azure/30">
+            {CAPTION_MODELS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+          </select>
+        </label>
+      </div>
 
       {/* Drop zone */}
       {!rows && (

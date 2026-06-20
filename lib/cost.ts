@@ -48,6 +48,7 @@ const MODEL_COSTS: Record<string, ModelCost> = {
 
   // Text (Claude — per graphic/caption call, rough estimate)
   'claude-opus-4-5':           { perCall: 0.15  },
+  'claude-opus-4-8':           { perCall: 0.15  },
   'claude-sonnet-4-6':         { perCall: 0.02  },
   'claude-haiku-4-5-20251001': { perCall: 0.005 },
 }

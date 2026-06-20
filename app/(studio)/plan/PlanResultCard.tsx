@@ -16,7 +16,7 @@ export interface PlanResult {
   error?:    string
 }
 
-export type ImageState = { url?: string; state: 'idle' | 'loading' | 'error' }
+export type ImageState = { url?: string; state: 'idle' | 'loading' | 'error'; error?: string }
 
 interface Props {
   result:          PlanResult
@@ -73,7 +73,7 @@ export default function PlanResultCard({ result, image, onGenerateImage }: Props
             {imgState === 'loading' ? <><Loader2 size={11} className="animate-spin" />Generating image…</> : <><ImageIcon size={11} />Generate image</>}
           </button>
         )}
-        {imgState === 'error' && <p className="text-[10px] text-red-500 mt-1">Image generation failed.</p>}
+        {imgState === 'error' && <p className="text-[10px] text-red-500 mt-1">{image?.error ?? 'Image generation failed.'}</p>}
       </div>
     </div>
   )

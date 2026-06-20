@@ -15,7 +15,8 @@
     "db:migrate": "dotenv -e .env.local -- prisma migrate dev",
     "db:push": "dotenv -e .env.local -- prisma db push",
     "db:studio": "dotenv -e .env.local -- prisma studio",
-    "check:rls": "tsx scripts/check-rls.mts"
+    "check:rls": "tsx scripts/check-rls.mts",
+    "check:gen": "tsx scripts/check-gen.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",

@@ -19,8 +19,9 @@ export const imageGenerateSchema = z.object({
   aspectRatio:   z.enum(['1:1', '16:9', '9:16', '4:5']),
   variations:    z.number().int().min(1).max(4),
   brandId:       z.enum(['lhcapital', 'simrp', 'espa', 'personal']).optional(),
-  enhancePrompt: z.boolean().optional(),
-  includeLogo:   z.boolean().optional(),
+  enhancePrompt:    z.boolean().optional(),
+  includeLogo:      z.boolean().optional(),
+  appendBrandStyle: z.boolean().optional(),   // false → don't append brand visualStyle text (design models render it literally)
 })
 
 export const graphicGenerateSchema = z.object({

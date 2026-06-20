@@ -25,6 +25,28 @@ const fmtEta = (n: number) => {
   return secs < 90 ? `~${secs}s` : `~${Math.ceil(secs / 60)} min`
 }
 
+// Brand colors described by NAME (never hex) so the design model uses the palette
+// without rendering color codes as text on the graphic.
+const BRAND_PALETTE: Record<string, string> = {
+  lhcapital: 'deep navy background with bright azure-blue and a warm orange accent',
+  simrp:     'slate-blue background with teal accents',
+  espa:      'deep navy background with emerald-green and a warm orange accent',
+  personal:  'deep navy background with a fresh green accent',
+}
+
+// The post's essence = the polished opening line of the generated caption, not the
+// raw plan hook. Skips markdown headers / bracketed directives.
+function headlineFromBody(body: string | undefined, fallback: string): string {
+  for (const raw of (body ?? '').split('\n')) {
+    const l = raw.trim()
+    if (!l || l.startsWith('#') || l.startsWith('---') || l.startsWith('[') || /^\*\*\[/.test(l)) continue
+    // Strip markdown + all quotes (inner quotes garble the design model) and cap length.
+    const clean = l.replace(/[*_`>#"'“”]/g, '').replace(/\s+/g, ' ').trim()
+    if (clean.length >= 8) return clean.slice(0, 80)
+  }
+  return (fallback || '').slice(0, 90)
+}
+
 export default function PlanClient() {
   const [brandId,    setBrandId]    = useState<BrandId>(useDefaultBrand())
   const [rows,       setRows]       = useState<PlanRow[] | null>(null)
@@ -64,10 +86,11 @@ export default function PlanClient() {
     const style = IMAGE_STYLES[imageStyle]
     let prompt: string
     if (style.mode === 'design') {
-      // Designed editorial card — render the post's hook as a real headline. Text-
-      // capable models (Recraft/Ideogram) keep it legible. Never dump the caption body.
-      const headline = (rows?.[result.idx]?.hook ?? result.theme ?? '').toString().trim().slice(0, 90)
-      prompt = `Flat modern editorial graphic design — NOT a photograph, NOT a billboard, no real-world scene, no frame, no wall, no shadow. Full-bleed: the design fills the entire square edge to edge. Solid background color. Large bold sans-serif headline that reads exactly: "${headline}". Strong typographic hierarchy, generous negative space, minimal premium design, on-brand color palette. Crisp, correctly spelled, perfectly legible text. Headline only, no body paragraphs.`
+      // Designed editorial card — render the post's essence (polished caption opener)
+      // as one headline. Text-capable models (Recraft/Ideogram) keep it legible.
+      const headline = headlineFromBody(result.body, rows?.[result.idx]?.hook ?? result.theme ?? '')
+      const palette  = BRAND_PALETTE[brandId] ?? 'professional modern color palette'
+      prompt = `Flat modern editorial graphic design poster — NOT a photograph, NOT a billboard, no real-world scene, no frame, no shadow. Full-bleed solid-color background, ${palette}. ONE large bold sans-serif headline that reads exactly: "${headline}". Strong typographic hierarchy, generous negative space, minimal premium design. Render ONLY this headline text — absolutely no other words, no hex codes, no color codes, no labels, no captions, no logos, no stray numbers. Crisp, correctly spelled, perfectly legible.`
     } else {
       // Photographic visual to PAIR with the caption — explicitly text-free.
       const concept = [result.theme, result.audience].filter(Boolean).join(', ') || 'professional business and employee benefits'
@@ -76,7 +99,7 @@ export default function PlanClient() {
     try {
       const res  = await fetch('/api/v1/generate/image', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, model: style.model, aspectRatio: '1:1', variations: 1, brandId }),
+        body: JSON.stringify({ prompt, model: style.model, aspectRatio: '1:1', variations: 1, brandId, appendBrandStyle: style.mode !== 'design' }),
       })
       if (res.status === 429 && attempt < 3) {
         const retryAfter = Number(res.headers.get('Retry-After')) || 20

@@ -36,8 +36,10 @@ export async function POST(req: Request) {
       console.error('[generate/image] prompt enhancement failed, using raw prompt:', err)
       finalPrompt = input.prompt
     }
-  } else if (input.brandId && brand.visualStyle) {
-    // Append brand visual style keywords — more useful to diffusion models than hex values
+  } else if (input.brandId && brand.visualStyle && input.appendBrandStyle !== false) {
+    // Append brand visual style keywords — more useful to diffusion models than hex values.
+    // Skipped for text-rendering design models (e.g. Recraft), which would render the
+    // style text / hex codes literally onto the graphic.
     finalPrompt = `${input.prompt}, ${brand.visualStyle}`
   }
 

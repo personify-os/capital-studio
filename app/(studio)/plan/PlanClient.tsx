@@ -15,6 +15,16 @@ import {
 
 const ACCEPT = '.xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv'
 
+// Image generation is rate-limited to 10/min per user (cost guard). Batch image
+// runs pace their starts just under that so they never hit a 429.
+const GEN_RATE_PER_MIN = 10
+const GEN_INTERVAL_MS  = Math.ceil(60_000 / GEN_RATE_PER_MIN) + 400  // ~6.4s between starts
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+const fmtEta = (n: number) => {
+  const secs = Math.ceil((n * GEN_INTERVAL_MS) / 1000)
+  return secs < 90 ? `~${secs}s` : `~${Math.ceil(secs / 60)} min`
+}
+
 export default function PlanClient() {
   const [brandId,    setBrandId]    = useState<BrandId>(useDefaultBrand())
   const [rows,       setRows]       = useState<PlanRow[] | null>(null)
@@ -29,6 +39,7 @@ export default function PlanClient() {
   const [scheduleMsg, setScheduleMsg] = useState<string | null>(null)
   const [images,     setImages]     = useState<Record<number, ImageState>>({})
   const [batchImg,   setBatchImg]   = useState(false)
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null)
   const [imageStyle,    setImageStyle]    = useState<ImageStyleId>(DEFAULT_IMAGE_STYLE)
   const [captionModel,  setCaptionModel]  = useState<CaptionModelId>(DEFAULT_CAPTION_MODEL)
   const [brandDefaults, setBrandDefaults] = useState<Record<string, ContentDefaults>>({})
@@ -46,7 +57,7 @@ export default function PlanClient() {
     if (d?.imageStyle)   setImageStyle(d.imageStyle)
   }, [brandId, brandDefaults])
 
-  async function genImage(result: PlanResult) {
+  async function genImage(result: PlanResult, attempt = 0): Promise<void> {
     if (!result.ok) return
     setImages((p) => ({ ...p, [result.idx]: { state: 'loading' } }))
     const style = IMAGE_STYLES[imageStyle]
@@ -66,6 +77,11 @@ export default function PlanClient() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, model: style.model, aspectRatio: '1:1', variations: 1, brandId }),
       })
+      if (res.status === 429 && attempt < 3) {
+        const retryAfter = Number(res.headers.get('Retry-After')) || 20
+        await sleep(Math.min(retryAfter, 65) * 1000)
+        return genImage(result, attempt + 1)
+      }
       const json = await res.json().catch(() => ({}))
       if (!res.ok || !json.assets?.[0]?.url) {
         const error = res.status === 429
@@ -77,16 +93,25 @@ export default function PlanClient() {
     } catch { setImages((p) => ({ ...p, [result.idx]: { state: 'error', error: 'Network error — please retry.' } })) }
   }
 
-  // Generate images for every post that doesn't have one yet. Concurrency 2 keeps
-  // us comfortably under the per-user generate rate limit (10/min).
+  // Generate an image for every post without one — paced to stay under the
+  // 10/min limit, with an upfront ETA, live progress, and per-image 429 retry.
   async function genAllImages() {
     if (!results) return
-    setBatchImg(true)
     const pending = results.filter((r) => r.ok && !images[r.idx]?.url)
-    let cursor = 0
-    const worker = async () => { while (cursor < pending.length) await genImage(pending[cursor++]) }
-    await Promise.all(Array.from({ length: Math.min(2, pending.length) }, worker))
+    if (!pending.length) return
+    if (pending.length > GEN_RATE_PER_MIN &&
+        !window.confirm(`Generating ${pending.length} images is paced to the 10/min limit — about ${fmtEta(pending.length)}. You can keep working; they'll fill in as they finish. Start?`)) return
+
+    setBatchImg(true)
+    setBatchProgress({ done: 0, total: pending.length })
+    const tasks: Promise<void>[] = []
+    for (let i = 0; i < pending.length; i++) {
+      tasks.push(genImage(pending[i]).then(() => setBatchProgress((p) => (p ? { ...p, done: p.done + 1 } : p))))
+      if (i < pending.length - 1) await sleep(GEN_INTERVAL_MS)   // pace starts under the limit
+    }
+    await Promise.all(tasks)
     setBatchImg(false)
+    setBatchProgress(null)
   }
 
   async function scheduleDrafts() {
@@ -220,7 +245,9 @@ export default function PlanClient() {
               </select>
               <button type="button" onClick={genAllImages} disabled={batchImg}
                 className="flex items-center gap-1 text-xs font-semibold text-brand-azure hover:underline disabled:opacity-60 whitespace-nowrap">
-                {batchImg ? <><Loader2 size={11} className="animate-spin" />Generating images…</> : <><ImageIcon size={11} />Generate all images</>}
+                {batchImg
+                  ? <><Loader2 size={11} className="animate-spin" />{batchProgress ? `Generating ${batchProgress.done}/${batchProgress.total} · ${fmtEta(batchProgress.total - batchProgress.done)} left` : 'Generating images…'}</>
+                  : <><ImageIcon size={11} />Generate all images</>}
               </button>
               <button type="button" onClick={reset} className="text-xs font-semibold text-gray-500 hover:text-gray-700">New plan</button>
               <Link href="/library?type=CAPTION" className="flex items-center gap-1 text-xs font-semibold text-green-700 hover:underline whitespace-nowrap">View Library <ArrowRight size={12} /></Link>

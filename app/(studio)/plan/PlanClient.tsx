@@ -40,6 +40,7 @@ export default function PlanClient() {
   const [images,     setImages]     = useState<Record<number, ImageState>>({})
   const [batchImg,   setBatchImg]   = useState(false)
   const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null)
+  const [confirmBatch,  setConfirmBatch]  = useState<{ count: number } | null>(null)
   const [imageStyle,    setImageStyle]    = useState<ImageStyleId>(DEFAULT_IMAGE_STYLE)
   const [captionModel,  setCaptionModel]  = useState<CaptionModelId>(DEFAULT_CAPTION_MODEL)
   const [brandDefaults, setBrandDefaults] = useState<Record<string, ContentDefaults>>({})
@@ -93,15 +94,25 @@ export default function PlanClient() {
     } catch { setImages((p) => ({ ...p, [result.idx]: { state: 'error', error: 'Network error — please retry.' } })) }
   }
 
-  // Generate an image for every post without one — paced to stay under the
-  // 10/min limit, with an upfront ETA, live progress, and per-image 429 retry.
-  async function genAllImages() {
+  // Larger batches first confirm via an in-app notice (with ETA); smaller ones run directly.
+  function genAllImages() {
     if (!results) return
     const pending = results.filter((r) => r.ok && !images[r.idx]?.url)
     if (!pending.length) return
-    if (pending.length > GEN_RATE_PER_MIN &&
-        !window.confirm(`Generating ${pending.length} images is paced to the 10/min limit — about ${fmtEta(pending.length)}. You can keep working; they'll fill in as they finish. Start?`)) return
+    if (pending.length > GEN_RATE_PER_MIN) { setConfirmBatch({ count: pending.length }); return }
+    runBatch(pending)
+  }
 
+  function startConfirmedBatch() {
+    setConfirmBatch(null)
+    if (!results) return
+    const pending = results.filter((r) => r.ok && !images[r.idx]?.url)
+    if (pending.length) runBatch(pending)
+  }
+
+  // Generate an image for every pending post — paced to stay under the 10/min
+  // limit, with live progress and per-image 429 retry.
+  async function runBatch(pending: PlanResult[]) {
     setBatchImg(true)
     setBatchProgress({ done: 0, total: pending.length })
     const tasks: Promise<void>[] = []
@@ -160,6 +171,27 @@ export default function PlanClient() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
+      {/* In-app batch-image notice (replaces the native confirm dialog) */}
+      {confirmBatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setConfirmBatch(null)}>
+          <div className="w-full max-w-sm bg-white rounded-card shadow-card-hover p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-2">
+              <ImageIcon size={16} className="text-brand-azure" />
+              <p className="font-semibold text-brand-navy text-sm">Generate {confirmBatch.count} images</p>
+            </div>
+            <p className="text-xs text-gray-600 leading-relaxed mb-4">
+              Image generation is paced to the <strong>10/min</strong> limit, so this takes about <strong>{fmtEta(confirmBatch.count)}</strong>. You can keep working — they&apos;ll fill in as they finish.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button type="button" onClick={() => setConfirmBatch(null)}
+                className="px-4 py-2 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
+              <button type="button" onClick={startConfirmedBatch}
+                className="px-4 py-2 text-xs font-semibold bg-brand-azure hover:bg-brand-navy text-white rounded-lg transition-colors">Start</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <BrandSelector value={brandId} onChange={setBrandId} />
         <label className="flex items-center gap-2">

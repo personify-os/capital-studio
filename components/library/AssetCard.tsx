@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Download, Copy, Check, Film, Play, PenSquare, Calendar, Layers, Eye } from 'lucide-react'
 import { formatRelativeTime } from '@/lib/utils'
 import { type Asset, BrandDot, PostStatusBadge, PostStatusList } from './shared'
+import { SelectCheckbox } from './SelectionContext'
 
 interface Props {
   asset:  Asset
@@ -45,6 +46,7 @@ export default function AssetCard({ asset, copied, onCopy }: Props) {
   return (
     <div className="group relative rounded-card overflow-hidden bg-gray-100 aspect-square shadow-card">
       <BrandDot asset={asset} />
+      <SelectCheckbox id={asset.id} className="absolute top-1.5 left-1.5 z-30 h-4 w-4 rounded border-gray-300 bg-white/90 text-brand-azure focus:ring-brand-azure cursor-pointer shadow" />
       <PostStatusBadge posts={asset.scheduledPosts} className="absolute top-1.5 right-1.5 z-20 shadow-xs" />
 
       {asset.type === 'IMAGE' && asset.s3Url ? (

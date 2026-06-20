@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { FolderOpen, Search, Loader2 } from 'lucide-react'
+import { FolderOpen, Search, Loader2, Trash2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { type Asset, getAssetBrand } from '@/components/library/shared'
+import { SelectionContext } from '@/components/library/SelectionContext'
 import AssetCard from '@/components/library/AssetCard'
 import CaptionRow from '@/components/library/CaptionRow'
 import AudioRow from '@/components/library/AudioRow'
@@ -61,6 +62,8 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize, 
   const [searching,     setSearching]     = useState(false)
   const [searchError,   setSearchError]   = useState(false)
   const [copied,        setCopied]        = useState<string | null>(null)
+  const [selectedIds,   setSelectedIds]   = useState<string[]>([])
+  const [bulkBusy,      setBulkBusy]      = useState(false)
   const [loadingMore,   setLoadingMore]   = useState(false)
   const [loadMoreError, setLoadMoreError] = useState(false)
   const [page,          setPage]          = useState(1)
@@ -157,13 +160,55 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize, 
     navigator.clipboard.writeText(text).then(() => { setCopied(id); setTimeout(() => setCopied(null), 2000) })
   }
 
+  // ── Multi-select + bulk delete ──────────────────────────────────────────────
+  const selectedSet      = new Set(selectedIds)
+  const selectionCtx     = { selected: (id: string) => selectedSet.has(id), toggle: (id: string) => setSelectedIds((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]) }
+  const clearSelection   = () => setSelectedIds([])
+  const allVisibleChosen = filtered.length > 0 && filtered.every((a) => selectedSet.has(a.id))
+
+  async function bulkDelete() {
+    if (!selectedIds.length) return
+    if (!window.confirm(`Delete ${selectedIds.length} asset${selectedIds.length === 1 ? '' : 's'}? This can't be undone.`)) return
+    const ids = new Set(selectedIds)
+    setBulkBusy(true)
+    try {
+      const res = await fetch('/api/v1/assets/bulk', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds, action: 'delete' }),
+      })
+      if (!res.ok) return
+      setAllAssets((prev) => prev.filter((a) => !ids.has(a.id)))
+      setSearchResults((prev) => prev ? prev.filter((a) => !ids.has(a.id)) : prev)
+      setTypeResults((prev) => prev ? prev.filter((a) => !ids.has(a.id)) : prev)
+      clearSelection()
+    } finally { setBulkBusy(false) }
+  }
+
   const isCaptionFilter = filter === 'CAPTION'
   const isAudioFilter   = filter === 'VOICEOVER' || filter === 'MUSIC'
   const isVideoFilter   = filter === 'MOTION' || filter === 'LIKENESS'
   const mixedMedia      = filter === 'ALL'
 
   return (
+    <SelectionContext.Provider value={selectionCtx}>
     <div className="p-6">
+      {/* Bulk action bar */}
+      {selectedIds.length > 0 && (
+        <div className="sticky top-2 z-30 flex flex-wrap items-center gap-3 mb-4 bg-brand-navy text-white rounded-card px-4 py-2.5 shadow-card-hover">
+          <span className="text-xs font-semibold">{selectedIds.length} selected</span>
+          <button type="button" onClick={() => setSelectedIds(filtered.map((a) => a.id))} disabled={allVisibleChosen}
+            className="text-[11px] font-medium text-white/80 hover:text-white disabled:opacity-40">Select all {filtered.length}</button>
+          <button type="button" onClick={clearSelection} className="text-[11px] font-medium text-white/80 hover:text-white">Clear</button>
+          <div className="ml-auto flex items-center gap-2">
+            <button type="button" onClick={bulkDelete} disabled={bulkBusy}
+              className="flex items-center gap-1.5 text-[11px] font-semibold bg-red-500/80 hover:bg-red-500 px-2.5 py-1.5 rounded-lg disabled:opacity-50">
+              <Trash2 size={12} /> Delete
+            </button>
+            <button type="button" onClick={clearSelection} className="text-white/70 hover:text-white"><X size={14} /></button>
+          </div>
+        </div>
+      )}
+
       {/* Type filter bar */}
       <div className="flex gap-2 mb-3 flex-wrap">
         {TYPE_FILTERS.map((f) => (
@@ -277,5 +322,6 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize, 
         </div>
       )}
     </div>
+    </SelectionContext.Provider>
   )
 }

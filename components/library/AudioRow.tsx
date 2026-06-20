@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Download, Copy, Check, Mic, Music, Calendar } from 'lucide-react'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { type Asset, BRAND_DOT, getAssetBrand, PostStatusList } from './shared'
+import { SelectCheckbox } from './SelectionContext'
 
 interface Props {
   asset:  Asset
@@ -31,6 +32,7 @@ export default function AudioRow({ asset, copied, onCopy }: Props) {
     <div className="bg-white rounded-card shadow-card p-4">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          <SelectCheckbox id={asset.id} className="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-brand-azure focus:ring-brand-azure cursor-pointer" />
           <div className="relative flex-shrink-0">
             <div className={cn('w-7 h-7 rounded-full flex items-center justify-center', isMusic ? 'bg-purple-100' : 'bg-brand-azure/10')}>
               {isMusic ? <Music size={13} className="text-purple-500" /> : <Mic size={13} className="text-brand-azure" />}

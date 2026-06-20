@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { UploadCloud, Loader2, Sparkles, FileSpreadsheet, ArrowRight, AlertCircle, CheckCircle2, X, CalendarPlus, ImageIcon } from 'lucide-react'
 import BrandSelector from '@/components/shared/BrandSelector'
@@ -45,6 +45,23 @@ export default function PlanClient() {
   const [imageStyle, setImageStyle] = useState<ImageStyleId>('claude-design')
   const [captionModel, setCaptionModel] = useState<CaptionModelId>('claude-haiku-4-5-20251001')
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Per-brand defaults — each brand remembers its caption model + image style.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`planDefaults:${brandId}`)
+      if (!raw) return
+      const d = JSON.parse(raw) as { captionModel?: CaptionModelId; imageStyle?: ImageStyleId }
+      if (d.captionModel && CAPTION_MODELS.some((m) => m.id === d.captionModel)) setCaptionModel(d.captionModel)
+      if (d.imageStyle && d.imageStyle in IMAGE_STYLES) setImageStyle(d.imageStyle)
+    } catch { /* ignore malformed */ }
+  }, [brandId])
+
+  function persistDefaults(next: { captionModel?: CaptionModelId; imageStyle?: ImageStyleId }) {
+    try { localStorage.setItem(`planDefaults:${brandId}`, JSON.stringify({ captionModel, imageStyle, ...next })) } catch { /* ignore */ }
+  }
+  const changeCaptionModel = (m: CaptionModelId) => { setCaptionModel(m); persistDefaults({ captionModel: m }) }
+  const changeImageStyle   = (s: ImageStyleId)   => { setImageStyle(s);   persistDefaults({ imageStyle: s }) }
 
   async function genImage(result: PlanResult) {
     if (!result.ok) return
@@ -134,7 +151,7 @@ export default function PlanClient() {
         <BrandSelector value={brandId} onChange={setBrandId} />
         <label className="flex items-center gap-2">
           <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Caption model</span>
-          <select value={captionModel} onChange={(e) => setCaptionModel(e.target.value as CaptionModelId)}
+          <select value={captionModel} onChange={(e) => changeCaptionModel(e.target.value as CaptionModelId)}
             className="text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-azure/30">
             {CAPTION_MODELS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
           </select>
@@ -207,7 +224,7 @@ export default function PlanClient() {
               {results.every((r) => r.assetId) ? <CheckCircle2 size={13} /> : <AlertCircle size={13} />} Generated {results.filter((r) => r.ok).length} of {results.length} — {results.every((r) => r.assetId) ? 'all' : `${results.filter((r) => r.assetId).length} of ${results.length}`} saved to your Library.
             </p>
             <div className="flex items-center gap-3">
-              <select value={imageStyle} onChange={(e) => setImageStyle(e.target.value as ImageStyleId)} title="Image style / model"
+              <select value={imageStyle} onChange={(e) => changeImageStyle(e.target.value as ImageStyleId)} title="Image style / model"
                 className="text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-azure/30">
                 {(Object.keys(IMAGE_STYLES) as ImageStyleId[]).map((k) => (
                   <option key={k} value={k}>{IMAGE_STYLES[k].label}</option>

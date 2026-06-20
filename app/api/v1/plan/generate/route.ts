@@ -11,7 +11,7 @@ import { withRetry, isTransient } from '@/lib/retry'
 import { estimateCost } from '@/lib/cost'
 import { rowToBrief, type PlanRow } from '@/lib/plan-parse'
 
-const MODEL = 'claude-haiku-4-5-20251001'
+const CAPTION_MODELS = ['claude-haiku-4-5-20251001', 'claude-sonnet-4-6', 'claude-opus-4-8'] as const
 const MAX_ROWS = 60
 
 const planRowSchema = z.object({
@@ -22,6 +22,7 @@ const planRowSchema = z.object({
 
 const bodySchema = z.object({
   brandId: z.enum(['lhcapital', 'simrp', 'espa', 'personal']),
+  model:   z.enum(CAPTION_MODELS).default('claude-haiku-4-5-20251001'),
   rows:    z.array(planRowSchema).min(1).max(MAX_ROWS),
 })
 
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
 
   const parsed = bodySchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ message: 'Invalid input' }, { status: 400 })
-  const { brandId, rows } = parsed.data
+  const { brandId, rows, model } = parsed.data
 
   const brand    = await withTenant(session.user.tenantId, (tx) => resolveBrandConfig(tx, brandId as BrandId, session.user.tenantId))
   const brandCtx = buildBrandPromptContext(brand, 'copy')
@@ -80,7 +81,7 @@ export async function POST(req: Request) {
     try {
       const message = await withRetry(
         () => client.messages.create({
-          model: MODEL, max_tokens: 1024, system: systemPrompt,
+          model, max_tokens: 1024, system: systemPrompt,
           messages: [{ role: 'user', content: userPrompt }],
         }),
         { retryOn: isTransient },
@@ -106,7 +107,7 @@ export async function POST(req: Request) {
             // BrandProfile.id, so it must stay null here (setting it to the tag string
             // violated Asset_brandId_fkey and silently dropped every caption).
             metadata: {
-              model: MODEL, platform, cost: estimateCost(MODEL), source: 'plan', brandId,
+              model, platform, cost: estimateCost(model), source: 'plan', brandId,
               planDay: row.day ?? null, audience: row.audience ?? null, theme: row.theme ?? null,
               seriesCount: 1, results: [result],
             },

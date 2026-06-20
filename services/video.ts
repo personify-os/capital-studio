@@ -5,7 +5,7 @@ import { withRetry, isTransient } from '@/lib/retry'
 // Verify model IDs at https://fal.ai/models
 const VIDEO_MODEL_MAP: Record<string, string> = {
   'kling-3.0': 'fal-ai/kling-video/v3/standard/text-to-video',
-  'kling-2.1': 'fal-ai/kling-video/v2.1/standard/text-to-video',
+  'kling-2.1': 'fal-ai/kling-video/v2.1/master/text-to-video',   // 2.1 t2v exists only under "master"; "standard" is image-to-video only
   'veo-3':     'fal-ai/veo3',
   'minimax':   'fal-ai/minimax/video-01-live',
   'hunyuan':   'fal-ai/hunyuan-video',

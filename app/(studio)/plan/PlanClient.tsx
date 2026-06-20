@@ -11,6 +11,16 @@ import type { PlanRow } from '@/lib/plan-parse'
 
 const ACCEPT = '.xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv'
 
+// Each post's image. "Claude Design" uses a text-capable design model (Recraft)
+// and renders the post's hook as a real headline — designed jpg/png cards, not
+// garbled diffusion text. "Photo" stays text-free for a photographic look.
+type ImageStyleId = 'claude-design' | 'ideogram' | 'photo'
+const IMAGE_STYLES: Record<ImageStyleId, { model: string; label: string; mode: 'design' | 'photo' }> = {
+  'claude-design': { model: 'recraft-v3',  label: 'Claude Design', mode: 'design' },
+  'ideogram':      { model: 'ideogram-v3', label: 'Ideogram',      mode: 'design' },
+  'photo':         { model: 'flux-pro',    label: 'Photo',         mode: 'photo'  },
+}
+
 export default function PlanClient() {
   const [brandId,    setBrandId]    = useState<BrandId>(useDefaultBrand())
   const [rows,       setRows]       = useState<PlanRow[] | null>(null)
@@ -25,20 +35,28 @@ export default function PlanClient() {
   const [scheduleMsg, setScheduleMsg] = useState<string | null>(null)
   const [images,     setImages]     = useState<Record<number, ImageState>>({})
   const [batchImg,   setBatchImg]   = useState(false)
+  const [imageStyle, setImageStyle] = useState<ImageStyleId>('claude-design')
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function genImage(result: PlanResult) {
     if (!result.ok) return
     setImages((p) => ({ ...p, [result.idx]: { state: 'loading' } }))
-    // Generate a clean visual to PAIR with the caption — never feed the caption
-    // copy in, or the diffusion model tries to render paragraphs of text and
-    // produces blurry, misspelled words. Describe a scene; forbid text.
-    const concept = [result.theme, result.audience].filter(Boolean).join(', ') || 'professional business and employee benefits'
-    const prompt = `Clean, modern, professional marketing photograph representing ${concept}. Photographic, well-lit, uncluttered, brand-appropriate. Absolutely no text, no words, no letters, no typography, no charts, no logos.`
+    const style = IMAGE_STYLES[imageStyle]
+    let prompt: string
+    if (style.mode === 'design') {
+      // Designed editorial card — render the post's hook as a real headline. Text-
+      // capable models (Recraft/Ideogram) keep it legible. Never dump the caption body.
+      const headline = (rows?.[result.idx]?.hook ?? result.theme ?? '').toString().trim().slice(0, 90)
+      prompt = `Flat modern editorial graphic design — NOT a photograph, NOT a billboard, no real-world scene, no frame, no wall, no shadow. Full-bleed: the design fills the entire square edge to edge. Solid background color. Large bold sans-serif headline that reads exactly: "${headline}". Strong typographic hierarchy, generous negative space, minimal premium design, on-brand color palette. Crisp, correctly spelled, perfectly legible text. Headline only, no body paragraphs.`
+    } else {
+      // Photographic visual to PAIR with the caption — explicitly text-free.
+      const concept = [result.theme, result.audience].filter(Boolean).join(', ') || 'professional business and employee benefits'
+      prompt = `Clean, modern, professional marketing photograph representing ${concept}. Photographic, well-lit, uncluttered, brand-appropriate. Absolutely no text, no words, no letters, no typography, no charts, no logos.`
+    }
     try {
       const res  = await fetch('/api/v1/generate/image', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, model: 'flux-pro', aspectRatio: '1:1', variations: 1, brandId }),
+        body: JSON.stringify({ prompt, model: style.model, aspectRatio: '1:1', variations: 1, brandId }),
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok || !json.assets?.[0]?.url) { setImages((p) => ({ ...p, [result.idx]: { state: 'error' } })); return }
@@ -172,6 +190,12 @@ export default function PlanClient() {
               {results.every((r) => r.assetId) ? <CheckCircle2 size={13} /> : <AlertCircle size={13} />} Generated {results.filter((r) => r.ok).length} of {results.length} — {results.every((r) => r.assetId) ? 'all' : `${results.filter((r) => r.assetId).length} of ${results.length}`} saved to your Library.
             </p>
             <div className="flex items-center gap-3">
+              <select value={imageStyle} onChange={(e) => setImageStyle(e.target.value as ImageStyleId)} title="Image style / model"
+                className="text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-azure/30">
+                {(Object.keys(IMAGE_STYLES) as ImageStyleId[]).map((k) => (
+                  <option key={k} value={k}>{IMAGE_STYLES[k].label}</option>
+                ))}
+              </select>
               <button type="button" onClick={genAllImages} disabled={batchImg}
                 className="flex items-center gap-1 text-xs font-semibold text-brand-azure hover:underline disabled:opacity-60 whitespace-nowrap">
                 {batchImg ? <><Loader2 size={11} className="animate-spin" />Generating images…</> : <><ImageIcon size={11} />Generate all images</>}

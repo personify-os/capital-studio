@@ -57,6 +57,7 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize, 
   )
   const [search,        setSearch]        = useState('')
   const [searchResults, setSearchResults] = useState<Asset[] | null>(null)
+  const [typeResults,   setTypeResults]   = useState<Asset[] | null>(null)
   const [searching,     setSearching]     = useState(false)
   const [searchError,   setSearchError]   = useState(false)
   const [copied,        setCopied]        = useState<string | null>(null)
@@ -98,6 +99,21 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize, 
     window.history.replaceState(null, '', qs ? `/library?${qs}` : '/library')
   }, [filter, brandFilter])
 
+  // When a type filter is active (and not searching), fetch ALL of that type from
+  // the server — otherwise older items beyond the first loaded page stay hidden.
+  useEffect(() => {
+    if (filter === 'ALL' || search.trim()) { setTypeResults(null); return }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res  = await fetch(`/api/v1/assets?type=${filter}&limit=100`)
+        const json = await res.json().catch(() => ({}))
+        if (!cancelled) setTypeResults(res.ok && json.assets ? (json.assets as Asset[]) : null)
+      } catch { if (!cancelled) setTypeResults(null) }
+    })()
+    return () => { cancelled = true }
+  }, [filter, search])
+
   async function loadMore() {
     setLoadingMore(true)
     setLoadMoreError(false)
@@ -124,8 +140,9 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize, 
     setSearchResults((prev) => (prev ? prev.map((a) => (a.id === updated.id ? updated : a)) : prev))
   }
 
-  // Active pool: server search results when searching, otherwise locally-loaded page
-  const activePool = searchResults ?? allAssets
+  // Active pool: server search results when searching, then server type-filter
+  // results when a type is selected, otherwise the locally-loaded paginated page.
+  const activePool = searchResults ?? typeResults ?? allAssets
 
   const filtered = useMemo(() => {
     let items = filter === 'ALL' ? activePool : activePool.filter((a) => a.type === filter)

@@ -30,7 +30,11 @@ export default function PlanClient() {
   async function genImage(result: PlanResult) {
     if (!result.ok) return
     setImages((p) => ({ ...p, [result.idx]: { state: 'loading' } }))
-    const prompt = [result.theme, result.body].filter(Boolean).join(' — ').slice(0, 500)
+    // Generate a clean visual to PAIR with the caption — never feed the caption
+    // copy in, or the diffusion model tries to render paragraphs of text and
+    // produces blurry, misspelled words. Describe a scene; forbid text.
+    const concept = [result.theme, result.audience].filter(Boolean).join(', ') || 'professional business and employee benefits'
+    const prompt = `Clean, modern, professional marketing photograph representing ${concept}. Photographic, well-lit, uncluttered, brand-appropriate. Absolutely no text, no words, no letters, no typography, no charts, no logos.`
     try {
       const res  = await fetch('/api/v1/generate/image', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },

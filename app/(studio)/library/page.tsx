@@ -16,11 +16,11 @@ const scheduledPostsSelect = (tenantId: string) => ({
   },
 })
 
-export default async function LibraryPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
+export default async function LibraryPage({ searchParams }: { searchParams: Promise<{ type?: string; brand?: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session) return null
 
-  const { type } = await searchParams
+  const { type, brand } = await searchParams
 
   let assets: Awaited<ReturnType<typeof fetchAssets>> = []
   let total = 0
@@ -62,6 +62,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
         total={total}
         pageSize={PAGE_SIZE}
         initialFilter={type}
+        initialBrand={brand}
       />
     </>
   )

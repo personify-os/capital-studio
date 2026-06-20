@@ -41,16 +41,20 @@ interface Props {
   total:         number
   pageSize:      number
   initialFilter?: string
+  initialBrand?:  string
 }
 
 const FILTER_VALUES: FilterValue[] = ['ALL', 'IMAGE', 'GRAPHIC', 'VIDEO', 'MOTION', 'LIKENESS', 'VOICEOVER', 'CAPTION', 'MUSIC']
+const BRAND_VALUES:  BrandFilter[] = ['ALL', 'lhcapital', 'simrp', 'espa', 'personal']
 
-export default function LibraryClient({ assets: initialAssets, total, pageSize, initialFilter }: Props) {
+export default function LibraryClient({ assets: initialAssets, total, pageSize, initialFilter, initialBrand }: Props) {
   const [allAssets,     setAllAssets]     = useState<Asset[]>(initialAssets)
   const [filter,        setFilter]        = useState<FilterValue>(
     (initialFilter && FILTER_VALUES.includes(initialFilter as FilterValue)) ? (initialFilter as FilterValue) : 'ALL',
   )
-  const [brandFilter,   setBrandFilter]   = useState<BrandFilter>('ALL')
+  const [brandFilter,   setBrandFilter]   = useState<BrandFilter>(
+    (initialBrand && BRAND_VALUES.includes(initialBrand as BrandFilter)) ? (initialBrand as BrandFilter) : 'ALL',
+  )
   const [search,        setSearch]        = useState('')
   const [searchResults, setSearchResults] = useState<Asset[] | null>(null)
   const [searching,     setSearching]     = useState(false)
@@ -83,6 +87,16 @@ export default function LibraryClient({ assets: initialAssets, total, pageSize, 
       }
     }, 350)
   }, [search, filter])
+
+  // Persist the active type/brand filters in the URL so a refresh restores them
+  // (the server reads ?type / ?brand on reload). replaceState avoids navigation.
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (filter !== 'ALL')      params.set('type', filter)
+    if (brandFilter !== 'ALL') params.set('brand', brandFilter)
+    const qs = params.toString()
+    window.history.replaceState(null, '', qs ? `/library?${qs}` : '/library')
+  }, [filter, brandFilter])
 
   async function loadMore() {
     setLoadingMore(true)

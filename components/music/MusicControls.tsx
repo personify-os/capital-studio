@@ -4,7 +4,7 @@ import Button from '@/components/ui/Button'
 import Textarea from '@/components/ui/Textarea'
 import Toggle from '@/components/ui/Toggle'
 import ContentIntentSimple from '@/components/shared/ContentIntentSimple'
-import ModelSelector, { type MusicModel } from './ModelSelector'
+import ModelSelector, { type MusicProvider } from './ModelSelector'
 
 type TabMode = 'create' | 'custom'
 
@@ -25,8 +25,8 @@ interface Props {
   onCustomStyle:   (v: string) => void
   instrumental:    boolean
   onInstrumental:  (v: boolean) => void
-  model:           MusicModel
-  onModel:         (m: MusicModel) => void
+  model:           MusicProvider
+  onModel:         (m: MusicProvider) => void
   intentOpen:      boolean
   onIntentOpen:    (v: boolean) => void
   selectedTopics:  string[]
@@ -166,7 +166,7 @@ export default function MusicControls({
 
         <div className="flex items-center gap-2 text-xs text-gray-400 px-1">
           <Zap size={11} className="text-brand-teal" />
-          <span>{model} · {instrumental ? 'Instrumental' : 'With vocals'} · Suno</span>
+          <span>{model === 'minimax' ? 'MiniMax v2' : 'Suno'} · {instrumental ? 'Instrumental' : 'With vocals'}</span>
         </div>
 
         <Button className="w-full" size="lg" disabled={!canGenerate || loading} loading={loading} onClick={onGenerate}>

@@ -6,7 +6,7 @@ import { Music, Download, PenSquare, Calendar } from 'lucide-react'
 import { useGenerate } from '@/hooks/useGenerate'
 import MusicControls from '@/components/music/MusicControls'
 import TrackRow, { type RecentTrack } from '@/components/music/TrackRow'
-import { type MusicModel } from '@/components/music/ModelSelector'
+import { type MusicProvider } from '@/components/music/ModelSelector'
 import type { MusicGenerateInput } from '@/lib/schemas/generate'
 import { TOPIC_TIERS, PURPOSES, CTA_OPTIONS, buildIntentString } from '@/lib/content-intent'
 
@@ -23,7 +23,7 @@ export default function MusicClient({ recentTracks: initial }: { recentTracks: R
   const [lyrics,       setLyrics]       = useState('')
   const [customStyle,  setCustomStyle]  = useState('')
   const [instrumental,    setInstrumental]    = useState(false)
-  const [model,           setModel]           = useState<MusicModel>('chirp-v4')
+  const [provider,        setProvider]        = useState<MusicProvider>('minimax')
   const [recentTracks,    setRecentTracks]    = useState(initial)
   const [intentOpen,      setIntentOpen]      = useState(false)
   const [selectedTopics,  setSelectedTopics]  = useState<string[]>([])
@@ -39,7 +39,7 @@ export default function MusicClient({ recentTracks: initial }: { recentTracks: R
         {
           id:        res.asset.id,
           s3Url:     res.asset.url,
-          metadata:  { source: 'music', title: res.asset.title, model, description: tab === 'create' ? description : undefined, style: tab === 'create' ? style : customStyle, instrumental },
+          metadata:  { source: 'music', title: res.asset.title, provider, description: tab === 'create' ? description : undefined, style: tab === 'create' ? style : customStyle, instrumental },
           createdAt: new Date().toISOString(),
         },
         ...prev,
@@ -57,13 +57,13 @@ export default function MusicClient({ recentTracks: initial }: { recentTracks: R
       if (!description.trim()) return
       const baseDesc = description.trim()
       const fullDesc = intent ? `${baseDesc}\n\nContent intent: ${intent}` : baseDesc
-      generate({ description: fullDesc, style: style || undefined, instrumental, model })
+      generate({ description: fullDesc, style: style || undefined, instrumental, provider })
     } else {
-      const desc = instrumental ? (customStyle.trim() || 'Instrumental track') : (lyrics.trim() || 'Background music')
+      const desc = instrumental ? (customStyle.trim() || 'Instrumental track') : (customStyle.trim() || 'Background music')
       const fullDesc = intent ? `${desc}\n\nContent intent: ${intent}` : desc
-      generate({ description: fullDesc, style: customStyle.trim() || undefined, instrumental, model })
+      generate({ description: fullDesc, style: customStyle.trim() || undefined, instrumental, provider, lyrics: !instrumental ? (lyrics.trim() || undefined) : undefined })
     }
-  }, [tab, description, style, lyrics, customStyle, instrumental, model, selectedTopics, selectedPurpose, selectedCta, generate])
+  }, [tab, description, style, lyrics, customStyle, instrumental, provider, selectedTopics, selectedPurpose, selectedCta, generate])
 
   const canGenerate = tab === 'create'
     ? description.trim().length > 0
@@ -78,7 +78,7 @@ export default function MusicClient({ recentTracks: initial }: { recentTracks: R
         lyrics={lyrics}       onLyrics={setLyrics}
         customStyle={customStyle}   onCustomStyle={setCustomStyle}
         instrumental={instrumental} onInstrumental={setInstrumental}
-        model={model}         onModel={setModel}
+        model={provider}      onModel={setProvider}
         intentOpen={intentOpen}     onIntentOpen={setIntentOpen}
         selectedTopics={selectedTopics}
         onToggleTopic={(id) => setSelectedTopics((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
@@ -96,7 +96,7 @@ export default function MusicClient({ recentTracks: initial }: { recentTracks: R
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <div className="w-8 h-8 border-[3px] border-brand-azure border-t-transparent rounded-full animate-spin" />
             <p className="text-sm font-medium text-brand-navy">Generating music…</p>
-            <p className="text-xs text-gray-400">Suno is composing your track — usually 20–60 seconds</p>
+            <p className="text-xs text-gray-400">Composing your track — usually 20–60 seconds</p>
           </div>
         )}
 

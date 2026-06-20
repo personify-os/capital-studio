@@ -93,7 +93,9 @@ export const musicGenerateSchema = z.object({
   description:  z.string().min(1).max(500),
   style:        z.string().max(100).optional(),
   instrumental: z.boolean().default(false),
-  model:        z.enum(['chirp-v4', 'chirp-v3-5', 'chirp-v3']).default('chirp-v4'),
+  lyrics:       z.string().max(3000).optional(),                 // vocal tracks; auto-written from the description if omitted
+  provider:     z.enum(['minimax', 'suno']).default('minimax'),  // 'suno' requires SUNO_API_KEY + a reseller adapter
   brandId:      z.enum(['lhcapital', 'simrp', 'espa', 'personal']).optional(),
 })
 export type MusicGenerateInput = z.infer<typeof musicGenerateSchema>
+export type MusicProvider      = MusicGenerateInput['provider']

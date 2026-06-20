@@ -40,9 +40,8 @@ const MODEL_COSTS: Record<string, ModelCost> = {
   'eleven-turbo-v2':       { perCall: 0.01 },
 
   // Music
-  'chirp-v4':             { perCall: 0.10  },
-  'chirp-v3-5':           { perCall: 0.08  },
-  'chirp-v3':             { perCall: 0.06  },
+  'music-minimax':        { perCall: 0.03  },
+  'music-suno':           { perCall: 0.10  },
 
   // Likeness Video (HeyGen — per minute of video)
   'heygen-avatar':          { perCall: 0.10  },

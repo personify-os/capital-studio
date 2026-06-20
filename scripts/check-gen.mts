@@ -85,9 +85,9 @@ async function main() {
   if (full) {
     console.log('\n--full: video / motion / music (slower + pricier)')
     await step('music  ', async () => {
-      const { url } = await generateMusic({ description: 'short upbeat corporate background music', instrumental: true, model: 'chirp-v4' } as MusicGenerateInput)
-      if (!url) throw new Error('Suno returned no audio URL')
-      return 'fal suno → url'
+      const { url } = await generateMusic({ description: 'short upbeat corporate background music', instrumental: true, provider: 'minimax' } as MusicGenerateInput)
+      if (!url) throw new Error('music provider returned no audio URL')
+      return 'fal minimax-music v2 → url'
     })
     await step('motion ', async () => {
       if (!imageR2Url) throw new Error('no source image (image step failed)')

@@ -17,14 +17,21 @@ import { config } from 'dotenv'
 config({ path: '.env.local' })
 
 import Anthropic from '@anthropic-ai/sdk'
-import type { ImageGenerateInput, GraphicGenerateInput } from '../lib/schemas/generate'
+import type { ImageGenerateInput, GraphicGenerateInput, VideoGenerateInput, MusicGenerateInput } from '../lib/schemas/generate'
 
 const { prisma, withTenant } = await import('../lib/db')
 const { generateImages }     = await import('../services/image')
 const { generateGraphicHtml } = await import('../services/graphics')
+const { generateVideo, generateMotionVideo } = await import('../services/video')
+const { generateMusic } = await import('../services/music')
 const { uploadFromUrl, makeAssetKey } = await import('../lib/storage')
 
+// --full also exercises video / motion / music (fal, slower + pricier — minutes
+// and ~a dollar). These broke from the same @fal-ai/client `.data` regression,
+// so generation-only is enough; the save path is covered by the basic checks.
+const full = process.argv.includes('--full')
 const created: string[] = []
+let imageR2Url = ''
 let failures = 0
 
 async function step(name: string, fn: () => Promise<string>) {
@@ -50,6 +57,7 @@ async function main() {
     if (!urls[0]) throw new Error('fal returned no image URL')
     const key = makeAssetKey(T, 'images')
     const s3Url = await uploadFromUrl(urls[0], key)
+    imageR2Url = s3Url   // reused as the source image for the motion check (--full)
     const a = await withTenant(T, (tx) => tx.asset.create({ data: { tenantId: T, userId: U, type: 'IMAGE', status: 'READY', s3Key: key, s3Url, metadata: { source: 'check-gen' } }, select: { id: true } }))
     created.push(a.id)
     return 'fal flux-pro → R2 → Asset'
@@ -73,6 +81,26 @@ async function main() {
     created.push(a.id)
     return 'claude html → Asset'
   })
+
+  if (full) {
+    console.log('\n--full: video / motion / music (slower + pricier)')
+    await step('music  ', async () => {
+      const { url } = await generateMusic({ description: 'short upbeat corporate background music', instrumental: true, model: 'chirp-v4' } as MusicGenerateInput)
+      if (!url) throw new Error('Suno returned no audio URL')
+      return 'fal suno → url'
+    })
+    await step('motion ', async () => {
+      if (!imageR2Url) throw new Error('no source image (image step failed)')
+      const url = await generateMotionVideo(imageR2Url, 'subtle gentle motion', '5', '16:9')
+      if (!url) throw new Error('Kling returned no video URL')
+      return 'fal kling i2v → url'
+    })
+    await step('video  ', async () => {
+      const url = await generateVideo({ prompt: 'a calm abstract gradient, slow cinematic motion', model: 'kling-2.1', duration: '5', aspectRatio: '16:9' } as VideoGenerateInput)
+      if (!url) throw new Error('video model returned no URL')
+      return 'fal kling t2v → url'
+    })
+  }
 
   if (created.length) {
     await withTenant(T, (tx) => tx.asset.deleteMany({ where: { id: { in: created } } }))

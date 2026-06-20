@@ -6,6 +6,7 @@ import { FileText, Copy, Check, Calendar, Hash, Pencil, Save, X } from 'lucide-r
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { type Asset, BRAND_DOT, getAssetBrand, PostStatusList } from './shared'
 import CaptionReferenceBadges from './CaptionReferenceBadges'
+import { SelectCheckbox } from './SelectionContext'
 
 interface CaptionResult { body: string; hashtags?: string[]; altText?: string }
 interface CaptionMeta {
@@ -97,6 +98,7 @@ export default function CaptionRow({ asset, copied, onCopy, onUpdate }: Props) {
     <div className="bg-white rounded-card shadow-card p-4">
       <div className="flex items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
+          <SelectCheckbox id={asset.id} className="h-4 w-4 flex-shrink-0 rounded border-gray-300 text-brand-azure focus:ring-brand-azure cursor-pointer" />
           <div className="relative w-7 h-7 rounded-full bg-brand-navy/10 flex items-center justify-center flex-shrink-0">
             <FileText size={13} className="text-brand-navy" />
             {brandId && BRAND_DOT[brandId] && (

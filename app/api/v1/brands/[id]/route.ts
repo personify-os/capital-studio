@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma, withTenant } from '@/lib/db'
 import { z } from 'zod'
+import { CAPTION_MODEL_IDS, IMAGE_STYLE_IDS } from '@/lib/content-plan-options'
 
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{3,8}$/)
 
@@ -29,6 +30,10 @@ const patchSchema = z.object({
   fonts:         z.object({
     heading: z.string().max(100).optional(),
     body:    z.string().max(100).optional(),
+  }).optional(),
+  contentDefaults: z.object({
+    captionModel: z.enum(CAPTION_MODEL_IDS).optional(),
+    imageStyle:   z.enum(IMAGE_STYLE_IDS).optional(),
   }).optional(),
 })
 

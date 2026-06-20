@@ -110,9 +110,12 @@ export async function generateImages(input: ImageGenerateInput, prompt: string):
     ),
   )
 
-  return results.flatMap((r: any) =>
-    (r.images ?? (r.image ? [r.image] : [])).map((img: any) => (typeof img === 'string' ? img : img?.url)).filter(Boolean),
-  )
+  // @fal-ai/client v1 wraps the model output in `.data` ({ data, requestId }always);
+  // older versions returned the output directly. Handle both.
+  return results.flatMap((r: any) => {
+    const out = r?.data ?? r
+    return (out.images ?? (out.image ? [out.image] : [])).map((img: any) => (typeof img === 'string' ? img : img?.url)).filter(Boolean)
+  })
 }
 
 async function generateWithDalle(prompt: string, count: number, aspectRatio: string): Promise<string[]> {

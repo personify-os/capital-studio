@@ -31,7 +31,8 @@ export async function generateMotionVideo(
     } as any,
   }), { retryOn: isTransient })
 
-  const r = result as any
+  // @fal-ai/client v1 wraps output in `.data`; fall back to the root for older shapes.
+  const r = (result as any)?.data ?? (result as any)
   const url = r.video?.url ?? r.video_url ?? r.url
   if (!url) throw new Error('No video URL returned from model')
   return url
@@ -57,7 +58,8 @@ export async function generateVideo(input: VideoGenerateInput): Promise<string> 
     },
   }), { retryOn: isTransient })
 
-  const r = result as any
+  // @fal-ai/client v1 wraps output in `.data`; fall back to the root for older shapes.
+  const r = (result as any)?.data ?? (result as any)
   const url = r.video?.url ?? r.video_url ?? r.url
   if (!url) throw new Error('No video URL returned from model')
   return url

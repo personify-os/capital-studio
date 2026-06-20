@@ -13,7 +13,9 @@ export async function generateMusic(input: MusicGenerateInput): Promise<{ url: s
     },
   }), { retryOn: isTransient }) as any
 
-  const track = result.tracks?.[0] ?? result
+  // @fal-ai/client v1 wraps output in `.data`; fall back to the root for older shapes.
+  const out   = result?.data ?? result
+  const track = out.tracks?.[0] ?? out
   const url = track.audio_url ?? track.url ?? track.audio
   if (!url) throw new Error('No audio URL returned from Suno')
   return { url, title: track.title, duration: track.duration }

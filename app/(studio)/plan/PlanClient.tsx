@@ -67,9 +67,14 @@ export default function PlanClient() {
         body: JSON.stringify({ prompt, model: style.model, aspectRatio: '1:1', variations: 1, brandId }),
       })
       const json = await res.json().catch(() => ({}))
-      if (!res.ok || !json.assets?.[0]?.url) { setImages((p) => ({ ...p, [result.idx]: { state: 'error' } })); return }
+      if (!res.ok || !json.assets?.[0]?.url) {
+        const error = res.status === 429
+          ? 'Rate limit — wait ~1 min, then retry (10 images/min).'
+          : (json.message ?? 'Generation failed.')
+        setImages((p) => ({ ...p, [result.idx]: { state: 'error', error } })); return
+      }
       setImages((p) => ({ ...p, [result.idx]: { state: 'idle', url: json.assets[0].url as string } }))
-    } catch { setImages((p) => ({ ...p, [result.idx]: { state: 'error' } })) }
+    } catch { setImages((p) => ({ ...p, [result.idx]: { state: 'error', error: 'Network error — please retry.' } })) }
   }
 
   // Generate images for every post that doesn't have one yet. Concurrency 2 keeps

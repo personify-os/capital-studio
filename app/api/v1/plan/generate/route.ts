@@ -22,7 +22,7 @@ const planRowSchema = z.object({
 
 const bodySchema = z.object({
   brandId: z.enum(['lhcapital', 'simrp', 'espa', 'personal']),
-  model:   z.enum(CAPTION_MODELS).default('claude-haiku-4-5-20251001'),
+  model:   z.enum(CAPTION_MODELS).default('claude-opus-4-8'),
   rows:    z.array(planRowSchema).min(1).max(MAX_ROWS),
 })
 

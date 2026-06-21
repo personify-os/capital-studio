@@ -24,7 +24,7 @@ export interface ContentDefaults {
   imageStyle?:   ImageStyleId
 }
 
-export const DEFAULT_CAPTION_MODEL: CaptionModelId = 'claude-haiku-4-5-20251001'
+export const DEFAULT_CAPTION_MODEL: CaptionModelId = 'claude-opus-4-8'
 export const DEFAULT_IMAGE_STYLE:   ImageStyleId   = 'claude-design'
 
 // BrandType (DB) → BrandId (Content Plan / UI)

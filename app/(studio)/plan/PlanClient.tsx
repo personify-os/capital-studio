@@ -90,7 +90,7 @@ export default function PlanClient() {
       // as one headline. Text-capable models (Recraft/Ideogram) keep it legible.
       const headline = headlineFromBody(result.body, rows?.[result.idx]?.hook ?? result.theme ?? '')
       const palette  = BRAND_PALETTE[brandId] ?? 'professional modern color palette'
-      prompt = `Flat modern editorial graphic design poster — NOT a photograph, NOT a billboard, no real-world scene, no frame, no shadow. Full-bleed solid-color background, ${palette}. ONE large bold sans-serif headline that reads exactly: "${headline}". Strong typographic hierarchy, generous negative space, minimal premium design. Render ONLY this headline text — absolutely no other words, no hex codes, no color codes, no labels, no captions, no logos, no stray numbers. Crisp, correctly spelled, perfectly legible.`
+      prompt = `Minimalist flat editorial graphic design, solid ${palette}. NO decoration, NO illustrations, NO photo, NO poster mockup, NO real-world scene — a flat 2D digital graphic that fills the whole frame. ONE large bold modern sans-serif headline reading exactly: "${headline}". Generous negative space, strong typographic hierarchy, premium minimal design. Render ONLY this headline text — no other words, no hex codes, no labels, no logos, no stray numbers. Crisp, correctly spelled, legible.`
     } else {
       // Photographic visual to PAIR with the caption — explicitly text-free.
       const concept = [result.theme, result.audience].filter(Boolean).join(', ') || 'professional business and employee benefits'
@@ -203,7 +203,7 @@ export default function PlanClient() {
               <p className="font-semibold text-brand-navy text-sm">Generate {confirmBatch.count} images</p>
             </div>
             <p className="text-xs text-gray-600 leading-relaxed mb-4">
-              Image generation is paced to the <strong>10/min</strong> limit, so this takes about <strong>{fmtEta(confirmBatch.count)}</strong>. You can keep working — they&apos;ll fill in as they finish.
+              Image generation is paced to the <strong>10/min</strong> limit, so this takes about <strong>{fmtEta(confirmBatch.count)}</strong>. <strong>Keep this page open</strong> while they generate — they&apos;ll fill in as they finish.
             </p>
             <div className="flex items-center justify-end gap-2">
               <button type="button" onClick={() => setConfirmBatch(null)}
